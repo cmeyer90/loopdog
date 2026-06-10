@@ -1,0 +1,34 @@
+# Local agent/tool state
+.claude/
+.codex/
+
+# Environment and secret material
+.env
+.env.*
+*.pem
+*.p12
+*.pfx
+*.key
+*.secret
+*.token
+id_rsa
+id_rsa.*
+credentials
+credentials.*
+secrets.*
+tokens.*
+keys.*
+.secrets/
+
+# Dependencies and build output
+node_modules/
+dist/
+build/
+coverage/
+.turbo/
+.vite/
+
+# OS/editor noise
+.DS_Store
+Thumbs.db
+*.log

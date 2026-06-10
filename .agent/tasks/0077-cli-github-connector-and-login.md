@@ -1,0 +1,231 @@
+# 0077 CLI GitHub Connector & `looper login`
+
+Status: planned  
+Branch: task/0077-cli-github-connector-and-login
+
+## Goal
+
+A keyless `looper login` that authenticates the *user to GitHub* from the local
+CLI — GitHub OAuth **device flow** via a public OAuth-App `client_id` (no private
+key, no hosted backend) **or** reuse of the user's existing `gh`/git auth — stores
+the resulting token in the **OS keychain**, then chains into provider connect
+(0010). Plus `looper auth status` and `looper logout`. **No looper GitHub App;** in
+CI the controller uses the Actions `GITHUB_TOKEN` and never runs this flow.
+
+## Background
+
+Part of [Milestone 02](../milestones/milestone-02-attachment-and-configuration-model.md)
+— its keyless-auth Guiding Decision: "Auth is a browser login via the CLI
+(`looper login`): GitHub OAuth device flow (public OAuth-App `client_id`, no hosted
+backend) — or reuse existing `gh`/git auth … tokens in the OS keychain. In CI the
+controller uses the Actions `GITHUB_TOKEN` (no looper GitHub App; M07)." See
+[architecture](../../docs/architecture.md) "The operator interface: the CLI"
+(`looper login` — the keyless connector) and "Identity & secrets (two planes)."
+
+This is the *first* command an adopter runs, ahead of `looper init` (0007). It owns
+**only the GitHub user-auth half**: the device-flow plumbing + keychain storage
+that 0029 (M07) *consumes* (it resolves `cli-device`/`cli-gh` tokens but defers
+their acquisition here) and that provider connect (0010) *defers to* (0010 handles
+the provider App; 0077 authenticates the user, then hands off). Lands in
+`@looper/cli` (`commands/login.ts`, `auth.ts`, `logout.ts`) over `@looper/github`
+(an OAuth/device-flow client + a token-source resolver) — the same `@looper/github`
+package that holds repo identity (0029).
+
+This task deliberately does not collect Claude routine `/fire` tokens or any
+`ANTHROPIC_API_KEY`. Provider-specific routine token bootstrap/import is owned by
+0010/0020/0023 after the 0093 spike validates the supported Claude surface.
+
+## Scope
+
+- `looper login`: pick an auth path (reuse `gh`/git, else OAuth device flow), run
+  it, persist the token to the OS keychain, verify it, then chain into `looper
+  connect` (0010) for the provider subscription.
+- `looper auth status`: report who you're authenticated as, the token source, the
+  granted scopes, and provider-connection state — read-only, never prints the token.
+- `looper logout`: delete the stored token from the keychain (and optionally clear
+  the cached provider-connection state), idempotent.
+- Secure token storage abstraction (keychain primary, documented fallback).
+
+### Technical detail
+
+**Lands in** `@looper/cli` (`src/commands/{login,auth,logout}.ts`, registered on
+the `commander` program; prompts via `@clack/prompts`) and `@looper/github`
+(`src/identity/` — alongside 0029's `resolveRepoIdentity`): a device-flow client
+and a `TokenStore` over the keychain. `@looper/core` already names the identity
+surface on `GitHubPort`; no new port type is required beyond a `TokenStore`
+interface declared in `core` and implemented in `github`.
+
+**Auth-path selection** (`looper login`, in precedence order; `--method` overrides):
+
+1. **Reuse `gh`** — if `gh auth token` succeeds, offer to adopt it (zero new
+   browser round-trip). Validate scopes (`repo` / fine-grained `contents`,
+   `issues`, `pull_requests`); if missing, fall through to device flow.
+2. **OAuth device flow** — `POST https://github.com/login/device/code` with the
+   public `client_id` (compiled in; **no client secret** — device flow needs none,
+   which is exactly why no hosted backend is required), display the
+   `user_code` + `verification_uri`, open the browser, then **poll**
+   `POST .../oauth/access_token` (grant
+   `urn:ietf:params:oauth:grant-type:device_code`) honoring the `interval` and
+   `slow_down`/`authorization_pending`/`expired_token` responses until a token is
+   returned or the code expires.
+3. **`git` credential fallback** — if neither is available, read
+   `git credential fill` for `github.com`; only adopt if it carries an OAuth/PAT
+   with sufficient scope.
+
+```ts
+type AuthMethod = 'gh' | 'device' | 'git-credential';
+interface StoredAuth {
+  token: string;          // never logged; redacted everywhere (per 0029)
+  method: AuthMethod;     // recorded so `auth status` / 0029 know the source
+  login: string;          // resolved via GET /user
+  scopes: string[];       // from the X-OAuth-Scopes response header
+  obtainedAt: string;     // ISO
+}
+interface TokenStore {                 // declared in @looper/core, impl in @looper/github
+  get(): Promise<StoredAuth | null>;
+  set(a: StoredAuth): Promise<void>;
+  clear(): Promise<void>;
+}
+```
+
+**Token storage** (`@looper/github`, `TokenStore` impl): primary backend is the OS
+keychain via `keytar` (macOS Keychain / libsecret / Windows Credential Manager),
+service `looper`, account = the GitHub `login`. If the keychain is unavailable
+(headless Linux without libsecret), fall back to a `~/.looper/auth.json` written
+`0600` with a printed warning that it is plaintext-on-disk and a pointer to use a
+PAT-in-secret for CI instead. **Never** write the token into the repo or any
+committed file. The token maps to 0029's `TokenSource` (`cli-device`/`cli-gh`) so
+`resolveRepoIdentity` reads it as the lowest-precedence local source after
+`LOOPER_PAT` and `GITHUB_TOKEN`.
+
+**Verify + chain.** After storing, `GET /user` confirms the token; on success
+print the authenticated login and **chain into `looper connect`** (0010) for the
+provider subscription unless `--no-connect` is passed. `looper init` (0007) and
+`looper connect` both call the shared `ensureAuth()` so any command needing GitHub
+auto-prompts login once.
+
+**`looper auth status`** — read-only: prints `login`, `method`, scopes,
+`obtainedAt`, keychain-vs-file location, and the provider-connection summary read
+from 0010's `connections.json`. In an Actions/CI context it instead reports "using
+GITHUB_TOKEN (CI)" via 0029's `resolveRepoIdentity` and exits 0 — it must be safe
+to run anywhere. Exits non-zero only when run interactively with no stored auth.
+
+**`looper logout`** — deletes the keychain entry (or the `0600` file); `--all`
+also clears the cached `connections.json` (provider-side revocation, such as
+Codex App removal or Claude routine token revocation, is out of scope).
+Idempotent: logging out when not logged in prints "not logged in" and exits 0.
+
+**CI note.** None of these commands run in the controller's CI path — the runner
+uses `GITHUB_TOKEN` (0029). If `CI`/`GITHUB_ACTIONS` is set, `login` refuses
+interactively and points to `GITHUB_TOKEN`/`LOOPER_PAT`.
+
+**Edge cases:** device code expires before authorization → re-display + re-poll
+once, then exit non-zero with a resume hint; user denies the OAuth grant →
+clean non-zero exit; `gh` present but under-scoped → transparently fall through to
+device flow; keychain locked/denied → file fallback with the plaintext warning;
+re-running `login` while already authed → re-verify and offer to re-auth, never
+silently stack tokens.
+
+## Out Of Scope
+
+- Repo-identity resolution + the fork-PR read-only caveat + permission manifest
+  (M07 · 0029) — this task *produces* the `cli-device`/`cli-gh` token 0029 resolves.
+- Provider connect (Claude routine import, Codex App install), repo authorization,
+  the verification probe, and per-loop backend selection (M02 · 0010) — `login`
+  only *chains into* it.
+- Config scaffolding / `looper init` (0007); the loop questionnaire (M16 · 0078).
+- Any looper GitHub App, hosted OAuth backend, or model API key on the primary path.
+- Provider routine bearer-token acquisition (M05 · 0023) and self-hosted API keys
+  (M07 · 0031).
+
+## Acceptance Criteria
+
+- [ ] `looper login` with `gh` present and sufficiently scoped adopts the `gh`
+      token without a second browser round-trip and stores it in the keychain.
+- [ ] `looper login` with no `gh` runs OAuth device flow against the public
+      `client_id` (no client secret), displays `user_code`/`verification_uri`,
+      polls honoring `interval`/`slow_down`/`authorization_pending`, and stores the
+      resulting token.
+- [ ] The token is written to the OS keychain (service `looper`); when the keychain
+      is unavailable it falls back to a `0600` `~/.looper/auth.json` with a printed
+      plaintext warning — and **never** to any committed/repo file.
+- [ ] After login, the flow chains into `looper connect` (0010) unless
+      `--no-connect`, and `looper init`/`connect` auto-prompt login when unauthed.
+- [ ] `looper auth status` reports login, method, scopes, and provider-connection
+      state; in CI it reports "using GITHUB_TOKEN" and exits 0; it never prints the
+      token.
+- [ ] `looper logout` removes the stored token idempotently; `--all` also clears
+      cached connection state.
+- [ ] The token never appears in any log, run-record, telemetry payload, or stdout
+      (redaction test, shared with 0029).
+- [ ] No looper GitHub App, no client secret, no hosted backend, and no model API
+      key introduced; no DB/queue.
+- [ ] Relevant checks pass.
+
+## Implementation Checklist
+
+- [ ] Add the device-flow client + `TokenStore` (keychain + `0600`-file fallback)
+      to `@looper/github/src/identity/`; declare `TokenStore` in `@looper/core`.
+- [ ] Add `commands/login.ts` with method selection (`gh` → device → git-credential)
+      and `--method`/`--no-connect` flags, registered on the `commander` program.
+- [ ] Implement the device-flow poll loop (interval/slow_down/expiry handling) and
+      `gh auth token` adoption + scope check.
+- [ ] Verify via `GET /user`, persist `StoredAuth`, and chain into `looper connect`
+      (0010).
+- [ ] Add `commands/auth.ts` (`auth status`, read-only, CI-aware) and
+      `commands/logout.ts` (`--all`), both idempotent.
+- [ ] Wire a shared `ensureAuth()` used by `init` (0007) and `connect` (0010); refuse
+      interactive login under `CI`/`GITHUB_ACTIONS`.
+- [ ] Add token redaction (share 0029's serializer) and document login/logout/auth
+      in the CLI docs + the connect-accounts walkthrough.
+
+## Test Plan
+
+Tests run via the repo's `vitest` runner; all GitHub/OAuth IO behind the M18 fakes
+(in-memory GitHub from [0083](0083-fake-github.md), a scripted device-flow/`gh`
+double) and an in-memory `TokenStore` — **no real browser, no real token, no
+provider quota, no network**.
+
+```bash
+# replace with the chosen stack's runner, e.g.:
+pnpm --filter @looper/github test   # device-flow poll loop + TokenStore (keychain/file) + scope check
+pnpm --filter @looper/cli test      # login method selection, auth status, logout, ensureAuth chaining
+```
+
+- Component: device-flow client handles `authorization_pending`/`slow_down`/
+  `expired_token`; `gh`-adoption path validates scopes and falls through when short.
+- Component: `TokenStore` round-trips via keychain double; falls back to `0600` file
+  when keychain throws; `clear()` is idempotent.
+- Scenario: `login` (no `gh`) → device flow → token stored → chains to fake
+  `connect`; `auth status` reflects it; `logout` removes it; second `logout` is a
+  no-op.
+- Edge: `CI=1` → `login` refuses with the `GITHUB_TOKEN` hint; redaction test
+  asserts the token never serializes into logs/run-records.
+
+## Verification Log
+
+Add dated entries here as work proceeds.
+
+## Decisions
+
+Record: the public OAuth-App `client_id` and the requested scopes; the keychain
+service/account naming and the file-fallback path/permissions; the method
+precedence (`gh` → device → git-credential); the `--no-connect`/`--all` flags; and
+the `TokenSource` mapping handed to 0029.
+
+## Risks / Rollback
+
+- **Token leakage** into logs/stdout/run-records is the headline risk — mitigated by
+  the shared redaction test (with 0029); treat a failure as release-blocking.
+- **Keychain unavailability** on headless Linux degrades to a plaintext `0600` file;
+  the warning + a pointer to `LOOPER_PAT`-in-secret for CI keep it honest rather
+  than a silent insecure default.
+- **GitHub OAuth/device-flow surface drift** (endpoints, scope names, `gh` CLI
+  output) is external — pin behind the `@looper/github` client and degrade to a
+  printed manual-URL/`--method` path, not a hard break.
+- Login is additive and local; rollback is reverting the three CLI commands + the
+  `identity/` token client and running `looper logout`. No repo state is written.
+
+## Final Summary
+
+Fill this in before marking verified.

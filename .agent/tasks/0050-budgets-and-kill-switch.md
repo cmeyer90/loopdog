@@ -1,0 +1,194 @@
+# 0050 Budgets & Kill Switch
+
+Status: planned  
+Branch: task/0050-budgets-and-kill-switch
+
+## Goal
+
+A deterministic **pre-flight guard** — global kill switch plus per-loop and global
+budgets — that every loop checks **before any claim or dispatch**, so no loop spends
+quota or token cost when halted or over budget. State lives entirely in GitHub
+labels / repo variables — no database.
+
+## Background
+
+Part of [Milestone 12](../milestones/milestone-12-observability-cost-and-safety.md):
+"every loop checks budget + quota + global kill switch **before** dispatching work."
+This is one of the runner pre-flight gates (alongside the DoR/DoD gate (0014),
+authorization (M17), and resilience policy (M19)) invoked by the transition runner
+(0012). See [architecture](../../docs/architecture.md#observability-cost--safety)
+and "Identity & secrets" (state is the `GITHUB_TOKEN`-writable label/variable plane,
+GitHub is the only store). This task owns the **budget + kill-switch** half;
+subscription rate caps are modelled by quota (0075) and provider-outage pausing by
+the circuit breaker (M19) — this guard composes their verdicts into one decision.
+
+## Scope
+
+- A `BudgetGate` in `@looper/core` (pure predicate) and its effectful counterpart
+  in `@looper/runtime` that reads kill-switch + budget state from GitHub.
+- Global **kill switch**: a `looper:stop` label on a sentinel issue **or** a repo
+  variable `LOOPER_STOP` — either halts *all* dispatch immediately.
+- Per-loop and global **budgets**: token-cost ceiling and dispatch-count ceiling
+  over a rolling window, sourced from `looper.yml`, spent against the run-record
+  cost ledger (0012).
+- Compose this verdict with quota (0075) and the circuit breaker (M19) so the runner
+  gets one pass/park decision.
+- A clear **parked** outcome (no spend, recorded), not a hard failure; parking is
+  an operational hold label and does not replace the item's lifecycle state.
+
+### Technical detail
+
+**Lands in:** the pure predicate + types in `@looper/core` (`core/src/gates/`);
+the GitHub-reading impl in `@looper/runtime` (`runtime/src/pipeline/preflight/`);
+config schema in `@looper/config`. No new package, no new IO port (reuse
+`GitHubPort` for labels/variables and the telemetry sink for the cost ledger).
+
+**Config (`looper.yml`), validated by zod in `@looper/config`:**
+
+```yaml
+budgets:
+  window: 24h                 # rolling window for all ceilings below
+  global:
+    max_dispatches: 100       # cloud tasks per window across all loops
+    max_usd: 20               # optional token-cost ceiling (self-hosted/API backend)
+  per_loop:
+    implement: { max_dispatches: 40, max_usd: 10 }
+    review:    { max_dispatches: 60 }
+  on_exceeded: park           # park (default) | needs-human
+kill_switch:
+  variable: LOOPER_STOP       # repo variable name; presence/"true" = stop
+  label: looper:stop          # label on the sentinel issue = stop
+```
+
+**Kill switch (checked first, cheapest).** Stop is active if **either** the repo
+variable `LOOPER_STOP` is truthy (`get_repo_variable` via `GitHubPort`) **or** the
+`looper:stop` label is present on the configured sentinel issue (default: the
+`looper:meta` issue, falling back to repo variable only if absent). Either source ⇒
+the gate returns `{ allowed: false, reason: 'kill-switch' }` and the runner parks
+the item with `looper:parked` + a one-line comment while leaving its existing
+`looper:state/*` label intact, emitting no dispatch.
+`looper stop` / `looper resume-all` (CLI, M16) toggle the variable; humans can also drop
+the label by hand. The variable is authoritative and instant; the label is the
+human-visible mirror.
+
+**Budgets.** The cost ledger is the **run records** (0012): each completed dispatch
+records `cost: { routine_runs?, tokens?, usd? }` and `backend`. The gate aggregates
+records whose `outcome.transition` fired within `window` (by `loop`, and globally),
+counting `max_dispatches` from dispatch steps and summing `max_usd` from `cost.usd`.
+A candidate transition is **denied** if adding one more dispatch would cross the
+per-loop *or* the global ceiling (whichever binds first). Reading the ledger over a
+window is O(records-in-window); cap the scan with the telemetry sink's time index
+(0052/0053) so it is bounded. `max_usd` is meaningful only for the self-hosted/API
+backend (subscription paths report no dollars — those are bounded by quota (0075),
+not budget); a `max_usd` set with no usd-reporting backend is a config warning, not
+an error.
+
+**Composition (single pre-flight verdict).** The runtime preflight calls, in cheap-
+to-expensive order: kill switch → budget (this task) → **quota (0075)** → **circuit
+breaker (M19)**. The first that denies wins; the gate returns a discriminated union
+so the runner records *which* guard parked the item:
+
+```ts
+type GuardVerdict =
+  | { allowed: true }
+  | { allowed: false; guard: 'kill-switch' | 'budget' | 'quota' | 'circuit'; reason: string; retryAfter?: Date }
+```
+
+`budget`/`quota` denials carry `retryAfter` = window/quota reset, so the cron sweep
+re-attempts the parked item once the window rolls — no manual nudge needed. A
+kill-switch denial has no `retryAfter` (it clears only on human resume).
+
+**Parked, not failed.** On deny the runner sets `looper:parked` (a non-terminal
+holding label), appends a `gate` step to the run record with `guard`+`reason`, and
+posts/updates a single comment ("Parked: over budget for loop `implement` — resets
+~14:00 UTC"). The lifecycle state label is preserved, so the sweep knows which
+transition to retry after the hold clears. No attempt-counter increment (distinct
+from a *failure* — this is a *hold*), so budget parking never feeds stuck-detection
+(0051). The sweep removes the hold when `retryAfter` passes or the kill switch
+clears.
+
+**Edge cases:** (a) repo variable unreadable / GitHub error → **fail closed** (treat
+as stopped) — never spend on an ambiguous signal; (b) ceiling set to `0` ⇒ that
+scope is fully halted (a soft per-loop kill switch); (c) clock skew on `window` — use
+the run-record timestamps, not wall-clock-at-eval, and the deterministic clock under
+test (M18); (d) concurrent runs racing the same ceiling — budget is advisory/eventually
+consistent (the atomic *claim* (0013) is the hard concurrency guard); slight overshoot
+within one sweep tick is acceptable and bounded by `max_in_flight` (M19).
+
+## Out Of Scope
+
+- Subscription rate-cap modelling + throttle/queue (quota, 0075).
+- Provider-outage pausing / retry backoff (circuit breaker + failure policy, M19).
+- Stuck-detection / K-failure escalation (0051).
+- The CLI surface for `looper stop`/`resume-all`/budget display (M16 · 0069); this task
+  exposes the state the CLI reads/writes.
+
+## Acceptance Criteria
+
+- [ ] With `LOOPER_STOP` set **or** the `looper:stop` label present, no loop
+      dispatches; eligible items are parked with a recorded `kill-switch` reason.
+- [ ] A loop at or over its per-loop or the global ceiling is denied a new dispatch
+      and parked with a `budget` reason and a `retryAfter` = window reset.
+- [ ] A loop under all ceilings with the kill switch off dispatches normally.
+- [ ] The verdict composes kill-switch → budget → quota (0075) → circuit (M19) in
+      that order; the first denial wins and is recorded in the run record.
+- [ ] A GitHub read error on the kill-switch source fails **closed** (parks, never
+      dispatches).
+- [ ] Budget parking does **not** increment the failure/attempt counter (no
+      interaction with stuck-detection (0051)).
+- [ ] Relevant checks pass.
+
+## Implementation Checklist
+
+- [ ] Add the `budgets` + `kill_switch` schema to `@looper/config` (zod) + defaults.
+- [ ] Implement the pure `budgetGate(state, candidate): GuardVerdict` in `core/src/gates/`.
+- [ ] Implement the runtime reader: kill-switch (variable + sentinel label) + ledger
+      aggregation over `window` from the telemetry sink.
+- [ ] Wire the gate into the runner pre-flight (0012) in cheap→expensive order and
+      compose with quota (0075) + circuit (M19) into one verdict.
+- [ ] Implement the parked outcome: `looper:parked` hold label, run-record `gate`
+      step, single idempotent comment; preserve the lifecycle state label and do
+      not bump the attempt counter.
+- [ ] Expose `setStop()/clearStop()` helpers (repo variable) for the CLI (M16).
+
+## Test Plan
+
+Tests run via the repo's `vitest` runner; behavioral tests use the M18 fakes
+(in-memory GitHub + fake backend + deterministic clock) — **no real quota**.
+
+```bash
+pnpm vitest run packages/core packages/runtime
+# unit: budgetGate predicate — under/at/over per-loop & global ceilings → verdicts
+# scenario (fake GitHub + fake backend):
+#   kill-switch label present  → eligible item parked, zero dispatches
+#   LOOPER_STOP variable truthy → parked; variable read error → fails closed (parked)
+#   ledger at ceiling          → park with retryAfter; advance clock past window → dispatches
+#   composition order          → kill-switch beats budget beats quota beats circuit
+```
+
+## Verification Log
+
+Add dated entries here as work proceeds.
+
+## Decisions
+
+Record: the sentinel-issue vs. repo-variable precedence for the kill switch; the
+default `window` and ceilings; whether `max_usd` warns or errors with a no-usd
+backend; the cheap→expensive composition order; and the fail-closed policy on read
+errors.
+
+## Risks / Rollback
+
+- **Fail-open would burn quota** under a GitHub blip — the gate must fail *closed*;
+  guard that path with an explicit test.
+- A mis-set ceiling could starve all loops silently; the parked comment + `looper
+  status` (M16) must make "why nothing is running" obvious, and `0` is a documented
+  intentional halt.
+- Budget is eventually-consistent (race-tolerant by design); the *hard* concurrency
+  guarantee remains the atomic claim (0013), not this gate. Rollback: set generous
+  ceilings + clear the kill switch; the gate is additive and disabling it (no
+  `budgets`/`kill_switch` config) reverts to no pre-flight budget check.
+
+## Final Summary
+
+Fill this in before marking verified.
