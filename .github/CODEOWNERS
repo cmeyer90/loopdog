@@ -1,0 +1,14 @@
+# Default: any maintainer review satisfies (no forced owner)
+*                                     @cmeyer90
+
+# Identity & gates the agent must not edit away (rung 2 of the ladder).
+# Last match wins; keep these after the catch-all.
+/.github/workflows/                   @cmeyer90
+/.github/CODEOWNERS                   @cmeyer90
+/.github/branch-protection.yml        @cmeyer90
+/templates/workflows/                 @cmeyer90
+/packages/github/src/identity/        @cmeyer90
+/packages/runtime/src/loops-builtin/  @cmeyer90
+/templates/loops/                     @cmeyer90
+/AGENTS.md                            @cmeyer90
+/.agent/                              @cmeyer90

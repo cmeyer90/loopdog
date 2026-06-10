@@ -61,4 +61,6 @@ for (const f of readdirSync(join(agentDir, 'milestones'))) {
   }
 }
 
-console.log(check ? 'index check done' : `synced ${changed} row(s) from ${statuses.size} task files`);
+console.log(
+  check ? 'index check done' : `synced ${changed} row(s) from ${statuses.size} task files`,
+);

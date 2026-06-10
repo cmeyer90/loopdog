@@ -1,7 +1,7 @@
 {
   "name": "@looper/cli",
   "version": "0.1.0",
-  "description": "Looper cli package",
+  "description": "Looper — autonomous-SDLC loops for any GitHub repository, driven by your existing Claude Code and Codex subscriptions.",
   "license": "Apache-2.0",
   "type": "module",
   "private": false,
@@ -20,8 +20,12 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
+    "@clack/prompts": "^0.11.0",
+    "@octokit/auth-oauth-device": "^8.0.0",
+    "@octokit/rest": "^21.1.1",
     "commander": "^13.1.0",
-    "@clack/prompts": "^0.11.0"
+    "yaml": "^2.8.0",
+    "zod": "^3.25.0"
   },
   "bin": {
     "looper": "dist/main.js"
@@ -31,5 +35,14 @@
     "@looper/config": "0.1.0",
     "@looper/github": "0.1.0",
     "@looper/runtime": "0.1.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/cmeyer90/looper.git",
+    "directory": "packages/cli"
+  },
+  "scripts": {
+    "bundle": "tsup",
+    "prepack": "npm run bundle"
   }
 }

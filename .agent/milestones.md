@@ -12,7 +12,7 @@ North-star architecture for the V1 roadmap:
 | Milestone | Layer | Status | File |
 |---:|---|---|---|
 | 00 | Validation | blocked | [Pre-Build Validation Spikes](milestones/milestone-00-pre-build-validation-spikes.md) |
-| 01 | Foundation | planned | [Project Foundation & Open-Source Scaffolding](milestones/milestone-01-project-foundation-and-oss-scaffolding.md) |
+| 01 | Foundation | implemented | [Project Foundation & Open-Source Scaffolding](milestones/milestone-01-project-foundation-and-oss-scaffolding.md) |
 | 02 | Platform | planned | [Attachment & Configuration Model](milestones/milestone-02-attachment-and-configuration-model.md) |
 | 03 | Platform | planned | [GitHub State-Machine Core](milestones/milestone-03-github-state-machine-core.md) |
 | 04 | Platform | planned | [Durable Planning Store](milestones/milestone-04-durable-planning-store.md) |
@@ -49,11 +49,11 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 |---:|---|---|---|---|
 | 0092 | Milestone 00: Pre-Build Validation Spikes | verified | task/0092-tos-and-subscription-automation-spike | ToS & Subscription-Automation Validation |
 | 0093 | Milestone 00: Pre-Build Validation Spikes | blocked | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike |
-| 0001 | Milestone 01: Project Foundation & Open-Source Scaffolding | planned | task/0001-stack-and-repo-layout | Stack & Repo Layout |
-| 0002 | Milestone 01: Project Foundation & Open-Source Scaffolding | planned | task/0002-license-and-community-files | License & Community Files |
-| 0003 | Milestone 01: Project Foundation & Open-Source Scaffolding | planned | task/0003-own-ci-pipeline | Looper's Own CI |
-| 0004 | Milestone 01: Project Foundation & Open-Source Scaffolding | planned | task/0004-branch-protection-and-codeowners | Branch Protection & CODEOWNERS |
-| 0005 | Milestone 01: Project Foundation & Open-Source Scaffolding | planned | task/0005-release-and-versioning | Release & Versioning |
+| 0001 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0001-stack-and-repo-layout | Stack & Repo Layout |
+| 0002 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0002-license-and-community-files | License & Community Files |
+| 0003 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0003-own-ci-pipeline | Looper's Own CI |
+| 0004 | Milestone 01: Project Foundation & Open-Source Scaffolding | implemented | task/0004-branch-protection-and-codeowners | Branch Protection & CODEOWNERS |
+| 0005 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0005-release-and-versioning | Release & Versioning |
 | 0006 | Milestone 02: Attachment & Configuration Model | planned | task/0006-config-schema-and-validation | Config Schema & Validation |
 | 0007 | Milestone 02: Attachment & Configuration Model | planned | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding |
 | 0008 | Milestone 02: Attachment & Configuration Model | planned | task/0008-event-driven-triggers | Event-Driven Triggers |

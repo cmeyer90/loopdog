@@ -1,0 +1,26 @@
+# Manually-dispatched governance action (task 0004): applies
+# .github/branch-protection.yml to main. Needs the ADMIN_TOKEN repo secret
+# (a maintainer PAT with repo administration:write) because the default
+# GITHUB_TOKEN cannot edit branch protection. One-time/occasional human action —
+# not part of any loop's runtime path.
+name: protect
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  apply:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - name: apply + verify branch protection
+        env:
+          ADMIN_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+        run: npm run protect

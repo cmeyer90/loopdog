@@ -1,0 +1,16 @@
+# Source of truth for main's branch protection (task 0004). Applied
+# idempotently by `npm run protect` (scripts/apply-branch-protection.mjs),
+# which also read-back-verifies and exits non-zero on drift.
+branch: main
+required_status_checks:
+  strict: true # branch must be up to date before merge
+  contexts: [lint, test, build] # the job names from ci.yml — keep in sync
+required_pull_request_reviews:
+  required_approving_review_count: 1
+  require_code_owner_reviews: true # CODEOWNERS paths need owner sign-off
+  dismiss_stale_reviews: true
+enforce_admins: true # rules apply to admins too — no bypass
+required_linear_history: true
+allow_force_pushes: false
+allow_deletions: false
+required_conversation_resolution: true

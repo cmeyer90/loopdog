@@ -1,0 +1,47 @@
+# Two-stage, changeset-driven release (task 0005).
+# Stage 1 (every push to main with pending changesets): open/update the
+#   "Version Packages" PR — merging it is the human release gate.
+# Stage 2 (push to main where versions changed, i.e. the version PR merged):
+#   re-verify (lint+test+build, same as CI) then publish @looper/cli to npm
+#   with provenance, push the git tag, and cut a GitHub Release.
+# Re-running a partially-failed publish is safe: `changeset publish` skips
+# versions that are already on the registry.
+name: release
+on:
+  push:
+    branches: [main]
+
+concurrency: release-${{ github.ref }}
+
+permissions:
+  contents: write
+  pull-requests: write
+  id-token: write # npm provenance (OIDC attestation)
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          registry-url: https://registry.npmjs.org
+      - run: npm ci
+      # Never publish an unverified tree — same gate as CI (0003).
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: version PR or publish
+        uses: changesets/action@v1
+        with:
+          version: npm run version-packages
+          publish: npm run release
+          createGithubReleases: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+          NPM_CONFIG_PROVENANCE: 'true'

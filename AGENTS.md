@@ -29,8 +29,33 @@ roadmap.
 - Stack: **TypeScript (strict) on Node 20+, an npm-workspaces monorepo** of small
   `@looper/*` packages. Module boundaries, filetree, and build order are defined
   in [`docs/codebase.md`](docs/codebase.md) (ratified by M01 · 0001).
-- Standard commands (npm workspaces; finalize tooling in M01, run from repo root):
-  `npm run build` · `npm test` · `npm run lint`.
+- Standard commands (run from the repo root, Node 20+):
+  - `npm install` — install workspace dependencies.
+  - `npm run build` — `tsc -b` across all packages (project references enforce
+    the dependency direction).
+  - `npm test` — vitest over `packages/*/test` + `scripts/test`.
+  - `npm run lint` — eslint + the package-boundary check
+    (`scripts/check-boundaries.mjs`) + prettier `--check`.
+  - `npm run format` — prettier `--write` (prettier owns code, not
+    `.agent/`/`docs/` prose).
+  - `node scripts/sync-plan-index.mjs` — sync task `Status` lines from
+    `.agent/tasks/*.md` into the three index tables (`--check` in CI).
+- Repo governance (maintainer, occasional): `npm run protect` applies
+  [` .github/branch-protection.yml`](.github/branch-protection.yml) idempotently
+  and read-back-verifies. It needs repo `administration:write` — the default
+  Actions `GITHUB_TOKEN` does **not** have it, so run locally with `gh` auth or
+  via the manually-dispatched `protect` workflow using the `ADMIN_TOKEN` repo
+  secret (a maintainer PAT). This is a one-time/occasional human action, never
+  part of a loop's runtime path.
+- Releases: changesets two-stage pipeline
+  ([`.github/workflows/release.yml`](.github/workflows/release.yml)) — push to
+  `main` opens/updates a "Version Packages" PR; merging it publishes
+  `@looper/cli` (libraries bundled in; everything else `private: true`) to npm
+  with provenance and cuts the GitHub Release. Needs the `NPM_TOKEN` secret.
+  Manual fallback: `npm run build && npx changeset publish` +
+  `git push --follow-tags`.
+- Flaky tests: quarantine with `it.skip` + `// QUARANTINE(<issue-url>): <reason>`
+  and a `flaky-test` issue — never delete (see CONTRIBUTING).
 
 Follow [`docs/codebase.md`](docs/codebase.md) for where code goes; prefer the
 patterns in the nearest package and don't add new tools or cross-package coupling

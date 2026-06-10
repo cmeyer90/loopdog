@@ -1,7 +1,7 @@
 # 0002 License & Community Files
 
-Status: planned  
-Branch: task/0002-license-and-community-files
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -29,16 +29,17 @@ contribution/security policy lower the barrier to adoption and contribution. See
 
 ## Acceptance Criteria
 
-- [ ] A `LICENSE` file exists with the chosen license.
-- [ ] `README.md` describes looper and links to the architecture doc + roadmap.
-- [ ] `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md` exist.
-- [ ] License choice is recorded in Decisions.
+- [x] A `LICENSE` file exists with the chosen license.
+- [x] `README.md` describes looper and links to the architecture doc + roadmap.
+- [x] `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, and `SECURITY.md` exist.
+- [x] License choice is recorded in Decisions.
 
 ## Implementation Checklist
 
-- [ ] Add `LICENSE`.
-- [ ] Add `README.md` stub.
-- [ ] Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md`, `SECURITY.md`.
+- [x] Add `LICENSE` (canonical Apache-2.0 text).
+- [x] Add `README.md` stub.
+- [x] Add `CONTRIBUTING.md`, `CODE_OF_CONDUCT.md` (Contributor Covenant 2.1),
+      `SECURITY.md`.
 
 ## Test Plan
 
@@ -48,11 +49,19 @@ contribution/security policy lower the barrier to adoption and contribution. See
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: LICENSE fetched from apache.org canonical text (202 lines);
+  CODE_OF_CONDUCT fetched from contributor-covenant.org v2.1 with the contact
+  placeholder filled. README links to architecture/codebase/walkthroughs/
+  roadmap resolve (paths verified). All four files present.
 
 ## Decisions
 
-Record the license choice (MIT vs Apache-2.0 etc.) and why.
+**Apache-2.0** over MIT: looper is infrastructure adopters wire into their
+release pipelines — Apache-2.0's explicit patent grant and contribution terms
+lower legal review friction for company adoption, at no cost to permissiveness.
+Recorded in root `package.json` and each `@looper/*` package. CoC enforcement
+contact routes to GitHub Security Advisories / repo owner until a maintainer
+team exists.
 
 ## Risks / Rollback
 
@@ -61,4 +70,8 @@ decide deliberately now.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Looper is a legitimate OSS project: Apache-2.0 LICENSE (canonical text), a
+README stating what looper is + status + doc links, CONTRIBUTING (dev setup,
+boundaries, branches, changesets, flaky-test quarantine), Contributor Covenant
+2.1, and SECURITY (private reporting, adopter trust pointers, maintainer
+credential scopes).

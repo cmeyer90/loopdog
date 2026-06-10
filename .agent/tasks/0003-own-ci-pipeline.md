@@ -1,7 +1,7 @@
 # 0003 Looper's Own CI
 
-Status: planned  
-Branch: task/0003-own-ci-pipeline
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -29,15 +29,19 @@ Branch protection + CODEOWNERS enforcement lands in task 0004.
 
 ## Acceptance Criteria
 
-- [ ] CI runs lint + test + build on every PR and is green on a clean checkout.
-- [ ] The same checks run locally via documented commands.
-- [ ] A flaky-test quarantine convention is documented.
+- [x] CI runs lint + test + build on every PR and is green on a clean checkout.
+      (Workflow added; local clean-checkout equivalent verified — green. First
+      live Actions run will occur when this branch gets a PR.)
+- [x] The same checks run locally via documented commands.
+- [x] A flaky-test quarantine convention is documented.
 
 ## Implementation Checklist
 
-- [ ] Add `.github/workflows/ci.yml` (lint + test + build on `pull_request`).
-- [ ] Document local-equivalent commands in `AGENTS.md`.
-- [ ] Document the quarantine convention (where the skip list lives + tracking).
+- [x] Add `.github/workflows/ci.yml` (lint + test + build on `pull_request`
+      and `push` to main).
+- [x] Document local-equivalent commands in `AGENTS.md`.
+- [x] Document the quarantine convention (CONTRIBUTING "Flaky tests": `it.skip`
+      + `QUARANTINE(<issue-url>)` comment + `flaky-test` issue; greppable).
 
 ## Test Plan
 
@@ -51,12 +55,19 @@ Branch protection + CODEOWNERS enforcement lands in task 0004.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: local equivalents of all three CI jobs green from a clean state:
+  `npm ci`-equivalent install, `npm run lint`, `npm test`, `npm run build` +
+  `node packages/cli/dist/main.js --help` smoke.
 
 ## Decisions
 
-Record CI provider (GitHub Actions), chosen lint/test/build tooling, and where the
-quarantine list lives.
+- CI provider: GitHub Actions; jobs named exactly `lint`, `test`, `build` — the
+  names are required-check contexts in `.github/branch-protection.yml` (0004),
+  so renames must touch both files (a comment in ci.yml says so).
+- Tooling per 0001 decisions (eslint 9 + boundary script + prettier; vitest 3;
+  tsc -b). Node 20 in CI (the engines floor).
+- Quarantine list = grep for `QUARANTINE(` in test files; tracking = GitHub
+  issues labeled `flaky-test`. No separate skip-list file to drift.
 
 ## Risks / Rollback
 
@@ -65,4 +76,7 @@ Low risk — additive. Rollback is removing the workflow. Risk: declaring CI
 
 ## Final Summary
 
-Fill this in before marking verified.
+Added `.github/workflows/ci.yml` running the three repo-standard checks (lint
+incl. boundary check, vitest, tsc build + CLI smoke) on every PR and push to
+main, with npm caching. Local commands documented in `AGENTS.md`; quarantine
+convention in CONTRIBUTING. Job names are stable contexts consumed by 0004.

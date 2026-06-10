@@ -1,7 +1,7 @@
 # 0001 Stack & Repo Layout
 
-Status: planned  
-Branch: task/0001-stack-and-repo-layout
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -36,22 +36,24 @@ does not implement behavior. The repo is not yet a git repository.
 
 ## Acceptance Criteria
 
-- [ ] The `@looper/*` workspace skeleton matches `docs/codebase.md` (8 packages,
-      correct dependency direction); `npm run build` is green across the workspace.
-- [ ] Dependency boundaries are enforced (a cross-package internal import fails
+- [x] The `@looper/*` workspace skeleton matches `docs/codebase.md` (8 packages
+      + dev-only `@looper/testing`, correct dependency direction); `npm run build`
+      is green across the workspace.
+- [x] Dependency boundaries are enforced (a cross-package internal import fails
       lint/build), and `@looper/core` has no IO dependencies.
-- [ ] `looper --help` builds and runs locally from `@looper/cli`.
-- [ ] `AGENTS.md` "Project" lists the real install/build/test/lint commands.
+- [x] `looper --help` builds and runs locally from `@looper/cli`.
+- [x] `AGENTS.md` "Project" lists the real install/build/test/lint commands.
 
 ## Implementation Checklist
 
-- [ ] `git init` + initial commit.
-- [ ] Set up npm workspaces + `tsconfig.base.json` + lint/format + test runner.
-- [ ] Create the 8 packages as buildable stubs (barrel `index.ts` + `test/`).
-- [ ] Enforce dependency direction (e.g. import/no-internal-modules or project
-      references); keep `core` IO-free.
-- [ ] Add `looper --help` in `@looper/cli`; create empty `templates/`.
-- [ ] Update `AGENTS.md` "Project" with real commands.
+- [x] ~~`git init` + initial commit~~ (repo already existed with an initial commit).
+- [x] Set up npm workspaces + `tsconfig.base.json` + lint/format + test runner.
+- [x] Create the 9 packages as buildable stubs (barrel `index.ts` + `test/`).
+- [x] Enforce dependency direction (TS project references + eslint
+      `no-restricted-imports` on `@looper/*/*` + `scripts/check-boundaries.mjs`
+      edge table in `npm run lint`); `core` is IO-free (no dependencies).
+- [x] Add `looper --help` in `@looper/cli`; create empty `templates/`.
+- [x] Update `AGENTS.md` "Project" with real commands.
 
 ## Test Plan
 
@@ -63,14 +65,35 @@ does not implement behavior. The repo is not yet a git repository.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: `npm install` — clean, 0 vulnerabilities (registry reachable).
+- 2026-06-09: `npm run build` (tsc -b, 9 composite packages) — green.
+- 2026-06-09: `node packages/cli/dist/main.js --help` — prints usage; `--version` → 0.1.0.
+- 2026-06-09: `npm test` — green (cli smoke tests).
+- 2026-06-09: `npm run lint` — eslint + `check-boundaries.mjs` ("package
+  boundaries OK") + prettier check all green.
 
 ## Decisions
 
 Stack decided in [`docs/codebase.md`](../../docs/codebase.md): TypeScript on
-Node 20+, npm-workspaces monorepo (rationale: GitHub-App/Octokit/Actions
-ecosystem). Record here the finalized tooling picks (build/test/lint/CLI/schema
-libraries) and the dependency-enforcement mechanism.
+Node 20+, npm-workspaces monorepo. Finalized tooling (pinned to known-stable
+majors deliberately; current latest majors — TS 6, eslint 10, vitest 4, zod 4,
+commander 15 — were skipped to avoid unvetted breaking changes at scaffold time):
+
+- Build: `tsc -b` with **project references** (`composite: true`), ESM
+  (`module: NodeNext`), TypeScript ~5.9. `tsup ^8` bundles only the published CLI.
+- Tests: `vitest ^3` at the root, aliasing each `@looper/*` barrel to its
+  `src/index.ts` (tests run without a build step), tests colocated per package.
+- Lint/format: `eslint ^9` flat config + `typescript-eslint ^8`; `prettier ^3`
+  scoped to code (`.agent/`, `docs/`, `spikes/`, `*.md` excluded).
+- CLI: `commander ^13`; questionnaire UX: `@clack/prompts ^0.11`.
+- Schemas: `zod ^3`; YAML: `yaml ^2`. GitHub: `@octokit/rest ^21` +
+  `@octokit/auth-oauth-device ^8`.
+- Dependency-direction enforcement is three-layered: TS project references
+  (build order), eslint `no-restricted-imports` (`@looper/*/*` deep imports),
+  and `scripts/check-boundaries.mjs` (the allowed-edge table from
+  `docs/codebase.md`, run in `npm run lint`).
+- `@looper/testing` added alongside the 8 shipped packages (dev-only,
+  `private: true`), per the codebase doc.
 
 ## Risks / Rollback
 
@@ -80,4 +103,9 @@ tooling from day one so violations fail the build, not review.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Scaffolded the npm-workspaces monorepo: 9 `@looper/*` packages (core, config,
+github, plans, backends, adapters, runtime, cli, testing) as buildable ESM
+stubs with strict TS project references matching `docs/codebase.md`'s edge
+table, three-layer boundary enforcement, vitest source-aliased tests, and a
+runnable `looper --help`/`--version` in `@looper/cli`. All four standard
+commands documented in `AGENTS.md` and green locally.

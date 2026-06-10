@@ -13,11 +13,11 @@ table and in `milestones.md`.
 
 | ID | Status | Branch | Title |
 |---:|---|---|---|
-| 0001 | planned | task/0001-stack-and-repo-layout | Stack & Repo Layout |
-| 0002 | planned | task/0002-license-and-community-files | License & Community Files |
-| 0003 | planned | task/0003-own-ci-pipeline | Looper's Own CI |
-| 0004 | planned | task/0004-branch-protection-and-codeowners | Branch Protection & CODEOWNERS |
-| 0005 | planned | task/0005-release-and-versioning | Release & Versioning |
+| 0001 | verified | task/0001-stack-and-repo-layout | Stack & Repo Layout |
+| 0002 | verified | task/0002-license-and-community-files | License & Community Files |
+| 0003 | verified | task/0003-own-ci-pipeline | Looper's Own CI |
+| 0004 | implemented | task/0004-branch-protection-and-codeowners | Branch Protection & CODEOWNERS |
+| 0005 | verified | task/0005-release-and-versioning | Release & Versioning |
 | 0006 | planned | task/0006-config-schema-and-validation | Config Schema & Validation |
 | 0007 | planned | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding |
 | 0008 | planned | task/0008-event-driven-triggers | Event-Driven Triggers |

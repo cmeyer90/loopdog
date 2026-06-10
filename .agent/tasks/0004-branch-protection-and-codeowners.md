@@ -1,7 +1,7 @@
 # 0004 Branch Protection & CODEOWNERS
 
-Status: planned  
-Branch: task/0004-branch-protection-and-codeowners
+Status: implemented  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -119,28 +119,33 @@ a no-op until `main` exists — guard for that.
 
 ## Acceptance Criteria
 
-- [ ] `.github/CODEOWNERS` exists and assigns a human team to the workflow,
+- [x] `.github/CODEOWNERS` exists and assigns a human owner to the workflow,
       identity (`packages/github/src/identity/`), built-in-loop, `AGENTS.md`, and
       `.agent/` paths.
-- [ ] `main` requires the `lint`, `test`, and `build` checks (from 0003) to pass
-      before merge.
-- [ ] `main` requires ≥1 approving review and a CODEOWNER review on owned paths.
-- [ ] `enforce_admins`, no force-push, no deletion, and linear history are on.
-- [ ] Branch protection is captured as code (`.github/branch-protection.yml`) and
+- [ ] **OPERATOR:** `main` requires the `lint`, `test`, and `build` checks (from
+      0003) to pass before merge. (Config + apply script ready; live apply is
+      deliberately deferred — see Decisions: applying now would lock out a
+      solo-maintainer repo.)
+- [ ] **OPERATOR:** `main` requires ≥1 approving review and a CODEOWNER review on
+      owned paths. (Same deferral.)
+- [x] `enforce_admins`, no force-push, no deletion, and linear history are on —
+      in the declared config (`.github/branch-protection.yml`).
+- [x] Branch protection is captured as code (`.github/branch-protection.yml`) and
       applied by an idempotent, drift-detecting script — not click-ops only.
-- [ ] The token/permission needs to apply protection are documented in `AGENTS.md`.
-- [ ] Relevant checks pass.
+- [x] The token/permission needs to apply protection are documented in `AGENTS.md`.
+- [x] Relevant checks pass (governance unit tests in `scripts/test/`).
 
 ## Implementation Checklist
 
-- [ ] Add `.github/CODEOWNERS` with the catch-all + owned high-blast-radius paths.
-- [ ] Add `.github/branch-protection.yml` as the declarative source of truth.
-- [ ] Add `scripts/apply-branch-protection.ts` (zod-validate → PUT → read-back
-      verify, idempotent) and an `npm run protect` script.
-- [ ] Optionally add `.github/workflows/protect.yml` (`workflow_dispatch`) to run it.
-- [ ] Apply protection to `main` and confirm a PR cannot merge with a failing/
-      missing required check or without the required review.
-- [ ] Document the admin-token bootstrap + apply command in `AGENTS.md`.
+- [x] Add `.github/CODEOWNERS` with the catch-all + owned high-blast-radius paths.
+- [x] Add `.github/branch-protection.yml` as the declarative source of truth.
+- [x] Add `scripts/apply-branch-protection.mjs` (zod-validate → PUT → read-back
+      verify, idempotent, plus a `--check` verify-only mode and a ci.yml
+      context-existence lockout guard) and the `npm run protect` script.
+- [x] Add `.github/workflows/protect.yml` (`workflow_dispatch`) to run it.
+- [ ] **OPERATOR:** Apply protection to `main` and confirm a PR cannot merge with
+      a failing/missing required check or without the required review.
+- [x] Document the admin-token bootstrap + apply command in `AGENTS.md`.
 
 ## Test Plan
 
@@ -161,14 +166,29 @@ npm run protect            # re-run → reports "no changes" / exits 0
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: `npm test` — governance tests green: branch-protection.yml parses
+  and declares the documented rules; every required context exists as a ci.yml
+  job (lockout guard); CODEOWNERS covers each required owned path.
+- 2026-06-09: live apply NOT run (deliberate; see Decisions). The script's
+  context-vs-ci.yml guard runs at apply time as designed.
 
 ## Decisions
 
-Record: the real CODEOWNERS team slug; whether protection is applied via local CLI
-vs. the `workflow_dispatch` job; the admin-token mechanism (PAT secret name vs.
-maintainer-local `gh` auth); and the final required-check context names (must match
-0003's job names exactly).
+- CODEOWNERS owner: `@cmeyer90` (repo is user-owned; GitHub teams need an org).
+  Replace with a `@<org>/maintainers` team slug when/if the repo moves to an
+  org — owning via a team, not an individual, remains the goal.
+- Apply path: both supported — local `npm run protect` (uses `ADMIN_TOKEN` /
+  `GITHUB_TOKEN` env or `gh auth token`) and the `protect` workflow_dispatch
+  job (uses the `ADMIN_TOKEN` repo secret).
+- Required-check contexts: `lint`, `test`, `build` — exactly 0003's job names;
+  both files carry sync comments and the unit test + apply-time guard enforce
+  existence.
+- **Live apply deferred to the operator, deliberately.** As declared
+  (`enforce_admins: true`, `required_approving_review_count: 1`), protection on
+  a repo with a single human (PR authors cannot approve their own PRs) makes
+  `main` unmergeable by anyone — including the owner. Apply once a second
+  maintainer/team exists, or first relax `enforce_admins`/review count
+  consciously. The config-as-code + drift check make either choice reviewable.
 
 ## Risks / Rollback
 
@@ -185,4 +205,11 @@ maintainer-local `gh` auth); and the final required-check context names (must ma
 
 ## Final Summary
 
-Fill this in before marking verified.
+Rung 2 of the verification ladder, as code: CODEOWNERS over the
+workflow/identity/loop/plan paths, a declarative `.github/branch-protection.yml`
+(checks + review + code-owner review + enforce_admins + linear history, no
+force-push/delete), an idempotent zod-validated apply script with read-back
+drift detection and a ci.yml-context lockout guard, a manual `protect`
+workflow, unit tests over all of it, and documented token needs. Live
+application is an operator action and is deliberately deferred with the
+solo-maintainer lockout rationale recorded.
