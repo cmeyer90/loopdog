@@ -1,7 +1,7 @@
 # 0093 Dispatch & Correlation Spike
 
-Status: ready  
-Branch: task/0093-dispatch-and-correlation-spike
+Status: blocked  
+Branch: claude/laughing-johnson-8a7944 (spike artifacts; live trials pending operator)
 
 ## Goal
 
@@ -85,18 +85,26 @@ and environment, and can produce a branch/PR that Looper can correlate.
 
 ## Implementation Checklist
 
-- [ ] Read and snapshot the current Claude routine and Claude Code GitHub Actions
+- [x] Read and snapshot the current Claude routine and Claude Code GitHub Actions
       docs so the spike does not conflate the API-key Action path with routines.
-- [ ] Test manual Claude routine/API-trigger creation, token generation, token
-      regeneration, token revocation, repo selection, cloud environment selection,
-      and branch-push permissions from the web UI; record the exact operator steps
-      that `looper connect claude` must display.
-- [ ] Store/import fire URL + token as GitHub Actions secret refs and run a
-      throwaway Claude `/fire` round-trip from Actions; record token behavior.
-- [ ] Throwaway `@codex` round-trip; record identity + handle.
-- [ ] Run N correlation trials per provider; tabulate honor-rate.
-- [ ] Observe provider-PR → event firing.
-- [ ] Write findings + recommendations into 0010 / 0020 / 0023 / 0077 / 0073 / 0008.
+      (2026-06-10 docs review, see Verification Log; surface separation is encoded
+      in the spike scripts — no `ANTHROPIC_API_KEY`, no `claude-code-action`.)
+- [x] Build the throwaway spike kit: `spikes/0093-dispatch-correlation/`
+      (claude-fire + codex-mention scripts, correlation trial/score scripts,
+      Actions workflows, event probe, operator RUNBOOK).
+- [ ] **OPERATOR (live subscription required):** run RUNBOOK §1 — manual Claude
+      routine/API-trigger creation, token generation/regeneration/revocation,
+      repo + cloud env selection, branch-push permissions; record exact steps.
+- [ ] **OPERATOR (live):** import fire URL + token as Actions secrets; run
+      `spike-claude-fire` round-trip; record token behavior.
+- [ ] **OPERATOR (live):** `spike-codex-mention` round-trip; record identity +
+      handle + whether Codex reacts to a bot-authored mention (RUNBOOK §2).
+- [ ] **OPERATOR (live):** N correlation trials per provider
+      (`correlation-trial.sh`); tabulate honor-rate (`correlation-score.sh`).
+- [ ] **OPERATOR (live):** observe provider-PR → event firing (RUNBOOK §3).
+- [x] Write findings + design consequences into the downstream task specs: 0073
+      must use a dual-signal correlation (dispatch-time signal authoritative,
+      agent-obeyed signals as accelerators) — see Decisions.
 
 ## Test Plan
 
@@ -112,13 +120,34 @@ Throwaway scripts against real test repos + real subscriptions; capture transcri
   CLI operations. Updated downstream planning to implement manual routine import,
   avoid `ANTHROPIC_API_KEY` / `anthropics/claude-code-action`, and treat Claude
   cloud env/setup as user-managed in Claude rather than forwarded at dispatch.
+- 2026-06-09: Built the throwaway spike kit under `spikes/0093-dispatch-correlation/`
+  (scripts + workflows + RUNBOOK; shellcheck-clean bash, executable bits set).
+  Live execution is **blocked in this environment**: it requires a human-owned
+  Claude/Codex subscription, a scratch GitHub repo, and the Claude web UI — none
+  of which an offline agent session can exercise. All live steps are enumerated
+  as OPERATOR items in the checklist and RUNBOOK; the kit is copy-paste runnable.
 
 ## Decisions
 
-Claude bootstrap decision: V1 uses manual routine/API-trigger import. Record the
-secret names/ref format for the fire URL and token, the operator web-setup steps,
-the provider identity that opens branches/PRs, the correlation honor-rates, and
-whether a non-agent-dependent correlation signal is mandated for 0073.
+- Claude bootstrap decision (2026-06-10, from docs): V1 uses manual
+  routine/API-trigger import. Secret-ref names standardized by the spike kit:
+  `LOOPER_CLAUDE_FIRE_URL` / `LOOPER_CLAUDE_FIRE_TOKEN` (spike uses a
+  `LOOPER_SPIKE_`-prefixed pair). Operator steps are RUNBOOK §1 and are the
+  draft copy for `looper connect claude` (0010/0077).
+- **Correlation design decision (2026-06-09, adopted without waiting for live
+  honor-rates):** 0073 MUST implement **dual-signal correlation** — the
+  **dispatch-time, non-agent-dependent signal is authoritative** (Claude: the
+  `/fire` response session id/URL recorded at dispatch; Codex: the mention
+  comment id + time window + provider-App actor), and the agent-obeyed signals
+  (branch `looper/<loop>/<issue>-<run_id>`, PR trailer `looper-run: <run_id>`)
+  are **accelerators, never the only key**. Rationale: LLM compliance is not a
+  protocol; designing for the unreliable case is strictly safer and costs one
+  extra recorded field per dispatch. Live trials can only *relax* this (they
+  cannot make agent-obeyed signals trustworthy at 100%), so implementation is
+  not blocked on them.
+- Codex bot-mention risk recorded for 0021: if Codex ignores mentions authored
+  by `github-actions[bot]`, dispatch needs a user-attributable identity (PAT)
+  — RUNBOOK §2 step 3 resolves this empirically; 0021 must carry both paths.
 
 ## Risks / Rollback
 
@@ -127,4 +156,13 @@ rework *before* it's built — which is exactly why this runs first.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Partial (agent-completable scope done; live trials operator-pending). Delivered
+the complete throwaway spike kit (`spikes/0093-dispatch-correlation/`: fire &
+mention dispatch scripts with dispatch-time signal capture, correlation
+trial/score harness, three Actions workflows incl. the provider-PR event probe,
+and the operator RUNBOOK that doubles as `looper connect` copy). Made the
+load-bearing design call downstream tasks needed from this spike — dual-signal
+correlation with the dispatch-time signal authoritative — so M05/0073 are not
+design-blocked on live honor-rate numbers. Remaining: the five OPERATOR items
+(real-subscription round-trips and measurements), which only a human with
+Claude/Codex accounts and a scratch repo can run.

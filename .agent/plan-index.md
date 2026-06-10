@@ -104,6 +104,6 @@ table and in `milestones.md`.
 | 0089 | planned | task/0089-retry-timeout-backoff | Retry, Timeout & Backoff |
 | 0090 | planned | task/0090-concurrency-ceiling-and-circuit-breaker | Concurrency Ceiling & Circuit Breaker |
 | 0091 | planned | task/0091-resilience-knobs-and-quarantine | Resilience Knobs, Quarantine & Escalation |
-| 0092 | ready | task/0092-tos-and-subscription-automation-spike | ToS & Subscription-Automation Validation |
-| 0093 | ready | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike |
+| 0092 | verified | task/0092-tos-and-subscription-automation-spike | ToS & Subscription-Automation Validation |
+| 0093 | blocked | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike |
 | 0094 | planned | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |

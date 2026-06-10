@@ -1,0 +1,17 @@
+# Build output / deps
+dist/
+node_modules/
+coverage/
+*.tsbuildinfo
+package-lock.json
+
+# Prettier owns source code, not prose: planning corpus, docs, and throwaway
+# spikes keep their hand-written formatting.
+.agent/
+docs/
+spikes/
+**/*.md
+
+# Changesets manage their own files
+.changeset/
+CHANGELOG.md

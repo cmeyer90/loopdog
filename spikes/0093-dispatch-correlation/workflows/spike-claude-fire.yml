@@ -1,0 +1,36 @@
+# THROWAWAY spike workflow (task 0093). Copy into the scratch repo's
+# .github/workflows/. Proves a headless Claude routine /fire from Actions using
+# imported secret refs — no ANTHROPIC_API_KEY, no anthropics/claude-code-action.
+name: spike-claude-fire
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: issue number the brief references
+        default: "1"
+      run_id:
+        description: correlation run id (blank = use the Actions run id)
+        default: ""
+
+permissions:
+  contents: read
+
+jobs:
+  fire:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: fire routine
+        env:
+          LOOPER_SPIKE_CLAUDE_FIRE_URL: ${{ secrets.LOOPER_SPIKE_CLAUDE_FIRE_URL }}
+          LOOPER_SPIKE_CLAUDE_FIRE_TOKEN: ${{ secrets.LOOPER_SPIKE_CLAUDE_FIRE_TOKEN }}
+          SPIKE_ISSUE: ${{ inputs.issue }}
+          SPIKE_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          chmod +x spikes/0093-dispatch-correlation/scripts/claude-fire.sh
+          spikes/0093-dispatch-correlation/scripts/claude-fire.sh
+      - name: keep dispatch record
+        uses: actions/upload-artifact@v4
+        with:
+          name: dispatch-${{ github.run_id }}
+          path: spike-runs/

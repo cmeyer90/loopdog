@@ -1,0 +1,14 @@
+{
+  "files": [],
+  "references": [
+    { "path": "packages/core" },
+    { "path": "packages/config" },
+    { "path": "packages/github" },
+    { "path": "packages/plans" },
+    { "path": "packages/backends" },
+    { "path": "packages/adapters" },
+    { "path": "packages/runtime" },
+    { "path": "packages/cli" },
+    { "path": "packages/testing" }
+  ]
+}

@@ -1,0 +1,35 @@
+{
+  "name": "@looper/cli",
+  "version": "0.1.0",
+  "description": "Looper cli package",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": false,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "commander": "^13.1.0",
+    "@clack/prompts": "^0.11.0"
+  },
+  "bin": {
+    "looper": "dist/main.js"
+  },
+  "devDependencies": {
+    "@looper/core": "0.1.0",
+    "@looper/config": "0.1.0",
+    "@looper/github": "0.1.0",
+    "@looper/runtime": "0.1.0"
+  }
+}

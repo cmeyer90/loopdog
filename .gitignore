@@ -28,6 +28,12 @@ coverage/
 .turbo/
 .vite/
 
+# TypeScript incremental build state
+*.tsbuildinfo
+
+# Spike throwaway run output (task 0093)
+spike-runs/
+
 # OS/editor noise
 .DS_Store
 Thumbs.db

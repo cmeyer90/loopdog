@@ -1,0 +1,26 @@
+{
+  "name": "@looper/backends",
+  "version": "0.1.0",
+  "description": "Looper backends package",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@looper/core": "0.1.0",
+    "@looper/github": "0.1.0"
+  }
+}

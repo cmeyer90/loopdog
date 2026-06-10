@@ -1,0 +1,27 @@
+{
+  "name": "@looper/github",
+  "version": "0.1.0",
+  "description": "Looper github package",
+  "license": "Apache-2.0",
+  "type": "module",
+  "private": true,
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "dependencies": {
+    "@octokit/rest": "^21.1.1",
+    "@octokit/auth-oauth-device": "^8.0.0",
+    "@looper/core": "0.1.0"
+  }
+}

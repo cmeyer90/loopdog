@@ -1,0 +1,37 @@
+# THROWAWAY spike workflow (task 0093). Copy into the scratch repo's
+# .github/workflows/. Proves @codex dispatch via a mention comment posted by
+# automation (GITHUB_TOKEN), and lets us observe whether Codex reacts to a
+# bot-authored mention at all — a known open question this spike answers.
+name: spike-codex-mention
+on:
+  workflow_dispatch:
+    inputs:
+      issue:
+        description: issue number to mention @codex on
+        default: "1"
+      run_id:
+        description: correlation run id (blank = use the Actions run id)
+        default: ""
+
+permissions:
+  issues: write
+
+jobs:
+  mention:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: post mention
+        env:
+          GH_TOKEN: ${{ github.token }}
+          SPIKE_REPO: ${{ github.repository }}
+          SPIKE_ISSUE: ${{ inputs.issue }}
+          SPIKE_RUN_ID: ${{ inputs.run_id }}
+        run: |
+          chmod +x spikes/0093-dispatch-correlation/scripts/codex-mention.sh
+          spikes/0093-dispatch-correlation/scripts/codex-mention.sh
+      - name: keep dispatch record
+        uses: actions/upload-artifact@v4
+        with:
+          name: dispatch-${{ github.run_id }}
+          path: spike-runs/

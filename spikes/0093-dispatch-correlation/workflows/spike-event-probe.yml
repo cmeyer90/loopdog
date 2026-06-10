@@ -1,0 +1,37 @@
+# THROWAWAY spike workflow (task 0093). Copy into the scratch repo's
+# .github/workflows/. Records every pull_request event delivery so we can verify
+# the load-bearing assumption (0008): a PR opened by a PROVIDER App (Claude /
+# Codex) fires the adopter's pull_request workflows, while a PR opened by
+# GITHUB_TOKEN automation does not re-trigger workflows.
+name: spike-event-probe
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+  issues:
+    types: [opened, edited, labeled]
+  issue_comment:
+    types: [created, edited]
+
+permissions:
+  contents: read
+
+jobs:
+  record:
+    runs-on: ubuntu-latest
+    steps:
+      - name: record delivery
+        env:
+          EVENT: ${{ github.event_name }}
+          ACTION: ${{ github.event.action }}
+          ACTOR: ${{ github.actor }}
+          SENDER_TYPE: ${{ github.event.sender.type }}
+          PR: ${{ github.event.pull_request.number }}
+          HEAD: ${{ github.event.pull_request.head.ref }}
+        run: |
+          {
+            echo "## event delivery"
+            echo "- event: \`$EVENT.$ACTION\`"
+            echo "- actor: \`$ACTOR\` (sender type: \`$SENDER_TYPE\`)"
+            [ -n "$PR" ] && echo "- pr: #$PR head=\`$HEAD\`"
+            echo "- delivered_at: $(date -u +%FT%TZ)"
+          } >> "$GITHUB_STEP_SUMMARY"

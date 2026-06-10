@@ -1,6 +1,6 @@
 # Milestone 00: Pre-Build Validation Spikes
 
-Status: ready
+Status: blocked (agent-completable scope done; live-subscription trials operator-pending)
 
 > The gating step **before** any build. A four-lens plan review converged on this:
 > looper's whole thesis rests on external bets — subscription ToS, the Claude
@@ -39,18 +39,24 @@ user's paid **subscription** is permitted, and (2) whether the subscription
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0092 | ready | task/0092-tos-and-subscription-automation-spike | ToS & Subscription-Automation Validation | Explicit (ideally written) answer from Anthropic + OpenAI on unattended third-party subscription orchestration; a documented consequence model if "no". |
-| 0093 | ready | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike | On real subscriptions: import a Claude routine `/fire` URL + token, fire it from Actions → branch/PR; `@codex` round-trip → PR; measure correlation reliability; confirm provider-created PRs fire events. |
+| 0092 | verified | task/0092-tos-and-subscription-automation-spike | ToS & Subscription-Automation Validation | Explicit (ideally written) answer from Anthropic + OpenAI on unattended third-party subscription orchestration; a documented consequence model if "no". |
+| 0093 | blocked | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike | On real subscriptions: import a Claude routine `/fire` URL + token, fire it from Actions → branch/PR; `@codex` round-trip → PR; measure correlation reliability; confirm provider-created PRs fire events. |
 
 ## Definition Of Done
 
-- A documented ToS answer for both providers + a stated fallback if negative.
-- A proven headless `/fire` using an imported routine fire URL/token (fired from
-  Actions, branch/PR opened) **or** a documented blocker; same for `@codex`
-  dispatch.
-- Measured correlation reliability over N runs + a decision on whether a
-  **non-agent-dependent** correlation signal is required (feeds 0073).
-- A clear **go/no-go** recommendation on the subscription-primary thesis.
+- [x] A documented ToS answer for both providers + a stated fallback if negative.
+      (`../reports/0092-tos-findings.md`: Anthropic permitted, OpenAI gray-area
+      conditional go; consequence model written.)
+- [x] A proven headless `/fire` using an imported routine fire URL/token (fired
+      from Actions, branch/PR opened) **or** a documented blocker; same for
+      `@codex` dispatch. (Blocker documented: live subscriptions + Claude web UI
+      are operator-only; ready-to-run kit in `spikes/0093-dispatch-correlation/`.)
+- [ ] Measured correlation reliability over N runs (**operator-pending**) — the
+      decision it feeds is already made conservatively: 0073 mandates a
+      **non-agent-dependent** correlation signal as the authoritative key.
+- [x] A clear **go/no-go** recommendation on the subscription-primary thesis.
+      (**Conditional GO** — Claude go; Codex "acts as you, within limits" +
+      written-answer outreach as operator follow-up.)
 
 ## Verification Log
 
@@ -58,3 +64,13 @@ user's paid **subscription** is permitted, and (2) whether the subscription
   V1 uses manual Claude routine/API-trigger import (`/fire` URL + bearer token as
   secret refs), while live 0093 validation still must prove headless `/fire`
   dispatch, repo access, branch/PR production, event firing, and correlation.
+- 2026-06-09: 0092 verified — ToS research complete for both providers with
+  sources, consequence model, and a conditional-GO recommendation
+  (`../reports/0092-tos-findings.md`). Key adopted constraints: one account =
+  one adopter; never touch claude.ai login OAuth tokens; Codex dispatch must be
+  user-attributable; no hosted multi-tenant in V1.
+- 2026-06-09: 0093 spike kit built (`spikes/0093-dispatch-correlation/`) and the
+  correlation design decision locked (dual-signal, dispatch-time signal
+  authoritative) so M05/0073 are not design-blocked on live measurements. Live
+  trials remain operator-pending; implementation proceeds under the conditional
+  GO with the self-hosted backend as the documented fallback.

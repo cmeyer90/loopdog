@@ -1,0 +1,39 @@
+{
+  "name": "looper-monorepo",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Looper — a generic, open-source autonomous-SDLC engine you attach to any GitHub repository.",
+  "license": "Apache-2.0",
+  "type": "module",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "workspaces": [
+    "packages/*"
+  ],
+  "scripts": {
+    "build": "tsc -b tsconfig.build.json",
+    "clean": "tsc -b tsconfig.build.json --clean && rm -rf packages/*/dist",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "lint": "eslint . && node scripts/check-boundaries.mjs && prettier --check .",
+    "format": "prettier --write .",
+    "protect": "node scripts/apply-branch-protection.mjs",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "npm run build && changeset publish"
+  },
+  "devDependencies": {
+    "@changesets/changelog-github": "^0.5.0",
+    "@changesets/cli": "^2.29.0",
+    "@eslint/js": "^9.32.0",
+    "@types/node": "^20.19.0",
+    "eslint": "^9.32.0",
+    "globals": "^17.6.0",
+    "prettier": "^3.6.0",
+    "tsup": "^8.5.0",
+    "typescript": "~5.9.2",
+    "typescript-eslint": "^8.39.0",
+    "vitest": "^3.2.0"
+  }
+}
