@@ -23,6 +23,7 @@ export function parseActionsEvent(
   const sender = payload['sender'] as { login?: string; type?: string } | undefined;
   const association = pickAssociation(payload);
   const label = (payload['label'] as { name?: string } | undefined)?.name;
+  const pr = payload['pull_request'] as { merged?: boolean } | undefined;
 
   return {
     kind: 'event',
@@ -33,6 +34,7 @@ export function parseActionsEvent(
       : undefined,
     authorAssociation: association,
     label,
+    merged: typeof pr?.merged === 'boolean' ? pr.merged : undefined,
     deliveredAt,
   };
 }

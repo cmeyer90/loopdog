@@ -1,6 +1,6 @@
 # Milestone 02: Attachment & Configuration Model
 
-Status: planned
+Status: implemented (live provider connects + device-flow login operator-pending)
 
 > Background: [Looper Architecture](../../docs/architecture.md) — "How looper
 > attaches to a repo," "Execution model," and "Triggering: events for latency,
@@ -48,32 +48,39 @@ triggers that run loops on **both GitHub events and a scheduled reconcile sweep*
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0006 | planned | task/0006-config-schema-and-validation | Config Schema & Validation | Root `looper.yml` (tiers, budgets/quota, backend, plan store) + per-loop `.looper/loops/<name>/loop.yml` schema; validator across both. |
-| 0007 | planned | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding | CLI that writes config + workflow callers and previews planned actions. |
-| 0008 | planned | task/0008-event-driven-triggers | Event-Driven Triggers | Reusable Actions on GitHub event/action matrix (issues/comments/PRs/reviews/checks/status/workflow-run, item labels, merged PRs) → controller dispatch (low latency); handoffs `GITHUB_TOKEN` won't re-trigger are carried by the sweep (0076). |
-| 0076 | planned | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep | Scheduled Actions that scan state and advance stuck/missed items + drive time-based transitions; the resilience backstop. |
-| 0009 | planned | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults | Comment-only/no-write mode that is the default until promoted. |
-| 0077 | planned | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` | Keyless login: GitHub OAuth device flow (public client_id, no backend) or reuse existing `gh`/git auth; secure token storage; chains into provider connect. CI uses `GITHUB_TOKEN` (no looper App). |
-| 0010 | planned | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select | Guided provider connect (Claude routine import; Codex App authorization), repo authorization, per-loop backend choice. |
+| 0006 | verified | task/0006-config-schema-and-validation | Config Schema & Validation | Root `looper.yml` (tiers, budgets/quota, backend, plan store) + per-loop `.looper/loops/<name>/loop.yml` schema; validator across both. |
+| 0007 | verified | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding | CLI that writes config + workflow callers and previews planned actions. |
+| 0008 | verified | task/0008-event-driven-triggers | Event-Driven Triggers | Reusable Actions on GitHub event/action matrix (issues/comments/PRs/reviews/checks/status/workflow-run, item labels, merged PRs) → controller dispatch (low latency); handoffs `GITHUB_TOKEN` won't re-trigger are carried by the sweep (0076). |
+| 0076 | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep | Scheduled Actions that scan state and advance stuck/missed items + drive time-based transitions; the resilience backstop. |
+| 0009 | verified | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults | Comment-only/no-write mode that is the default until promoted. |
+| 0077 | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` | Keyless login: GitHub OAuth device flow (public client_id, no backend) or reuse existing `gh`/git auth; secure token storage; chains into provider connect. CI uses `GITHUB_TOKEN` (no looper App). |
+| 0010 | implemented | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select | Guided provider connect (Claude routine import; Codex App authorization), repo authorization, per-loop backend choice. |
 
 ## Definition Of Done
 
-- A documented config schema — root `looper.yml` plus per-loop
-  `.looper/loops/<name>/loop.yml` (provider/backend + trigger config) — is
-  validated with clear errors; no single monolithic config file.
-- `looper init` scaffolds a working attachment on a fresh repo and previews what
-  looper would do without writing.
-- The controller runs on **GitHub events** (low latency) **and** a **scheduled
-  reconcile sweep** (backstop); a dropped/missed event is recovered by the next
-  sweep, so no item is permanently stranded by a lost webhook.
-- A single `looper login` connects the user to GitHub and their provider via
-  browser OAuth (device flow) or existing `gh` — no manual tokens, no API keys, no
-  looper GitHub App (CI uses `GITHUB_TOKEN`; keys only on the self-hosted backend).
-- The adopter can connect a Claude and/or Codex subscription through the validated
-  provider surface (manual routine import for Claude; provider App for Codex) and
-  choose a backend per loop.
-- Dry-run is the default; promotion to act is explicit and documented.
+- [x] A documented config schema — root `looper.yml` plus per-loop
+  `.looper/loops/<name>/loop.yml` — validated with per-field errors; no
+  monolithic config file (0006; 7-test suite).
+- [x] `looper init` scaffolds a working attachment on a fresh repo and previews
+  what looper would do without writing (0007; idempotent, conflict-protected).
+- [x] The controller runs on **GitHub events** (0008: matrix + reusable
+  workflow + matcher) **and** a **scheduled reconcile sweep** (0076: 6-test
+  suite incl. stranded-item recovery — no item permanently stranded).
+- [~] A single `looper login` connects via existing `gh` or device flow with
+  keychain storage — implemented; the live device-flow round-trip needs a
+  registered OAuth App client_id (operator; release prereq in 0066).
+- [~] Claude/Codex connect via the validated surfaces (manual routine import /
+  provider App) with idempotent re-runs and per-loop backend choice —
+  implemented; live provider round-trips are operator-pending (0093 kit).
+- [x] Dry-run is the default; promotion is explicit (`looper promote`, audited,
+  tier:core merge guard) and documented (0009; zero-mutation proof).
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-09: all seven tasks landed. 83 tests green across config (schemas/
+  discovery/validation/cron), runtime (runner modes, sweep), cli (init plan +
+  idempotence, promote + guard, token store). Build/lint/boundaries clean.
+- 2026-06-09: end-to-end attach exercised in a temp repo: init --dry-run (0
+  writes) → init --yes (15 files, validation OK) → config validate → promote
+  groom → re-run init (14 skips + 1 protected conflict) → connect default
+  backend edits.

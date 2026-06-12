@@ -103,6 +103,8 @@ export type TriggerEvent =
       authorAssociation?: AuthorAssociation | undefined;
       /** Item label applied/removed, when the event carries one. */
       label?: string | undefined;
+      /** For pull_request.closed: whether the PR merged (the merge predicate). */
+      merged?: boolean | undefined;
       deliveredAt: string;
     }
   | {

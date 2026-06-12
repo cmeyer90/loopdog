@@ -1,0 +1,9 @@
+# Deploy: on merge, deploy via the project adapter; smoke-gate + auto-rollback.
+name: deploy
+trigger:
+  github_event: pull_request
+  action: [closed]
+  predicate: { merged: true }
+transition: { from: merged, to: deploying }
+expects: none
+gates: { require_dor: false, require_ci: true, tier: core }

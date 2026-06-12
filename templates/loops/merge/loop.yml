@@ -1,0 +1,9 @@
+# Merge: graduated auto-merge once the verification ladder passes (DoD gate).
+# tier:core stays human-gated forever; promote tier:safe loops first.
+name: merge
+trigger:
+  github_event: pull_request_review
+  action: [submitted]
+transition: { from: verified, to: merged }
+expects: none
+gates: { require_dor: false, require_ci: true, tier: core }

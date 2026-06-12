@@ -166,21 +166,52 @@ describe('transition runner (0012) — deterministic loop', () => {
   });
 });
 
-describe('transition runner (0012) — dry-run mode (0009)', () => {
-  it('comments only: no labels, no claim, no dispatch; sticky comment updates in place', async () => {
-    const { gh, backend, loop, deps } = setup({ mode: 'dry-run' });
+describe('transition runner — mode enforcement (0009)', () => {
+  it('dry-run: zero GitHub writes, zero dispatch, complete PlannedAction[] incl. the brief', async () => {
+    const { gh, backend, loop, deps, records } = setup({ mode: 'dry-run' });
+    gh.seedIssue({ ref, body: GROOMED_BODY, labels: [stateLabel('ready-for-agent')] });
+    gh.mutations.length = 0;
+
+    const out = await runLoopOnce(deps, loop, repo, CRON);
+    await runLoopOnce(deps, loop, repo, CRON); // sweep again — still silent
+
+    expect(gh.mutations).toEqual([]); // ZERO writes of any kind
+    expect(backend.dispatched).toEqual([]);
+    expect((await gh.getIssue(ref)).labels).toEqual([stateLabel('ready-for-agent')]);
+
+    expect(out[0]!.mode).toBe('dry-run');
+    const planned = out[0]!.planned!;
+    expect(planned.map((a) => a.kind)).toEqual(
+      expect.arrayContaining(['claim', 'compose', 'dispatch']),
+    );
+    expect(out[0]!.briefRef).toMatch(/^implement\/prompt\.md@[0-9a-f]{8}$/);
+    expect(records.records.length).toBeGreaterThan(0); // record still emitted
+  });
+
+  it('suggest: exactly one idempotent advisory comment, no other writes, no dispatch', async () => {
+    const { gh, backend, loop, deps } = setup({ mode: 'suggest' });
     gh.seedIssue({ ref, body: GROOMED_BODY, labels: [stateLabel('ready-for-agent')] });
 
     await runLoopOnce(deps, loop, repo, CRON);
-    await runLoopOnce(deps, loop, repo, CRON); // sweep again
+    await runLoopOnce(deps, loop, repo, CRON); // event/sweep re-run — no spam
 
-    const issue = await gh.getIssue(ref);
-    expect(issue.labels).toEqual([stateLabel('ready-for-agent')]); // untouched
     expect(backend.dispatched).toEqual([]);
-    const dryRunComments = (await gh.listComments(ref)).filter((c) =>
-      c.body.includes('looper:dry-run:implement'),
+    expect((await gh.getIssue(ref)).labels).toEqual([stateLabel('ready-for-agent')]);
+    const advisories = (await gh.listComments(ref)).filter((c) =>
+      c.body.includes('looper-suggest:implement:ready-for-agent->in-review'),
     );
-    expect(dryRunComments).toHaveLength(1); // sticky, not spammed
-    expect(dryRunComments[0]!.body).toContain('would claim, dispatch');
+    expect(advisories).toHaveLength(1);
+    expect(advisories[0]!.body).toContain('looper promote implement --to act');
+  });
+
+  it('forceDryRun tightens an act loop to dry-run for one invocation', async () => {
+    const { gh, backend, loop, deps } = setup({ mode: 'act' });
+    gh.seedIssue({ ref, body: GROOMED_BODY, labels: [stateLabel('ready-for-agent')] });
+    gh.mutations.length = 0;
+
+    const out = await runLoopOnce({ ...deps, forceDryRun: true }, loop, repo, CRON);
+    expect(out[0]!.mode).toBe('dry-run');
+    expect(gh.mutations).toEqual([]);
+    expect(backend.dispatched).toEqual([]);
   });
 });

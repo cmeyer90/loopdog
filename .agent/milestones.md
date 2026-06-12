@@ -13,7 +13,7 @@ North-star architecture for the V1 roadmap:
 |---:|---|---|---|
 | 00 | Validation | blocked | [Pre-Build Validation Spikes](milestones/milestone-00-pre-build-validation-spikes.md) |
 | 01 | Foundation | implemented | [Project Foundation & Open-Source Scaffolding](milestones/milestone-01-project-foundation-and-oss-scaffolding.md) |
-| 02 | Platform | planned | [Attachment & Configuration Model](milestones/milestone-02-attachment-and-configuration-model.md) |
+| 02 | Platform | implemented | [Attachment & Configuration Model](milestones/milestone-02-attachment-and-configuration-model.md) |
 | 03 | Platform | verified | [GitHub State-Machine Core](milestones/milestone-03-github-state-machine-core.md) |
 | 04 | Platform | planned | [Durable Planning Store](milestones/milestone-04-durable-planning-store.md) |
 | 05 | Platform | planned | [Provider & Execution Backend Abstraction (Claude + Codex subscriptions)](milestones/milestone-05-model-provider-abstraction.md) |
@@ -54,13 +54,13 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0003 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0003-own-ci-pipeline | Looper's Own CI |
 | 0004 | Milestone 01: Project Foundation & Open-Source Scaffolding | implemented | task/0004-branch-protection-and-codeowners | Branch Protection & CODEOWNERS |
 | 0005 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0005-release-and-versioning | Release & Versioning |
-| 0006 | Milestone 02: Attachment & Configuration Model | planned | task/0006-config-schema-and-validation | Config Schema & Validation |
-| 0007 | Milestone 02: Attachment & Configuration Model | planned | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding |
-| 0008 | Milestone 02: Attachment & Configuration Model | planned | task/0008-event-driven-triggers | Event-Driven Triggers |
-| 0076 | Milestone 02: Attachment & Configuration Model | planned | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
-| 0009 | Milestone 02: Attachment & Configuration Model | planned | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults |
-| 0077 | Milestone 02: Attachment & Configuration Model | planned | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
-| 0010 | Milestone 02: Attachment & Configuration Model | planned | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select |
+| 0006 | Milestone 02: Attachment & Configuration Model | verified | task/0006-config-schema-and-validation | Config Schema & Validation |
+| 0007 | Milestone 02: Attachment & Configuration Model | verified | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding |
+| 0008 | Milestone 02: Attachment & Configuration Model | verified | task/0008-event-driven-triggers | Event-Driven Triggers |
+| 0076 | Milestone 02: Attachment & Configuration Model | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
+| 0009 | Milestone 02: Attachment & Configuration Model | verified | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults |
+| 0077 | Milestone 02: Attachment & Configuration Model | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
+| 0010 | Milestone 02: Attachment & Configuration Model | implemented | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select |
 | 0094 | Milestone 03: GitHub State-Machine Core | verified | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |
 | 0011 | Milestone 03: GitHub State-Machine Core | verified | task/0011-label-state-machine-spec | Label State Machine Spec |
 | 0012 | Milestone 03: GitHub State-Machine Core | verified | task/0012-transition-runner | Stateless Transition Runner |

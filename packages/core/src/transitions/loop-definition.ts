@@ -1,4 +1,5 @@
 import type { BackendId } from '../ports/backend.js';
+import type { Mode } from '../gates/mode.js';
 
 /**
  * The domain shape of a declared loop ("loops are data, not code"): the parsed
@@ -29,11 +30,19 @@ export interface LoopDefinition {
   serializeBy?: string | undefined;
 }
 
-export type LoopMode = 'dry-run' | 'act';
+export type LoopMode = Mode;
 
 /** The only two trigger kinds: GitHub events or cron. */
 export type LoopTrigger =
-  | { kind: 'github_event'; events: string[] }
+  | {
+      kind: 'github_event';
+      /** Normalized names, e.g. 'issues.labeled' (or bare 'status'). */
+      events: string[];
+      /** e.g. { merged: true } — the synthetic merge source (0008). */
+      predicate?: Record<string, unknown> | undefined;
+      /** Optional actor/label filters. */
+      filter?: { author?: string | undefined; label?: string | undefined } | undefined;
+    }
   | { kind: 'cron'; schedule: string };
 
 export type RiskTier = 'safe' | 'default' | 'core';

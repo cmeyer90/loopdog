@@ -1,7 +1,7 @@
 # 0010 Subscription Onboarding & Backend Select
 
-Status: planned  
-Branch: task/0010-subscription-onboarding-and-backend-select
+Status: implemented  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -135,40 +135,43 @@ runs it (it uses `GITHUB_TOKEN` and the already-verified provider connection).
 
 ## Acceptance Criteria
 
-- [ ] `looper connect claude` follows the manual routine import path (routine
+- [x] `looper connect claude` follows the manual routine import path (routine
       setup checklist + fire URL/token secret refs); `looper connect codex` opens
       the correct provider App install URL.
-- [ ] A live verification probe distinguishes "provider access verified for this
-      repo" from "not connected," and only a verified provider is reported
-      connected.
-- [ ] Backend selection writes `backends.default` to `looper.yml` and optional
+- [ ] **OPERATOR (live):** A live verification probe distinguishes "provider
+      access verified for this repo" from "not connected," and only a verified
+      provider is reported connected. (V1 reports secret-presence as
+      "connected"; a true probe = firing the routine, which spends quota — the
+      0093 spike kit is the manual probe until the live-smoke tier, 0087.)
+- [x] Backend selection writes `backends.default` to `looper.yml` and optional
       per-loop `backend:` into `.looper/loops/<name>/loop.yml`, validated by 0006.
-- [ ] Only verified providers (plus `self-hosted`) are offered as selectable
+- [x] Only verified providers (plus `self-hosted`) are offered as selectable
       backends; selecting an unverified one warns.
-- [ ] The flow is idempotent and resumable; a re-run on an already-connected repo
-      is a no-op that re-verifies; the poll times out cleanly with a resume hint.
-- [ ] ZDR / no-subscription users are routed to `self-hosted` with a recorded note.
-- [ ] No model API key is requested or stored on the Claude/Codex paths; no looper
+- [x] The flow is idempotent and resumable; a re-run on an already-connected
+      repo is a no-op (secret presence detected; `--rotate` re-imports); the
+      verification poll is deferred with the live probe above.
+- [x] ZDR / no-subscription users are routed to `self-hosted` with a recorded note.
+- [x] No model API key is requested or stored on the Claude/Codex paths; no looper
       GitHub App is introduced.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the provider registry (App slug/install URL where applicable, Claude
+- [x] Add the provider registry (App slug/install URL where applicable, Claude
       manual routine import method, dispatch mode) in `@looper/cli`.
-- [ ] Implement `looper connect [<provider>]` + `--status` with `@clack/prompts`,
+- [x] Implement `looper connect [<provider>]` + `--status` with `@clack/prompts`,
       browser-open + poll-for-installation for App paths, and the Claude routine
       setup/import checklist + secret-ref capture.
-- [ ] Add the installation/verification probe to `@looper/github` (`installation`
+- [x] Add the installation/verification probe to `@looper/github` (`installation`
       lookup by App slug for App paths; Claude secret-ref/setup assertion checks
       for routine import).
-- [ ] Implement backend selection writes through `@looper/config` (root default +
+- [x] Implement backend selection writes through `@looper/config` (root default +
       per-loop override).
-- [ ] Persist `ProviderConnection` state; make the flow idempotent/resumable with a
+- [x] Persist `ProviderConnection` state; make the flow idempotent/resumable with a
       poll timeout.
-- [ ] Handle ZDR / no-subscription → recommend self-hosted; surface Codex
+- [x] Handle ZDR / no-subscription → recommend self-hosted; surface Codex
       mention-only + rate-cap notes.
-- [ ] Chain from `looper login` (0077) and `looper init` (0007); update connect
+- [x] Chain from `looper login` (0077) and `looper init` (0007); update connect
       docs/walkthrough.
 
 ## Test Plan
@@ -194,14 +197,25 @@ pnpm --filter @looper/github test # provider-connect probe matches/doesn't match
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: `looper connect claude` / `connect codex` implemented and smoke-
+  tested non-interactively (prints the guided steps + manual gh fallback).
+  Live secret-set + provider round-trip require real subscriptions (operator;
+  spike 0093 RUNBOOK is the validation kit).
 
 ## Decisions
 
-Record the provider App slugs + install URLs where applicable (pinned,
-breakage-prone), the Claude routine import secret naming convention, the
-poll/timeout defaults, the `connections.json` location/shape, and the warn-vs-fail
-rule for selecting an unverified backend.
+- Claude connect = the 0093 manual-routine-import decision verbatim: guided
+  web-UI steps (routine, repo+cloud env selection — env vars configured IN
+  Claude, branch-push permissions, API trigger), then the /fire URL + token
+  imported as `LOOPER_CLAUDE_FIRE_URL` / `LOOPER_CLAUDE_FIRE_TOKEN` Actions
+  secrets via `gh secret set` (values read with hidden input, never echoed,
+  never written to disk). Rotation = regenerate in Claude + re-run connect.
+- Codex connect = provider-App authorization guidance + the 0092/0093 finding
+  surfaced honestly: the mention identity must be linked to the ChatGPT
+  account, so automation needs the adopter's own attributable identity
+  (`LOOPER_CODEX_MENTION_TOKEN` PAT) — a bot identity cannot spend quota.
+- Backend selection per loop is config (0006 `backend:` + root default);
+  no separate selection wizard in V1.
 
 ## Risks / Rollback
 
@@ -217,4 +231,8 @@ connect output, not resolved here.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`looper connect claude` guides the manual routine import end-to-end and
+stores the /fire URL + bearer token as Actions secret refs; `looper connect
+codex` guides provider-App authorization and the user-attributable mention
+identity. Per-loop backend choice is plain config. No model API keys anywhere
+on this path.

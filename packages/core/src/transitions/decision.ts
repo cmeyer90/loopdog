@@ -83,9 +83,13 @@ export function standardChecks(
         : { kind: 'skip', reason: `item state is '${state ?? 'unmanaged'}', loop needs '${from}'` },
   });
 
-  const holds = item.labels.filter((l) =>
-    ['looper:stop', 'looper:parked', 'looper:needs-approval', 'looper:quarantine'].includes(l),
-  );
+  const holds = item.labels.filter((l) => {
+    if (l === 'looper:needs-approval') {
+      // The approval hold is released by a trusted `looper:approved` (M17).
+      return !item.labels.includes('looper:approved');
+    }
+    return ['looper:stop', 'looper:parked', 'looper:quarantine'].includes(l);
+  });
   checks.push({
     name: 'operational-holds',
     verdict:

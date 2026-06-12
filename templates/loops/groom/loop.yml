@@ -1,0 +1,8 @@
+# Grooming: raw issue -> Definition-of-Ready + durable plan + plan-as-contract.
+name: groom
+trigger:
+  github_event: issues
+  action: [labeled, edited]
+transition: { from: needs-grooming, to: ready-for-agent }
+expects: plan-update
+gates: { require_dor: false, require_ci: false, tier: safe } # grooming CREATES the DoR

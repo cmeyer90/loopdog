@@ -1,0 +1,11 @@
+# Review: cross-provider adversarial review + intent-diff against criteria.
+name: review
+trigger:
+  github_event: pull_request
+  action: [opened, synchronize, ready_for_review]
+transition: { from: in-review, to: verified }
+expects: comment
+gates: { require_dor: false, require_ci: true, tier: default }
+# Cross-provider rule: the reviewer differs from the implementer. With a Claude
+# implement loop, set this (or root default) so reviews dispatch to codex:
+# backend: codex

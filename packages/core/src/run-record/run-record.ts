@@ -1,5 +1,6 @@
 import type { BackendId } from '../ports/backend.js';
 import type { ItemRef } from '../ports/types.js';
+import type { Mode, PlannedAction } from '../gates/mode.js';
 
 /**
  * The run record (task 0012's schema): one per transition attempt, consumed by
@@ -15,6 +16,10 @@ export interface RunRecord {
   backend: BackendId;
   /** `<loop>/prompt.md@<sha8>` + the composed brief snapshot reference. */
   briefRef?: string | undefined;
+  /** The mode the run executed under (0009). */
+  mode?: Mode | undefined;
+  /** What looper did (act) or would have done (dry-run/suggest) — 0009. */
+  planned?: PlannedAction[] | undefined;
   steps: RunStep[];
   outcome: RunOutcome;
   cost: RunCost;

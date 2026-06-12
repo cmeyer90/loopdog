@@ -1,0 +1,38 @@
+# Looper's reusable EVENT workflow (task 0008). Adopters reference this from
+# the thin caller `looper init` scaffolds — they never copy the logic.
+#
+# GitHub Actions IS the webhook receiver: the caller's `on:` block (pinned to
+# the canonical event/action matrix) delivers events natively; this workflow
+# runs the deterministic controller for the one affected item under the
+# adopter's own GITHUB_TOKEN. Controller-written changes do not re-trigger
+# events — the sweep (reusable-sweep.yml) carries those handoffs.
+name: looper-reusable-events
+on:
+  workflow_call:
+    inputs:
+      looper-version:
+        description: '@looper/cli version to run'
+        type: string
+        default: latest
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  controller:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: run looper controller (event)
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+        run: |
+          npx --yes @looper/cli@${{ inputs.looper-version }} controller event \
+            --event-name "${{ github.event_name }}" \
+            --event-path "$GITHUB_EVENT_PATH" \
+            --repo "${{ github.repository }}"

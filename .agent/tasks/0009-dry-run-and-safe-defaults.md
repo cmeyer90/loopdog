@@ -1,7 +1,7 @@
 # 0009 Dry-Run & Safe Defaults
 
-Status: planned  
-Branch: task/0009-dry-run-and-safe-defaults
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -101,23 +101,23 @@ loosen, the configured mode.
 
 ## Acceptance Criteria
 
-- [ ] `allowedEffects(mode)` matches the table above and is unit-tested for all three modes.
-- [ ] A loop with no `mode` resolves to `dry-run`; root `defaults.mode` and per-loop `mode` follow 0006 precedence.
-- [ ] In `dry-run`, a full transition run performs **zero** GitHub writes and **zero** backend dispatches, yet emits a complete `PlannedAction[]` including the composed brief.
-- [ ] In `suggest`, the run posts exactly one idempotent advisory comment (no spam under repeated sweep invocation) and still performs no writes/dispatch.
-- [ ] In `act`, the run dispatches and writes as normal, and the run record's `planned` mirrors the real effects.
-- [ ] `looper promote <loop> --to act` rewrites `mode:` in the loop file and is refused for a `tier:core` merge loop.
-- [ ] A kill-switch/budget pause overrides even `act`; CLI `--dry-run` cannot be loosened by config.
-- [ ] Relevant checks pass.
+- [x] `allowedEffects(mode)` matches the table above and is unit-tested for all three modes.
+- [x] A loop with no `mode` resolves to `dry-run`; root `defaults.mode` and per-loop `mode` follow 0006 precedence.
+- [x] In `dry-run`, a full transition run performs **zero** GitHub writes and **zero** backend dispatches, yet emits a complete `PlannedAction[]` including the composed brief.
+- [x] In `suggest`, the run posts exactly one idempotent advisory comment (no spam under repeated sweep invocation) and still performs no writes/dispatch.
+- [x] In `act`, the run dispatches and writes as normal, and the run record's `planned` mirrors the real effects.
+- [x] `looper promote <loop> --to act` rewrites `mode:` in the loop file and is refused for a `tier:core` merge loop.
+- [x] A kill-switch/budget pause overrides even `act`; CLI `--dry-run` cannot be loosened by config.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add `Mode`, `EffectPolicy`, `allowedEffects`, `PlannedAction` to `@looper/core` gates.
-- [ ] Implement the mode-aware port decorator in `@looper/runtime` and resolve `mode` once per run.
-- [ ] Extend the run record (0012) with `mode` + `planned`; emit it in every mode.
-- [ ] Implement the idempotent advisory-comment upsert for `suggest` in `@looper/github`.
-- [ ] Implement `looper promote` (comment-preserving YAML edit + tier:core guard + audit line).
-- [ ] Ensure scaffolds (0007) default to `dry-run`; document the promotion path in adopter docs.
+- [x] Add `Mode`, `EffectPolicy`, `allowedEffects`, `PlannedAction` to `@looper/core` gates.
+- [x] Implement the mode-aware port decorator in `@looper/runtime` and resolve `mode` once per run.
+- [x] Extend the run record (0012) with `mode` + `planned`; emit it in every mode.
+- [x] Implement the idempotent advisory-comment upsert for `suggest` in `@looper/github`.
+- [x] Implement `looper promote` (comment-preserving YAML edit + tier:core guard + audit line).
+- [x] Ensure scaffolds (0007) default to `dry-run`; document the promotion path in adopter docs.
 
 ## Test Plan
 
@@ -135,12 +135,36 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: `allowedEffects` unit-proven through behavior tests; mode suite
+  green: dry-run = ZERO fake-GitHub mutations + zero dispatch with complete
+  PlannedAction[] (claim/compose/dispatch) and briefRef; suggest = exactly one
+  idempotent advisory comment under repeated sweeps, no other writes; act =
+  effects applied with planned mirroring them (all prior act-path tests);
+  forceDryRun tightens an act loop for one invocation.
+- 2026-06-09: `looper promote` end-to-end: groom dry-run→act rewrites `mode:`
+  in place preserving comments; tier:core merge loop promotion refused with
+  exit 1 and file untouched.
 
 ## Decisions
 
-Record the exact effect table, where the mode decorator wraps the ports, the
-`suggest` comment-marker key, and the `promote` tier:core guard boundary.
+- Effect table exactly as specced (core `gates/mode.ts`). Enforcement point:
+  the runner calls every outward effect through ONE `EffectGate` instance per
+  run (`runtime/pipeline/effect-gate.ts`) — `mutate`/`comment`/`dispatch`
+  record a PlannedAction and run the IO only when the policy allows. A
+  pass-through port decorator was rejected: the claim protocol's read-back CAS
+  would mis-resolve against simulated writes; the gate keeps mode in one place
+  with honest semantics.
+- Run records carry `mode` + `planned[]` in every mode. Telemetry-store choice
+  is the composition root's: act uses the `looper/telemetry` branch store; a
+  dry-run invocation forced via `--dry-run` still records through whatever
+  store was injected (job summary in Actions).
+- Suggest marker key: `looper-suggest:<loop>:<from>-><to>` via the
+  `upsertMarkedComment` primitive in `@looper/github`.
+- Promote guard boundary: refuse `--to act` when `gates.tier === 'core'` AND
+  `transition.to === 'merged'` — auto-merge of core paths is the dial a loop
+  never turns itself.
+- Kill-switch/budget (M12) and authorization (M17) park BEFORE mode is
+  consulted (they are pre-flight checks); `--dry-run` only tightens.
 
 ## Risks / Rollback
 
@@ -153,4 +177,9 @@ promote commit) to return any loop to observe-only.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Three modes (`dry-run | suggest | act`) with `allowedEffects` in core, a
+single EffectGate boundary in the runner recording `PlannedAction[]` on every
+run record, idempotent suggest advisories, scaffold-default dry-run (0007),
+the tighten-only `--dry-run` override, and the audited `looper promote`
+command with the tier:core merge guard. Proven side-effect-free by zero-
+mutation fake-GitHub assertions.

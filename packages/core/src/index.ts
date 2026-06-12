@@ -113,6 +113,13 @@ export {
 } from './transitions/claim-protocol.js';
 export type { Decision, PreflightCheck, Verdict } from './transitions/decision.js';
 export { decideTransition, standardChecks } from './transitions/decision.js';
+export type { SupportedEventName } from './transitions/event-matrix.js';
+export {
+  EVENT_ACTION_MATRIX,
+  MERGE_SOURCE,
+  isSupportedEvent,
+  isSupportedEventAction,
+} from './transitions/event-matrix.js';
 
 // gates
 export {
@@ -130,6 +137,8 @@ export type { GateResult } from './gates/dor.js';
 export { DOR_FAIL_ROUTE, evaluateDor } from './gates/dor.js';
 export type { DodInput } from './gates/dod.js';
 export { evaluateDod } from './gates/dod.js';
+export type { EffectPolicy, Mode, PlannedAction } from './gates/mode.js';
+export { DEFAULT_MODE, allowedEffects } from './gates/mode.js';
 
 // run record
 export type {

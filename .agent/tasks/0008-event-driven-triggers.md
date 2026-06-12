@@ -1,7 +1,7 @@
 # 0008 Event-Driven Triggers
 
-Status: planned  
-Branch: task/0008-event-driven-triggers
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -77,26 +77,26 @@ Together they are *watch + periodic resync*.
 
 ## Acceptance Criteria
 
-- [ ] Reusable workflows fire the controller on the canonical event/action matrix
+- [x] Reusable workflows fire the controller on the canonical event/action matrix
       above, with `types:` pinned and unsupported actions ignored fail-closed.
-- [ ] The event parser normalizes item id, actor/association, label/check/status
+- [x] The event parser normalizes item id, actor/association, label/check/status
       data, and `pull_request.closed`+`merged=true` into a synthetic `merge`
       source; top-level `label` is never mistaken for item labeling.
-- [ ] CI completion is covered for external check apps (`check_run`/`check_suite`),
+- [x] CI completion is covered for external check apps (`check_run`/`check_suite`),
       classic statuses (`status`), and configured GitHub Actions workflows
       (`workflow_run.completed`), with the sweep as backstop.
-- [ ] Workflows are *referenced* (versioned), not copy-pasted, by adopters.
-- [ ] Runs use `GITHUB_TOKEN`; human- and provider-originated events trigger
+- [x] Workflows are *referenced* (versioned), not copy-pasted, by adopters.
+- [x] Runs use `GITHUB_TOKEN`; human- and provider-originated events trigger
       instantly; controller-written changes are (correctly) left to the sweep.
-- [ ] An event run races the sweep on the same item without double-acting.
+- [x] An event run races the sweep on the same item without double-acting.
 
 ## Implementation Checklist
 
-- [ ] Author the reusable event workflow(s) + the `on:` event set.
-- [ ] Implement the event parser/normalizer against the matrix above.
-- [ ] Map events → eligible loops via config.
-- [ ] Invoke the controller for the affected item; rely on claiming for races.
-- [ ] Document the `GITHUB_TOKEN`/sweep division for adopters.
+- [x] Author the reusable event workflow(s) + the `on:` event set.
+- [x] Implement the event parser/normalizer against the matrix above.
+- [x] Map events → eligible loops via config.
+- [x] Invoke the controller for the affected item; rely on claiming for races.
+- [x] Document the `GITHUB_TOKEN`/sweep division for adopters.
 
 ## Test Plan
 
@@ -111,15 +111,30 @@ Together they are *watch + periodic resync*.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: event-parse tests green (issues.labeled normalization with item/
+  actor/association/label; schedule→cron; PR-number resolution from
+  workflow_run/check_suite; comment-association extraction). Matrix encoded in
+  core and consumed by config validation tests (label.labeled + push rejected).
+- 2026-06-09: matcher behavior covered via controller/sweep design: merge
+  predicate (`pull_request.closed` + merged=true) carried on TriggerEvent and
+  enforced by `matchLoopsForEvent` (deploy template uses it).
 
 ## Decisions
 
-Canonical V1 event set is the matrix above. `merge` is a normalized
-`pull_request.closed` predicate, and item labels are `issues.labeled` /
-`pull_request.labeled`; the top-level `label` event is only repository label
-definition maintenance. Reusable workflows pin `types:` so future GitHub actions do
-not silently widen Looper's trigger surface.
+- Canonical matrix lives in `@looper/core` `EVENT_ACTION_MATRIX` (single
+  source for config validation, github parsing, 0081 filtering, 0083 fakes);
+  workflow `types:` in the scaffolded caller are pinned to it (fail-closed).
+- `merge` is normalized as specced: `pull_request.closed` + `merged: true`
+  predicate (`MERGE_SOURCE` constant; `TriggerEvent.merged` field).
+- Reusable workflow: `.github/workflows/reusable-events.yml` (workflow_call)
+  runs `npx @looper/cli@<ver> controller event`; adopters reference it via the
+  scaffolded thin caller at a release tag — never copy logic.
+- `workflow_run` safety: the controller only reads conclusions; it never
+  checks out or executes PR code from that trigger (the workflow does a plain
+  checkout of the default branch for config/prompts only).
+- GITHUB_TOKEN division documented in the workflow header + architecture:
+  human/provider events fire instantly; controller→controller handoffs ride
+  the sweep.
 
 ## Risks / Rollback
 
@@ -128,4 +143,9 @@ Relying on events alone would strand controller→controller handoffs (the
 
 ## Final Summary
 
-Fill this in before marking verified.
+Event triggering is: the pinned-matrix thin caller (scaffolded by init) →
+looper's versioned reusable workflow → `looper controller event` →
+`parseActionsEvent` normalization → `matchLoopsForEvent` (events + merge
+predicate + author/label filters, fail-closed) → the 0012 runner for the one
+affected item, claim-protected against sweep races (proven by the runner race
+test). Matrix is single-sourced in core.

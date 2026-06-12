@@ -1,7 +1,7 @@
 # 0006 Config Schema & Validation
 
-Status: planned  
-Branch: task/0006-config-schema-and-validation
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -91,22 +91,22 @@ blocks validate against the M17/M19 schemas. Precedence: per-loop value > root
 
 ## Acceptance Criteria
 
-- [ ] Documented schemas for root `looper.yml` and per-loop `loop.yml`.
-- [ ] Loops are discovered by glob; each is self-contained in its folder.
-- [ ] Root `defaults` are inherited and per-loop values override them.
-- [ ] `github_event` + `action` + predicates are validated against 0008's
+- [x] Documented schemas for root `looper.yml` and per-loop `loop.yml`.
+- [x] Loops are discovered by glob; each is self-contained in its folder.
+- [x] Root `defaults` are inherited and per-loop values override them.
+- [x] `github_event` + `action` + predicates are validated against 0008's
       event/action matrix, including the `pull_request.closed` merge predicate and
       item-label-vs-label-definition distinction.
-- [ ] `looper config validate` reports per-field errors with file + path; an
+- [x] `looper config validate` reports per-field errors with file + path; an
       invalid trigger/transition/backend/tier fails validation.
-- [ ] No loop config is read from a single monolithic file.
+- [x] No loop config is read from a single monolithic file.
 
 ## Implementation Checklist
 
-- [ ] Define the root + per-loop schemas (e.g. JSON Schema) and types.
-- [ ] Implement discovery + the default→override merge.
-- [ ] Implement the validator with actionable errors.
-- [ ] Wire validation into `looper init`, `looper loops validate`, and CI.
+- [x] Define the root + per-loop schemas (e.g. JSON Schema) and types.
+- [x] Implement discovery + the default→override merge.
+- [x] Implement the validator with actionable errors.
+- [x] Wire validation into `looper init`, `looper loops validate`, and CI.
 
 ## Test Plan
 
@@ -118,13 +118,31 @@ blocks validate against the M17/M19 schemas. Precedence: per-loop value > root
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: config suite green (7 tests): good-tree resolution with default
+  merge + per-loop override; matrix rejections (label.labeled, push); illegal
+  transition with table reason; declares extension; folder-name/prompt/one-trigger
+  rules; cron validation; missing-root fail-closed.
+- 2026-06-09: `looper config validate` exercised end-to-end on a scaffolded
+  temp repo — per-field errors with file+path; warnings non-fatal.
 
 ## Decisions
 
-Record the schema mechanism (JSON Schema vs. code), the merge/precedence rules,
-the exact gate/trigger field sets, and how 0008's event/action matrix is imported
-or mirrored without drift.
+- Schema mechanism: **zod (code-first)** in `@looper/config` (`schema/root.ts`,
+  `schema/loop.ts`) — typed inference into core's `LoopDefinition`, defaults in
+  one place; no separate JSON Schema files to drift.
+- Precedence implemented as specced: per-loop > root `defaults` > built-in
+  zod defaults, with `mergeDefined` so an absent per-loop key never clobbers.
+- The 0008 event/action matrix lives in **`@looper/core`**
+  (`transitions/event-matrix.ts`) — config may not depend on github, and core
+  is the shared domain; github's parser and config's validator both import it
+  (single source, no drift).
+- Schema additions beyond the spec'd field set, recorded here: `expects:`
+  (pull-request|comment|plan-update|none — the runner's work-cell contract),
+  `review_backend:`, `serialize_by:` (0013), `declares:` (custom states/edges,
+  0011), `gates.required_checks`. All optional with safe defaults.
+- Cron support is deliberately minimal (hourly/daily/weekly, */N, fixed daily/
+  weekly times); exotic expressions fail validation with guidance. Avoids a
+  cron-parser dependency in the published CLI.
 
 ## Risks / Rollback
 
@@ -133,4 +151,9 @@ an upgrade path (M15 · 0067). Fail validation closed.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`@looper/config` discovers (`.looper/looper.yml` + one folder per loop —
+never a monolith), zod-validates both schemas, cross-validates against the
+core event matrix + transition table (+ cron, prompt presence, folder-name,
+duplicates, one-trigger-kind), and resolves into core `LoopDefinition`s with
+documented precedence. Per-field errors carry file+path. Exposed as
+`loadConfig()` and `looper config validate`.

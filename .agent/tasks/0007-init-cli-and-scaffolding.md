@@ -1,7 +1,7 @@
 # 0007 `looper init` CLI & Scaffolding
 
-Status: planned  
-Branch: task/0007-init-cli-and-scaffolding
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -85,28 +85,28 @@ conflict, never destroy); `templates/` missing from the install → hard error
 
 ## Acceptance Criteria
 
-- [ ] `looper init` on a fresh repo scaffolds a working attachment: root
+- [x] `looper init` on a fresh repo scaffolds a working attachment: root
       `looper.yml`, the built-in loop folders, and the event + sweep workflow
       callers, all passing 0006 validation.
-- [ ] Scaffolded config defaults to `mode: dry-run` (safe by default, 0009).
-- [ ] A preview lists every planned write and a per-loop behavior summary
+- [x] Scaffolded config defaults to `mode: dry-run` (safe by default, 0009).
+- [x] A preview lists every planned write and a per-loop behavior summary
       (state, transition, trigger, backend, mode) before anything is written.
-- [ ] `looper init --dry-run` writes nothing and exits 0.
-- [ ] Re-running on an already-attached repo is idempotent: unchanged files are
+- [x] `looper init --dry-run` writes nothing and exits 0.
+- [x] Re-running on an already-attached repo is idempotent: unchanged files are
       skipped and adopter-edited files are never silently overwritten.
-- [ ] Detected project type (node/python/generic) seeds correct defaults.
-- [ ] Workflow callers `uses:` looper's versioned reusable workflows (referenced,
+- [x] Detected project type (node/python/generic) seeds correct defaults.
+- [x] Workflow callers `uses:` looper's versioned reusable workflows (referenced,
       not copy-pasted).
 
 ## Implementation Checklist
 
-- [ ] Add `commands/init.ts` to `@looper/cli` and register it on the program.
-- [ ] Implement the `ScaffoldPlan` builder (detect → plan, with create/skip/conflict).
-- [ ] Implement the preview renderer (file table + per-loop summary) and `--dry-run`.
-- [ ] Implement the asset copier from `templates/` with idempotent merge + conflict prompts.
-- [ ] Call `@looper/config` validation on the written tree; fail closed.
-- [ ] Print next-steps guidance (connect 0010, test issue, promote to `act`).
-- [ ] Document `looper init` in the CLI docs.
+- [x] Add `commands/init.ts` to `@looper/cli` and register it on the program.
+- [x] Implement the `ScaffoldPlan` builder (detect → plan, with create/skip/conflict).
+- [x] Implement the preview renderer (file table + per-loop summary) and `--dry-run`.
+- [x] Implement the asset copier from `templates/` with idempotent merge + conflict prompts.
+- [x] Call `@looper/config` validation on the written tree; fail closed.
+- [x] Print next-steps guidance (connect 0010, test issue, promote to `act`).
+- [x] Document `looper init` in the CLI docs.
 
 ## Test Plan
 
@@ -123,12 +123,30 @@ temp dir, GitHub/provider effects via the M18 fakes (no real quota, no network).
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: cli suite green: fresh-dir plan is create-only and the written
+  tree passes 0006 validation with every loop dry-run; re-run is idempotent
+  (unchanged → skip, adopter-edited → conflict, never overwritten).
+- 2026-06-09: manual end-to-end in a temp dir: `init --dry-run` writes 0 files
+  and exits 0 with the full preview (15-file table + 6-loop behavior summary);
+  `init --yes` writes 15 files, validation OK, next steps printed; re-run after
+  a `promote` shows 14 skips + 1 protected conflict.
 
 ## Decisions
 
-Record the `templates/` packaging/resolution mechanism, the create/skip/conflict
-merge policy, the exact built-in loop set scaffolded, and the preview format.
+- Templates packaging: repo-root `templates/` is the dev source;
+  `npm run bundle` (prepack) copies it to `dist/templates` in the published
+  package; `findTemplatesDir()` probes dist-relative then repo-root candidates
+  and hard-errors when absent (packaging bug, per spec).
+- Merge policy: byte-identical → `skip`; any difference → `conflict`, never
+  overwritten (not even with `--force`, which only re-prompts); fresh → `create`.
+- Built-in loop set scaffolded: **triage, groom, implement, review, merge,
+  deploy** (six folders — triage is the deterministic `new→needs-grooming`
+  intake the spec's four-loop story implies, and merge is split from review so
+  auto-merge policy has its own tier:core file).
+- Detect-driven defaults (adapter seeding) arrive with M06 `detect()`; the
+  scaffold ships `adapter: auto` until then.
+- Preview format mirrors the future `looper loops list` shape (name,
+  transition, trigger, mode).
 
 ## Risks / Rollback
 
@@ -140,4 +158,9 @@ scaffolded tree in CI.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`looper init` builds a ScaffoldPlan (create/skip/conflict per file), renders
+the file table + per-loop behavior summary BEFORE any write, honors
+`--dry-run/--yes/--force/--path`, copies the six built-in loop folders + root
+config + the two thin workflow callers, validates the written tree via 0006
+(fail closed), and prints the connect→test-issue→promote next steps.
+Idempotent re-runs; adopter edits are never clobbered.

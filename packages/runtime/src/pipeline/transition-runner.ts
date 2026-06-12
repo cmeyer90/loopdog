@@ -4,7 +4,6 @@ import type {
   ExecutionBackend,
   GitHubPort,
   IssueSnapshot,
-  ItemRef,
   LoopDefinition,
   PreflightCheck,
   RepoRef,
@@ -22,7 +21,7 @@ import {
   stateLabel,
   stateOfLabels,
 } from '@looper/core';
-import { acquireClaim, releaseClaim } from '@looper/github';
+import { acquireClaim, releaseClaim, upsertMarkedComment } from '@looper/github';
 import { composeBrief } from './brief.js';
 import { bumpAttempts, clearAttempts, parseAttempts } from './attempts.js';
 import {
@@ -30,6 +29,7 @@ import {
   markDispatchResolved,
   renderDispatchMarker,
 } from './dispatch-marker.js';
+import { EffectGate } from './effect-gate.js';
 import type { RunRecordStore } from '../telemetry/record-store.js';
 
 /**
@@ -38,6 +38,8 @@ import type { RunRecordStore } from '../telemetry/record-store.js';
  * Crash-safe single-step design: `dispatch` persists a marker comment and
  * returns; a LATER invocation (event or sweep) ingests the result. Safe under
  * event and cron invocation concurrently (claims + idempotent decisions).
+ * Every outward effect flows through the mode `EffectGate` (task 0009) —
+ * dry-run records intentions, suggest adds one advisory comment, act acts.
  */
 
 export interface RunnerDeps {
@@ -62,6 +64,8 @@ export interface RunnerDeps {
   maxAttempts?: number;
   /** Invocation-unique nonce for the claim CAS (injectable for determinism). */
   claimNonce?: () => string;
+  /** Forces dry-run for this invocation; can only tighten, never loosen (0009). */
+  forceDryRun?: boolean;
 }
 
 export async function runLoopOnce(
@@ -73,13 +77,22 @@ export async function runLoopOnce(
   const items = await selectItems(deps, loop, repo, trigger);
   const records: RunRecord[] = [];
   for (const item of items) {
-    const record = await processItem(deps, loop, item, trigger);
-    if (record) {
-      await deps.records.append(record);
-      records.push(record);
-    }
+    const record = await runLoopOnItem(deps, loop, item, trigger);
+    if (record) records.push(record);
   }
   return records;
+}
+
+/** Process ONE item through one loop (the sweep drives candidates with this). */
+export async function runLoopOnItem(
+  deps: RunnerDeps,
+  loop: LoopDefinition,
+  item: IssueSnapshot,
+  trigger: TriggerEvent,
+): Promise<RunRecord | null> {
+  const record = await processItem(deps, loop, item, trigger);
+  if (record) await deps.records.append(record);
+  return record;
 }
 
 async function selectItems(
@@ -103,6 +116,8 @@ async function processItem(
 ): Promise<RunRecord | null> {
   const now = deps.now?.() ?? new Date();
   const steps: RunStep[] = [];
+  const mode = deps.forceDryRun ? 'dry-run' : loop.mode;
+  const gate = new EffectGate(mode);
   const attempt = parseAttempts(item.labels) + 1;
   const runId = deriveRunId(loop.name, item.ref, attempt);
   const record = (outcome: RunRecord['outcome'], briefRef?: string): RunRecord => ({
@@ -115,17 +130,24 @@ async function processItem(
         : { kind: 'cron', at: now.toISOString() },
     backend: loop.backend,
     briefRef,
+    mode,
+    planned: gate.planned,
     steps,
     outcome,
-    cost: loop.expects ? { routineRuns: loop.backend === 'claude' ? 1 : 0 } : {},
+    cost:
+      loop.expects && gate.policy.dispatch
+        ? { routineRuns: loop.backend === 'claude' ? 1 : 0 }
+        : {},
   });
+  const step = (kind: RunStep['kind'], detail: string) =>
+    steps.push({ t: now.toISOString(), kind, detail });
 
   // Ingest phase first: a pending dispatch on this item takes precedence over
   // dispatching again — this is what makes re-invocation idempotent.
   const pending = findPendingDispatches(await deps.gh.listComments(item.ref));
   const ours = pending.filter((p) => p.handle.runId.startsWith(`run-${loop.name}-`));
   if (ours.length > 0) {
-    return ingestPhase(deps, loop, item, ours[0]!, steps, record, now);
+    return ingestPhase(deps, loop, item, ours[0]!, gate, steps, step, record);
   }
 
   // Decision: standard state-machine checks + gate + cross-cutting extras.
@@ -143,91 +165,83 @@ async function processItem(
     checks.push(...(await deps.extraChecks({ loop, item, trigger })));
   }
   const decision = decideTransition(checks);
-  steps.push({
-    t: now.toISOString(),
-    kind: 'gate',
-    detail: `decision: ${decision.verdict.kind} (${decision.decidedBy})`,
-  });
+  step('gate', `decision: ${decision.verdict.kind} (${decision.decidedBy})`);
 
   switch (decision.verdict.kind) {
     case 'no-op':
     case 'skip':
       return null; // not an attempt — common on sweeps; no record spam
     case 'park': {
-      if (loop.mode === 'act') {
-        await deps.gh.addLabels(item.ref, ['looper:parked']);
-        await comment(deps, item.ref, `⏸️ looper parked this item: ${decision.verdict.reason}`);
-      }
+      const reason = decision.verdict.reason;
+      await gate.mutate('label', `add looper:parked (${reason})`, () =>
+        deps.gh.addLabels(item.ref, ['looper:parked']),
+      );
+      await gate.comment(`park notice`, () =>
+        deps.gh.createComment(item.ref, `⏸️ looper parked this item: ${reason}`),
+      );
       return record({ status: 'parked' });
     }
     case 'route': {
-      const to = decision.verdict.to;
-      if (loop.mode === 'act') {
-        await applyStateChange(deps, item, to);
-        await comment(
-          deps,
-          item.ref,
-          `↩️ looper routed this item to \`${to}\`: ${decision.verdict.reason}`,
-        );
-      }
-      steps.push({ t: now.toISOString(), kind: 'write', detail: `routed to ${to}` });
+      const { to, reason } = decision.verdict;
+      await gate.mutate('label', `state -> ${to} (${reason})`, () =>
+        applyStateChange(deps, item, to),
+      );
+      await gate.comment('route notice', () =>
+        deps.gh.createComment(item.ref, `↩️ looper routed this item to \`${to}\`: ${reason}`),
+      );
+      step('write', `routed to ${to}`);
       return record({ status: 'done', transition: `${loop.transition.from}->${to}` });
     }
     case 'escalate': {
-      if (loop.mode === 'act') {
-        await deps.gh.addLabels(item.ref, ['looper:needs-human']);
-        await comment(deps, item.ref, `🚨 looper escalated: ${decision.verdict.reason}`);
-      }
-      return record({
-        status: 'escalated',
-        failure: { class: 'terminal', reason: decision.verdict.reason },
-      });
+      const reason = decision.verdict.reason;
+      await gate.mutate('label', 'add looper:needs-human', () =>
+        deps.gh.addLabels(item.ref, ['looper:needs-human']),
+      );
+      await gate.comment('escalation notice', () =>
+        deps.gh.createComment(item.ref, `🚨 looper escalated: ${reason}`),
+      );
+      return record({ status: 'escalated', failure: { class: 'terminal', reason } });
     }
     case 'proceed':
       break;
-  }
-
-  // Dry-run: comment-only preview, no claim, no labels, no dispatch (0009).
-  if (loop.mode === 'dry-run') {
-    const preview = loop.expects
-      ? `would claim, dispatch a ${loop.expects} work cell to **${loop.backend}**, and advance \`${loop.transition.from}\` → \`${loop.transition.to}\``
-      : `would advance \`${loop.transition.from}\` → \`${loop.transition.to}\``;
-    await upsertDryRunComment(
-      deps,
-      loop,
-      item.ref,
-      `🧪 looper dry-run (\`${loop.name}\`): ${preview}.`,
-    );
-    steps.push({ t: now.toISOString(), kind: 'write', detail: 'dry-run comment' });
-    return record({
-      status: 'done',
-      transition: `dry-run:${loop.transition.from}->${loop.transition.to}`,
-    });
   }
 
   // Claim (atomic; loser walks away cleanly). The claimant token is
   // invocation-unique — two invocations deriving the same runId must still
   // contend as two claimants (the event-vs-sweep double-dispatch defense).
   const nonce = deps.claimNonce?.() ?? Math.random().toString(36).slice(2, 8);
-  const claim = await acquireClaim(deps.gh, item.ref, runId, {
-    now,
-    claimant: `${runId}~${nonce}`,
-    ...(deps.botLogin ? { assignee: deps.botLogin } : {}),
-    ...(loop.serializeBy ? { serializeArea: loop.serializeBy } : {}),
-  });
-  if (!claim.acquired) {
-    steps.push({ t: now.toISOString(), kind: 'claim', detail: `not acquired: ${claim.reason}` });
+  const claim = await gate.mutate('claim', `claim ${runId}`, () =>
+    acquireClaim(deps.gh, item.ref, runId, {
+      now,
+      claimant: `${runId}~${nonce}`,
+      ...(deps.botLogin ? { assignee: deps.botLogin } : {}),
+      ...(loop.serializeBy ? { serializeArea: loop.serializeBy } : {}),
+    }),
+  );
+  if (claim && !claim.acquired) {
+    step('claim', `not acquired: ${claim.reason}`);
     return null; // another runner owns it — not an attempt
   }
-  steps.push({ t: now.toISOString(), kind: 'claim', detail: `lease until ${claim.leaseUntil}` });
+  if (claim) step('claim', `lease until ${claim.leaseUntil}`);
 
   try {
     if (!loop.expects) {
       // Deterministic transition: apply and release in one invocation.
-      await applyStateChange(deps, item, loop.transition.to);
-      steps.push({ t: now.toISOString(), kind: 'write', detail: `state -> ${loop.transition.to}` });
-      await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
-      await clearAttempts(deps.gh, item.ref);
+      await gate.mutate('label', `state -> ${loop.transition.to}`, () =>
+        applyStateChange(deps, item, loop.transition.to),
+      );
+      step('write', `state -> ${loop.transition.to}`);
+      await gate.mutate('claim', 'release', async () => {
+        await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
+        await clearAttempts(deps.gh, item.ref);
+      });
+      await suggestAdvisory(
+        deps,
+        loop,
+        item,
+        gate,
+        `advance \`${loop.transition.from}\` → \`${loop.transition.to}\``,
+      );
       return record({
         status: 'done',
         transition: `${loop.transition.from}->${loop.transition.to}`,
@@ -238,37 +252,65 @@ async function processItem(
     // the intermediate state. Ingest happens on a later invocation.
     const promptText = await deps.readPrompt(loop);
     const brief = composeBrief({ loop, item, runId, promptText });
-    steps.push({ t: now.toISOString(), kind: 'compose', detail: brief.briefRef });
+    gate.note('compose', brief.briefRef);
+    step('compose', brief.briefRef);
 
     const backend = deps.backends.get(loop.backend);
     if (!backend) throw new Error(`no backend registered for '${loop.backend}'`);
-    const handle = await backend.dispatch(brief);
-    steps.push({ t: now.toISOString(), kind: 'dispatch', detail: `signal: ${handle.signal.kind}` });
-
-    await deps.gh.createComment(item.ref, renderDispatchMarker(handle));
-    if (
-      loop.transition.to !== 'in-progress' &&
-      deps.table.edges.some((e) => e.from === loop.transition.from && e.to === 'in-progress')
-    ) {
-      await applyStateChange(deps, item, 'in-progress');
-      steps.push({
-        t: now.toISOString(),
-        kind: 'write',
-        detail: 'state -> in-progress (dispatched)',
-      });
+    const handle = await gate.dispatch(
+      `${loop.expects} work cell to ${loop.backend} (brief ${brief.briefRef})`,
+      () => backend.dispatch(brief),
+    );
+    if (handle) {
+      step('dispatch', `signal: ${handle.signal.kind}`);
+      await gate.mutate('comment', 'persist dispatch handle', () =>
+        deps.gh.createComment(item.ref, renderDispatchMarker(handle)).then(() => {}),
+      );
+      if (
+        loop.transition.to !== 'in-progress' &&
+        deps.table.edges.some((e) => e.from === loop.transition.from && e.to === 'in-progress')
+      ) {
+        await gate.mutate('label', 'state -> in-progress (dispatched)', () =>
+          applyStateChange(deps, item, 'in-progress'),
+        );
+        step('write', 'state -> in-progress (dispatched)');
+      }
+      return record(
+        { status: 'pending', artifacts: sessionArtifact(handle.signal) },
+        brief.briefRef,
+      );
     }
-    return record({ status: 'pending', artifacts: sessionArtifact(handle.signal) }, brief.briefRef);
+    // Dispatch blocked by mode: preview only.
+    await suggestAdvisory(
+      deps,
+      loop,
+      item,
+      gate,
+      `dispatch a ${loop.expects} work cell to **${loop.backend}** and advance ` +
+        `\`${loop.transition.from}\` → \`${loop.transition.to}\``,
+    );
+    return record(
+      { status: 'done', transition: `${mode}:${loop.transition.from}->${loop.transition.to}` },
+      brief.briefRef,
+    );
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err);
-    steps.push({ t: now.toISOString(), kind: 'dispatch', detail: `failed: ${reason}` });
-    await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
-    const attempts = await bumpAttempts(deps.gh, item.ref);
+    step('dispatch', `failed: ${reason}`);
+    await gate.mutate('claim', 'release after failure', () =>
+      releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
+    );
+    const attempts =
+      (await gate.mutate('label', 'bump attempts', () => bumpAttempts(deps.gh, item.ref))) ??
+      attempt;
     if (attempts >= (deps.maxAttempts ?? 3)) {
-      await deps.gh.addLabels(item.ref, ['looper:needs-human']);
-      await comment(
-        deps,
-        item.ref,
-        `🚨 looper: ${attempts} failed attempts — needs a human. Last error: ${reason}`,
+      await gate.mutate('label', 'add looper:needs-human', () =>
+        deps.gh.addLabels(item.ref, ['looper:needs-human']),
+      );
+      await gate.comment('escalation notice', () =>
+        deps.gh.createComment(
+          item.ref,
+          `🚨 looper: ${attempts} failed attempts — needs a human. Last error: ${reason}`,
+        ),
       );
       return record({ status: 'escalated', failure: { class: 'poisoned', reason } });
     }
@@ -281,14 +323,16 @@ async function ingestPhase(
   loop: LoopDefinition,
   item: IssueSnapshot,
   pending: { commentId: number; handle: DispatchHandle },
+  gate: EffectGate,
   steps: RunStep[],
+  step: (kind: RunStep['kind'], detail: string) => void,
   record: (outcome: RunRecord['outcome'], briefRef?: string) => RunRecord,
-  now: Date,
 ): Promise<RunRecord | null> {
+  void steps;
   const backend = deps.backends.get(pending.handle.backend);
   if (!backend) return null;
   const result = await backend.ingest(pending.handle);
-  steps.push({ t: now.toISOString(), kind: 'ingest', detail: result.status });
+  step('ingest', result.status);
 
   if (result.status === 'pending') return null; // check again next invocation
 
@@ -297,21 +341,25 @@ async function ingestPhase(
 
   if (result.status === 'failed') {
     if (marker) {
-      await deps.gh.updateComment(
-        item.ref,
-        pending.commentId,
-        markDispatchResolved(marker.body, `failed: ${result.reason}`),
+      await gate.mutate('comment', 'mark dispatch failed', () =>
+        deps.gh.updateComment(
+          item.ref,
+          pending.commentId,
+          markDispatchResolved(marker.body, `failed: ${result.reason}`),
+        ),
       );
     }
-    await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
-    const attempts = await bumpAttempts(deps.gh, item.ref);
+    await gate.mutate('claim', 'release after failure', () =>
+      releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
+    );
+    const attempts =
+      (await gate.mutate('label', 'bump attempts', () => bumpAttempts(deps.gh, item.ref))) ?? 1;
     if (attempts >= (deps.maxAttempts ?? 3)) {
-      await deps.gh.addLabels(item.ref, ['looper:needs-human']);
+      await gate.mutate('label', 'add looper:needs-human', () =>
+        deps.gh.addLabels(item.ref, ['looper:needs-human']),
+      );
     }
-    return record({
-      status: 'failed',
-      failure: { class: 'transient', reason: result.reason },
-    });
+    return record({ status: 'failed', failure: { class: 'transient', reason: result.reason } });
   }
 
   // Completed: advance to the loop's target state, link artifacts, release.
@@ -319,19 +367,24 @@ async function ingestPhase(
     ? `ingested PR #${result.pr.ref.number} (matched by ${result.matchedBy})`
     : `ingested result (matched by ${result.matchedBy})`;
   if (marker) {
-    await deps.gh.updateComment(
-      item.ref,
-      pending.commentId,
-      markDispatchResolved(marker.body, note),
+    await gate.mutate('comment', 'mark dispatch resolved', () =>
+      deps.gh.updateComment(item.ref, pending.commentId, markDispatchResolved(marker.body, note)),
     );
   }
-  await applyStateChange(deps, item, loop.transition.to);
+  await gate.mutate('label', `state -> ${loop.transition.to}`, () =>
+    applyStateChange(deps, item, loop.transition.to),
+  );
   if (result.pr) {
-    await deps.gh.addLabels(result.pr.ref, [stateLabel(loop.transition.to)]);
+    const pr = result.pr;
+    await gate.mutate('label', `label PR #${pr.ref.number} ${loop.transition.to}`, () =>
+      deps.gh.addLabels(pr.ref, [stateLabel(loop.transition.to)]),
+    );
   }
-  steps.push({ t: now.toISOString(), kind: 'write', detail: `state -> ${loop.transition.to}` });
-  await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
-  await clearAttempts(deps.gh, item.ref);
+  step('write', `state -> ${loop.transition.to}`);
+  await gate.mutate('claim', 'release', async () => {
+    await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
+    await clearAttempts(deps.gh, item.ref);
+  });
   return record({
     status: 'done',
     transition: `${loop.transition.from}->${loop.transition.to}`,
@@ -342,33 +395,33 @@ async function ingestPhase(
   });
 }
 
+/** One idempotent advisory comment per (loop, transition) in suggest mode. */
+async function suggestAdvisory(
+  deps: RunnerDeps,
+  loop: LoopDefinition,
+  item: IssueSnapshot,
+  gate: EffectGate,
+  action: string,
+): Promise<void> {
+  if (gate.mode !== 'suggest') return;
+  const marker = `looper-suggest:${loop.name}:${loop.transition.from}->${loop.transition.to}`;
+  await gate.comment(`suggest advisory (${marker})`, () =>
+    upsertMarkedComment(
+      deps.gh,
+      item.ref,
+      marker,
+      `💡 looper (\`${loop.name}\`, suggest mode) would ${action}.\n\n` +
+        `Promote with \`looper promote ${loop.name} --to act\` when ready.`,
+    ).then(() => {}),
+  );
+}
+
 async function applyStateChange(deps: RunnerDeps, item: IssueSnapshot, to: string): Promise<void> {
   const current = await deps.gh.getItemLabels(item.ref);
   const currentState = stateOfLabels(current);
   await deps.gh.addLabels(item.ref, [stateLabel(to)]);
   if (currentState && currentState !== to) {
     await deps.gh.removeLabel(item.ref, stateLabel(currentState));
-  }
-}
-
-async function comment(deps: RunnerDeps, ref: ItemRef, body: string): Promise<void> {
-  await deps.gh.createComment(ref, body);
-}
-
-/** One sticky dry-run comment per loop, updated in place (no sweep spam). */
-async function upsertDryRunComment(
-  deps: RunnerDeps,
-  loop: LoopDefinition,
-  ref: ItemRef,
-  body: string,
-): Promise<void> {
-  const marker = `<!-- looper:dry-run:${loop.name} -->`;
-  const full = `${body}\n\n${marker}`;
-  const existing = (await deps.gh.listComments(ref)).find((c) => c.body.includes(marker));
-  if (existing) {
-    if (existing.body !== full) await deps.gh.updateComment(ref, existing.id, full);
-  } else {
-    await deps.gh.createComment(ref, full);
   }
 }
 

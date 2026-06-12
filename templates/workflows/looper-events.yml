@@ -1,0 +1,47 @@
+# Looper event trigger — thin caller scaffolded by `looper init` (task 0008).
+# The `on:` types are PINNED to looper's canonical event/action matrix; new
+# GitHub actions are ignored until looper intentionally extends the matrix.
+# Logic lives in looper's versioned reusable workflow — update by bumping the
+# ref below, never by editing logic here.
+name: looper-events
+on:
+  issues:
+    types: [opened, edited, reopened, labeled, unlabeled]
+  issue_comment:
+    types: [created, edited]
+  pull_request:
+    types:
+      [
+        opened,
+        reopened,
+        synchronize,
+        ready_for_review,
+        converted_to_draft,
+        labeled,
+        unlabeled,
+        closed,
+      ]
+  pull_request_review:
+    types: [submitted, edited, dismissed]
+  check_run:
+    types: [completed, rerequested]
+  check_suite:
+    types: [completed]
+  status:
+  workflow_run:
+    workflows: ['ci'] # your required CI workflow name(s)
+    types: [completed]
+  label:
+    types: [created, edited, deleted]
+
+permissions:
+  contents: read
+  issues: write
+  pull-requests: write
+
+jobs:
+  looper:
+    # LOOPER_VERSION_REF: pinned by `looper init` to the installed CLI version.
+    uses: cmeyer90/looper/.github/workflows/reusable-events.yml@v0.1.0
+    with:
+      looper-version: 0.1.0

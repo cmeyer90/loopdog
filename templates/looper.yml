@@ -1,0 +1,46 @@
+# Looper root configuration — global defaults every loop inherits.
+# Each loop is its own folder under .looper/loops/<name>/ (loop.yml + prompt.md).
+# Reference: https://github.com/cmeyer90/looper docs/ (config reference).
+version: 1
+
+backends:
+  default: claude # claude | codex | self-hosted
+
+plan_store: .looper/plans
+
+sweep:
+  interval: '*/5 * * * *' # the reconcile-sweep cadence (resilience backstop)
+
+risk_tiers:
+  safe: ['docs/**', '**/*.test.*']
+  core: [] # e.g. ["src/auth/**", "migrations/**"] — always human-gated
+
+budgets:
+  window: monthly
+  global: { max_dispatches: 0, max_usd: 0 } # 0 = unlimited
+  per_loop: { max_dispatches: 0, max_usd: 0 }
+  on_exceeded: park
+
+kill_switch:
+  variable: LOOPER_KILL # repo Actions variable; set to any value to stop all loops
+  label: 'looper:stop' # or label an individual item to stop just that item
+
+quota:
+  window: monthly
+  on_exceeded: defer # defer to later sweeps; never burn past provider caps
+
+authorization:
+  actors: collaborators # who may trigger acting loops: anyone | org-members | collaborators | allowlist
+  on_unauthorized: park # park (needs-approval) | ignore | comment
+
+resilience:
+  retries: { max: 2, backoff: exponential, base: 30s, cap: 10m }
+  dispatch_timeout: 30m
+  max_attempts_per_item: 3
+
+adapter: auto # project adapter; auto = detect (node/python/generic)
+
+defaults:
+  blast_radius: { max_files: 20, max_diff: 400 }
+  mode: dry-run # SAFE BY DEFAULT: observe + explain only. Promote per loop
+  # with `looper promote <loop> --to act` once you trust it.

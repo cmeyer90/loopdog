@@ -42,7 +42,8 @@
     "directory": "packages/cli"
   },
   "scripts": {
-    "bundle": "tsup",
-    "prepack": "npm run bundle"
+    "bundle": "tsup && cp -R ../../templates dist/templates",
+    "prepack": "npm run bundle",
+    "postpack": "rm -rf dist && tsc -b"
   }
 }

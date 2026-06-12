@@ -18,11 +18,11 @@ table and in `milestones.md`.
 | 0003 | verified | task/0003-own-ci-pipeline | Looper's Own CI |
 | 0004 | implemented | task/0004-branch-protection-and-codeowners | Branch Protection & CODEOWNERS |
 | 0005 | verified | task/0005-release-and-versioning | Release & Versioning |
-| 0006 | planned | task/0006-config-schema-and-validation | Config Schema & Validation |
-| 0007 | planned | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding |
-| 0008 | planned | task/0008-event-driven-triggers | Event-Driven Triggers |
-| 0009 | planned | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults |
-| 0010 | planned | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select |
+| 0006 | verified | task/0006-config-schema-and-validation | Config Schema & Validation |
+| 0007 | verified | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding |
+| 0008 | verified | task/0008-event-driven-triggers | Event-Driven Triggers |
+| 0009 | verified | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults |
+| 0010 | implemented | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select |
 | 0011 | verified | task/0011-label-state-machine-spec | Label State Machine Spec |
 | 0012 | verified | task/0012-transition-runner | Stateless Transition Runner |
 | 0013 | verified | task/0013-atomic-claiming-and-serialization | Atomic Claiming & Serialization |
@@ -88,8 +88,8 @@ table and in `milestones.md`.
 | 0073 | planned | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) |
 | 0074 | planned | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
 | 0075 | planned | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
-| 0076 | planned | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
-| 0077 | planned | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
+| 0076 | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
+| 0077 | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
 | 0078 | planned | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) |
 | 0079 | planned | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) |
 | 0080 | planned | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |

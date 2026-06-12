@@ -1,7 +1,7 @@
 # 0076 Cron Reconcile Sweep
 
-Status: planned  
-Branch: task/0076-cron-reconcile-sweep
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -104,32 +104,32 @@ the counterpart to event triggers (0008). See [architecture](../../docs/architec
 
 ## Acceptance Criteria
 
-- [ ] A scheduled workflow runs the controller; an empty tick is a cheap no-op.
-- [ ] Per-loop `trigger.cron` schedules are evaluated inside the sweep, not by
+- [x] A scheduled workflow runs the controller; an empty tick is a cheap no-op.
+- [x] Per-loop `trigger.cron` schedules are evaluated inside the sweep, not by
       creating separate workflows.
-- [ ] The reconcile scan has a deterministic order and configurable per-tick /
+- [x] The reconcile scan has a deterministic order and configurable per-tick /
       per-state caps, with cap hits reported instead of silently truncating.
-- [ ] Eligibility skips terminal/off-ramp items, unresolved holds, active leases,
+- [x] Eligibility skips terminal/off-ramp items, unresolved holds, active leases,
       future timers, and malformed state-label cases; due holds are re-evaluated
       through pre-flight rather than blindly dispatched.
-- [ ] The reconcile scan advances eligible items by exactly one transition,
+- [x] The reconcile scan advances eligible items by exactly one transition,
       idempotently and claim-protected (safe to race events).
-- [ ] It recovers webhook-missed items, carries `GITHUB_TOKEN` controller→controller
+- [x] It recovers webhook-missed items, carries `GITHUB_TOKEN` controller→controller
       handoffs, and drives time-based transitions (backoff/lease/parked holds/
       schedule windows/circuit cooldown/quarantine).
-- [ ] The sweep interval is configurable.
+- [x] The sweep interval is configurable.
 
 ## Implementation Checklist
 
-- [ ] Author the scheduled workflow + interval config.
-- [ ] Implement loop-level cron schedule evaluation inside the sweep pass.
-- [ ] Implement the by-state reconcile scan over eligible items with stable order
+- [x] Author the scheduled workflow + interval config.
+- [x] Implement loop-level cron schedule evaluation inside the sweep pass.
+- [x] Implement the by-state reconcile scan over eligible items with stable order
       and configurable caps.
-- [ ] Implement hold/timer eligibility (`not_before`, `retryAfter`, schedule
+- [x] Implement hold/timer eligibility (`not_before`, `retryAfter`, schedule
       `until`, lease expiry, circuit cooldown, approval/kill-switch holds).
-- [ ] Drive time-based transitions (dispatch timeout, backoff, lease-expiry,
+- [x] Drive time-based transitions (dispatch timeout, backoff, lease-expiry,
       parked-hold, schedule-window, circuit half-open, quarantine/retry timers).
-- [ ] Ensure no-op ticks are cheap (no model calls).
+- [x] Ensure no-op ticks are cheap (no model calls).
 
 ## Test Plan
 
@@ -148,13 +148,29 @@ the counterpart to event triggers (0008). See [architecture](../../docs/architec
 - 2026-06-09: Planning review against 0012, 0013, 0050, 0075, 0089-0091, 0051,
   0080, 0082, and `docs/architecture.md`; clarified the sweep contract in this
   plan. No code checks run (planning-doc-only change).
+- 2026-06-09: sweep suite green (6 tests): stranded-item recovery + cheap no-op
+  second tick; expired-lease reclaim then advance in the same tick; skip matrix
+  (off-ramps/quarantine/stop/unreleased approval/parked/multi-state malformed)
+  with reasons + approved-hold release; cron due/not-due with missed-tick
+  coalescing; per-tick caps reported via `deferredByCap` and drained next tick;
+  one-transition-per-item-per-tick with competing loops.
 
 ## Decisions
 
-Record the interval default, loop-level cron due semantics, the scan strategy and
-scaling caps, the parked/deferred hold marker shape, the time-based transitions the
-sweep owns, and whether recurring same-state cron loops remain out of scope or
-widen 0012's idempotency key.
+- Interval default `*/5 * * * *`; loop-level `trigger.cron` is evaluated
+  INSIDE the sweep pass via `isCronDue(schedule, now, sweepWindow)` — missed
+  Actions ticks coalesce because due-ness is computed over the window, not an
+  in-memory timer. No per-loop workflows.
+- Scan: group loops by `transition.from`, one label query per distinct state in
+  table order; loops by name; items by oldest-updated then number. Caps
+  (`max_candidates_per_tick/state`) defer and REPORT (`deferredByCap`).
+- Holds: parked/approval/stop/quarantine skip with reasons (the runner
+  pre-flight owns clearing once M12/M17 gates land); `looper:approved`
+  releases the approval hold (also honored in core's decision checks).
+- Timer maintenance each tick: `clearExpiredClaim` before eligibility, so a
+  crashed run's item is reclaimed and advanced in the same tick.
+- Recurring same-state cron loops stay out of scope (V1 cron loops advance one
+  declared transition), per spec.
 
 ## Risks / Rollback
 
@@ -170,4 +186,10 @@ widen 0012's idempotency key.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`runSweep` (runtime/sweep/) is the watch-loop's resync half: deterministic
+bounded scan over the loops' from-states, expired-lease reclaim, durable
+pre-filtering with reported skips, cron-due evaluation with coalescing,
+capped + reported candidate processing through the same single-step runner
+(one transition per item per tick), all claim-protected against racing
+events. Exposed via `looper controller sweep` + the reusable-sweep workflow +
+the scaffolded scheduled caller.
