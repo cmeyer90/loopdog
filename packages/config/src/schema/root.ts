@@ -62,7 +62,15 @@ export const rootConfigSchema = z.object({
   backends: z
     .object({ default: z.enum(['claude', 'codex', 'self-hosted']).default('claude') })
     .default({}),
-  plan_store: z.string().default('.looper/plans'),
+  plan_store: z
+    .union([
+      z.string().transform((path) => ({ path, format_version: 1 })),
+      z.object({
+        path: z.string().default('.looper/plans'),
+        format_version: z.number().int().min(1).default(1),
+      }),
+    ])
+    .default({ path: '.looper/plans', format_version: 1 }),
   sweep: z
     .object({
       interval: z.string().default('*/5 * * * *'),

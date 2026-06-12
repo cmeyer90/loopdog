@@ -15,7 +15,7 @@ North-star architecture for the V1 roadmap:
 | 01 | Foundation | implemented | [Project Foundation & Open-Source Scaffolding](milestones/milestone-01-project-foundation-and-oss-scaffolding.md) |
 | 02 | Platform | implemented | [Attachment & Configuration Model](milestones/milestone-02-attachment-and-configuration-model.md) |
 | 03 | Platform | verified | [GitHub State-Machine Core](milestones/milestone-03-github-state-machine-core.md) |
-| 04 | Platform | planned | [Durable Planning Store](milestones/milestone-04-durable-planning-store.md) |
+| 04 | Platform | verified | [Durable Planning Store](milestones/milestone-04-durable-planning-store.md) |
 | 05 | Platform | planned | [Provider & Execution Backend Abstraction (Claude + Codex subscriptions)](milestones/milestone-05-model-provider-abstraction.md) |
 | 06 | Platform | planned | [Project Adapter System](milestones/milestone-06-project-adapter-system.md) |
 | 07 | Platform | planned | [Secrets & Identity (two-plane, subscription-native)](milestones/milestone-07-secrets-and-identity.md) |
@@ -66,10 +66,10 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0012 | Milestone 03: GitHub State-Machine Core | verified | task/0012-transition-runner | Stateless Transition Runner |
 | 0013 | Milestone 03: GitHub State-Machine Core | verified | task/0013-atomic-claiming-and-serialization | Atomic Claiming & Serialization |
 | 0014 | Milestone 03: GitHub State-Machine Core | verified | task/0014-dor-dod-contract-gates | DoR / DoD Contract Gates |
-| 0015 | Milestone 04: Durable Planning Store | planned | task/0015-portable-plan-format | Portable Plan Format |
-| 0016 | Milestone 04: Durable Planning Store | planned | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding |
-| 0017 | Milestone 04: Durable Planning Store | planned | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation |
-| 0018 | Milestone 04: Durable Planning Store | planned | task/0018-plan-index-maintenance | Plan Index Maintenance |
+| 0015 | Milestone 04: Durable Planning Store | verified | task/0015-portable-plan-format | Portable Plan Format |
+| 0016 | Milestone 04: Durable Planning Store | verified | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding |
+| 0017 | Milestone 04: Durable Planning Store | verified | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation |
+| 0018 | Milestone 04: Durable Planning Store | verified | task/0018-plan-index-maintenance | Plan Index Maintenance |
 | 0019 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0019-execution-backend-interface | Execution Backend Interface |
 | 0020 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0020-claude-subscription-backend | Claude Subscription Backend |
 | 0021 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0021-codex-subscription-backend | Codex Subscription Backend |

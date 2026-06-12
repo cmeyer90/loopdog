@@ -17,5 +17,6 @@ export {
 export type { PendingDispatch } from './pipeline/dispatch-marker.js';
 export { bumpAttempts, clearAttempts, parseAttempts } from './pipeline/attempts.js';
 export { EffectGate } from './pipeline/effect-gate.js';
+export { syncPlanAfterTransition } from './pipeline/plan-sync.js';
 export { TELEMETRY_BRANCH, TelemetryBranchStore } from './telemetry/record-store.js';
 export type { RunRecordStore } from './telemetry/record-store.js';

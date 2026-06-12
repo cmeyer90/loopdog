@@ -11,6 +11,7 @@ import type {
 import { STATE_LABEL_PREFIX, stateLabel } from '@looper/core';
 import { loadConfig, parseDuration } from '@looper/config';
 import { parseActionsEvent } from '@looper/github';
+import { RepoPlanStoreFiles, assertSupportedFormatVersion } from '@looper/plans';
 import type { RunnerDeps } from './transition-runner.js';
 import { runLoopOnce } from './transition-runner.js';
 import { matchLoopsForEvent } from '../triggers/match.js';
@@ -100,12 +101,22 @@ async function load(opts: ControllerOptions): Promise<{
     );
     throw new Error(`looper config invalid:\n${lines.join('\n')}`);
   }
+  const planStoreCfg = result.config.root.plan_store;
+  assertSupportedFormatVersion(planStoreCfg.format_version);
+  const meta = await opts.gh.getRepoMeta(opts.repo);
+  const planFiles = new RepoPlanStoreFiles(
+    opts.gh,
+    opts.repo,
+    meta.defaultBranch,
+    planStoreCfg.path,
+  );
   const deps: RunnerDeps = {
     gh: opts.gh,
     backends: opts.backends,
     records: opts.records,
     table: result.config.table,
     readPrompt: (loop: LoopDefinition) => readPromptFile(opts.repoDir, loop),
+    planFiles,
     ...(opts.botLogin ? { botLogin: opts.botLogin } : {}),
     ...(opts.now ? { now: opts.now } : {}),
     ...(opts.forceDryRun ? { forceDryRun: true } : {}),

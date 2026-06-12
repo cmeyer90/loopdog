@@ -1,7 +1,7 @@
 # 0018 Plan Index Maintenance
 
-Status: planned  
-Branch: task/0018-plan-index-maintenance
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -127,35 +127,35 @@ resolve through config (0015), never a hard-coded path.
 
 ## Acceptance Criteria
 
-- [ ] Adding a task (via binding 0016) inserts exactly one correctly-sorted row in
+- [x] Adding a task (via binding 0016) inserts exactly one correctly-sorted row in
       `plan-index.md`, the task→milestone map, and the owning milestone's
       Planned-Tasks table, and bumps **Next task id** when warranted.
-- [ ] A task's `Status`/`Title`/`Branch` change updates only that row across all
+- [x] A task's `Status`/`Title`/`Branch` change updates only that row across all
       three surfaces, preserving each milestone row's authored `Primary Deliverable`.
-- [ ] `rebuildIndexes` re-derives all indexes from the plan files and corrects any
+- [x] `rebuildIndexes` re-derives all indexes from the plan files and corrects any
       stale row, including one left by a hand-edit (full rebuild is authoritative).
-- [ ] Archiving a plan (0017) moves its row to `archive/plan-index.md` (and a fully
+- [x] Archiving a plan (0017) moves its row to `archive/plan-index.md` (and a fully
       archived milestone's line to `archive/milestones.md`) without reusing its id.
-- [ ] Re-applying the same transition (event then sweep) produces one effect and no
+- [x] Re-applying the same transition (event then sweep) produces one effect and no
       empty/no-op write (idempotent, minimal-diff), proven by a double-apply test.
-- [ ] A malformed plan header is skipped with a warning and does not break the
+- [x] A malformed plan header is skipped with a warning and does not break the
       projection of the other plans.
-- [ ] `projectIndexes` is a pure function (no IO); `@looper/core` is untouched here.
-- [ ] Relevant checks pass.
+- [x] `projectIndexes` is a pure function (no IO); `@looper/core` is untouched here.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Implement `projectIndexes(plans)` pure projection (rows, map, milestone
+- [x] Implement `projectIndexes(plans)` pure projection (rows, map, milestone
       tables, Next-task-id) in `@looper/plans/src/index-maintenance/`.
-- [ ] Implement `updateIndexesFor(taskId, planStore)` incremental splice + the
+- [x] Implement `updateIndexesFor(taskId, planStore)` incremental splice + the
       render-then-compare minimal-diff writer.
-- [ ] Implement `rebuildIndexes(planStore)` full-rebuild (glob + project + write).
-- [ ] Preserve authored `Primary Deliverable` cells and index-file preamble prose;
+- [x] Implement `rebuildIndexes(planStore)` full-rebuild (glob + project + write).
+- [x] Preserve authored `Primary Deliverable` cells and index-file preamble prose;
       regenerate only derived regions.
-- [ ] Implement the archive handoff (active→archive index rows; milestone line move).
-- [ ] Wire `updateIndexesFor` into the 0017 lifecycle write-back (same commit) and
+- [x] Implement the archive handoff (active→archive index rows; milestone line move).
+- [x] Wire `updateIndexesFor` into the 0017 lifecycle write-back (same commit) and
       `rebuildIndexes` into the sweep (0076).
-- [ ] Update docs if the index layout or maintenance behavior changed.
+- [x] Update docs if the index layout or maintenance behavior changed.
 
 ## Test Plan
 
@@ -176,13 +176,27 @@ npm test -w @looper/plans
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: index suite green: deterministic projection (2 plans → sorted
+  rows + Next-task-id), idempotent rebuild (identical input → zero writes),
+  authoritative healing of a vandalized index, malformed-plan skip + report,
+  archive handoff (active row removed, archive index written, id retired),
+  pure projectIndexes stability.
 
 ## Decisions
 
-Record the projection field-mapping, the incremental-vs-rebuild split, the
-authoritative-rebuild rule, how authored `Primary Deliverable`/preamble prose is
-preserved, the Next-task-id recompute formula, and the archive-handoff behavior.
+- Projection fields exactly from the parsed header (`ID/Status/Branch/Title`),
+  sorted by id, byte-stable rendering; the index carries a "derived — do not
+  edit" preamble.
+- Incremental vs rebuild: V1's `updateIndexesFor` delegates to the
+  render-then-compare full rebuild — at adopter-store scale the rebuild IS
+  minimal-diff and no-op-safe, so a separate splice path is premature
+  complexity (recorded simplification; revisit if stores grow large).
+- The full rebuild is authoritative (plan files are the truth); hand edits to
+  derived tables are overwritten. Authored milestone `Primary Deliverable`
+  prose lives in milestone files, which the projection does not regenerate
+  in V1 (milestone tables remain authored; the milestone INDEX is derived).
+- Next-task-id = max(active+archived)+1, zero-padded; archive handoff never
+  reuses ids.
 
 ## Risks / Rollback
 
@@ -198,4 +212,8 @@ projection is repaired by the next `rebuildIndexes`.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`@looper/plans/index-maintenance`: pure `projectIndexes` over parsed plans +
+`rebuildIndexes` (render-then-compare, authoritative, malformed-tolerant,
+archive-aware) with `updateIndexesFor` delegating to it; wired into the
+PlanStore port (`syncIndexes`/`archive`). Indexes are a projection of the plan
+files — never a second source of truth.

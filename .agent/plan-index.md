@@ -27,10 +27,10 @@ table and in `milestones.md`.
 | 0012 | verified | task/0012-transition-runner | Stateless Transition Runner |
 | 0013 | verified | task/0013-atomic-claiming-and-serialization | Atomic Claiming & Serialization |
 | 0014 | verified | task/0014-dor-dod-contract-gates | DoR / DoD Contract Gates |
-| 0015 | planned | task/0015-portable-plan-format | Portable Plan Format |
-| 0016 | planned | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding |
-| 0017 | planned | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation |
-| 0018 | planned | task/0018-plan-index-maintenance | Plan Index Maintenance |
+| 0015 | verified | task/0015-portable-plan-format | Portable Plan Format |
+| 0016 | verified | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding |
+| 0017 | verified | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation |
+| 0018 | verified | task/0018-plan-index-maintenance | Plan Index Maintenance |
 | 0019 | planned | task/0019-execution-backend-interface | Execution Backend Interface |
 | 0020 | planned | task/0020-claude-subscription-backend | Claude Subscription Backend |
 | 0021 | planned | task/0021-codex-subscription-backend | Codex Subscription Backend |

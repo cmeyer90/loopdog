@@ -1,7 +1,7 @@
 # 0015 Portable Plan Format
 
-Status: planned  
-Branch: task/0015-portable-plan-format
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -81,7 +81,7 @@ prose). Two parseable blocks, each an HTML comment fence so they render invisibl
 - `Status:` line — the canonical task status (one of PLANS.md status values); the
   binding loop (0016) mirrors it to the issue label and back.
 - `<!-- looper:acceptance-criteria -->` … `<!-- /looper:acceptance-criteria -->` — the
-  contract block of `- [ ] test: …` / `- [ ] manual: …` items (grooming writes it,
+  contract block of `- [x] test: …` / `- [x] manual: …` items (grooming writes it,
   review checks every item; see architecture "plan-as-contract").
 
 **Parser/serializer**: `parsePlan(md) -> PlanDoc` and `serializePlan(PlanDoc) -> md`,
@@ -106,27 +106,27 @@ missing a marker block → treat as empty block, never crash.
 
 ## Acceptance Criteria
 
-- [ ] The store layout is documented and created from templates at a configurable
+- [x] The store layout is documented and created from templates at a configurable
       root, defaulting to `.looper/plans/`.
-- [ ] `templates/plans/task.md` and `templates/plans/milestone.md` ship in
+- [x] `templates/plans/task.md` and `templates/plans/milestone.md` ship in
       `@looper/plans` with exactly the required section set (matches PLANS.md).
-- [ ] `plan_store.{path,format_version}` exist in the `looper.yml` schema and
+- [x] `plan_store.{path,format_version}` exist in the `looper.yml` schema and
       validate; every reader resolves paths through config, never a hard-coded path.
-- [ ] `parsePlan`/`serializePlan` round-trips a plan file byte-for-byte (no marker or
+- [x] `parsePlan`/`serializePlan` round-trips a plan file byte-for-byte (no marker or
       prose loss), proven by a golden round-trip test.
-- [ ] `setStatus` and `checkCriterion` each mutate only their block and
+- [x] `setStatus` and `checkCriterion` each mutate only their block and
       re-serialize losslessly.
-- [ ] A `format_version` newer than the controller is refused with a clear message.
-- [ ] Relevant checks pass.
+- [x] A `format_version` newer than the controller is refused with a clear message.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add `plan_store` keys to the `@looper/config` schema + defaults.
-- [ ] Add `templates/plans/{task,milestone}.md` assets to `@looper/plans`.
-- [ ] Implement `parsePlan`/`serializePlan` + `PlanDoc` in `@looper/plans/format`.
-- [ ] Implement `setStatus`/`checkCriterion`/`updateSection` mutators.
-- [ ] Implement the `format_version` stamp + refuse-on-newer guard.
-- [ ] Document the layout in M04 and (briefly) in docs/architecture's plan-store note.
+- [x] Add `plan_store` keys to the `@looper/config` schema + defaults.
+- [x] Add `templates/plans/{task,milestone}.md` assets to `@looper/plans`.
+- [x] Implement `parsePlan`/`serializePlan` + `PlanDoc` in `@looper/plans/format`.
+- [x] Implement `setStatus`/`checkCriterion`/`updateSection` mutators.
+- [x] Implement the `format_version` stamp + refuse-on-newer guard.
+- [x] Document the layout in M04 and (briefly) in docs/architecture's plan-store note.
 
 ## Test Plan
 
@@ -142,12 +142,30 @@ npm test -w @looper/config    # plan_store schema validation
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: format suite green (6 tests): byte-for-byte round-trip (task +
+  milestone), header/section parsing, single-block mutators (setStatus,
+  checkItem, appendToSection, setHeaderField), template-asset drift guard,
+  refuse-on-newer format_version.
+- 2026-06-09: `plan_store` schema (path + format_version, string shorthand
+  accepted) validated by the config suite; the controller asserts the version
+  before any plan IO.
 
 ## Decisions
 
-Record the final store layout, the chosen marker-block syntax, the `PlanDoc` shape, and
-the `format_version` policy.
+- Store layout exactly as specced under `plan_store.path` (default
+  `.looper/plans/`): tasks/, milestones/, archive/{tasks,milestones}/, the two
+  index files + archive indexes. Run records stay on `looper/telemetry` (0053).
+- Marker blocks: the `Status:` header line + the shared
+  `<!-- looper:acceptance-criteria -->` fence (parser lives in core 0014 and is
+  reused verbatim — one parser, no drift).
+- `PlanDoc` = {kind, id, title, status, headerLines (raw), sections (ordered,
+  raw bodies)} — deliberately line-preserving rather than AST-based, so
+  serialize(parse(x)) === x and machine edits are diff-minimal.
+- Templates are EMBEDDED as code (the bundled CLI must carry them) with
+  `packages/plans/templates/*.md` as the reviewable assets and a drift-guard
+  test asserting byte equality.
+- `format_version: 1`; newer-than-supported refuses with upgrade guidance
+  (fail closed, no partial parse).
 
 ## Risks / Rollback
 
@@ -159,4 +177,8 @@ unreleased `@looper/plans/format` module; no adopter data exists pre-release.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`@looper/plans/format`: the portable plan shape (this repo's own `.agent/`
+section set, parameterized), a lossless line-preserving parser/serializer with
+single-block mutators, embedded+asset templates with a drift guard, the store
+layout constants, and the format_version gate. `plan_store.{path,format_version}`
+ship in the config schema with a string shorthand.

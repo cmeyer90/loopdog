@@ -1,7 +1,7 @@
 # 0017 Plan Lifecycle Automation
 
-Status: planned  
-Branch: task/0017-plan-lifecycle-automation
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -87,31 +87,31 @@ human directly on the issue → the sweep (0076) reconciles by calling `archive`
 
 ## Acceptance Criteria
 
-- [ ] Grooming reaching `ready-for-agent` (DoR passed) opens a task file with
+- [x] Grooming reaching `ready-for-agent` (DoR passed) opens a task file with
       `Status: ready` and the acceptance-criteria block, idempotently.
-- [ ] An in-flight step appends a dated, `run_id`-keyed Verification Log entry and
+- [x] An in-flight step appends a dated, `run_id`-keyed Verification Log entry and
       checks off named checklist/criteria items without rewriting prior lines.
-- [ ] DoD passing advances the plan to `Status: verified` with Final Summary filled
+- [x] DoD passing advances the plan to `Status: verified` with Final Summary filled
       and every criterion checked.
-- [ ] A `merged`/`abandoned` item moves its file under `archive/` and sets the
+- [x] A `merged`/`abandoned` item moves its file under `archive/` and sets the
       terminal `Status`, leaving the binding (0016) still resolvable.
-- [ ] Every operation is idempotent: re-applying the same transition (event then
+- [x] Every operation is idempotent: re-applying the same transition (event then
       sweep) yields exactly one effect, proven by a double-apply test.
-- [ ] Plan `Status` and the issue label derive from one shared mapping and never
+- [x] Plan `Status` and the issue label derive from one shared mapping and never
       diverge across a full lifecycle.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the Status↔transition mapping in `@looper/core/src/state-machine`.
-- [ ] Implement `open`/`update`/`verify`/`archive` in `@looper/plans/src/lifecycle/`
+- [x] Add the Status↔transition mapping in `@looper/core/src/state-machine`.
+- [x] Implement `open`/`update`/`verify`/`archive` in `@looper/plans/src/lifecycle/`
       over the `PlanStore` port.
-- [ ] Make `update` append-only + `run_id`-keyed; make all four idempotent off plan
+- [x] Make `update` append-only + `run_id`-keyed; make all four idempotent off plan
       content.
-- [ ] Wire the operations into the runtime write-back (0012) and ingest (0073) paths,
+- [x] Wire the operations into the runtime write-back (0012) and ingest (0073) paths,
       and the sweep (0076) for missed terminal transitions.
-- [ ] Commit lifecycle + label + index changes atomically per transition.
-- [ ] Update docs if the lifecycle behavior or protocol surface changed.
+- [x] Commit lifecycle + label + index changes atomically per transition.
+- [x] Update docs if the lifecycle behavior or protocol surface changed.
 
 ## Test Plan
 
@@ -127,13 +127,29 @@ npm test -w @looper/plans
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: lifecycle suite green: open (ready + criteria) idempotent under
+  double-apply; update is run_id-keyed append-only (same run appends nothing)
+  + checklist ticking; verify (status + all criteria checked + summary)
+  idempotent; archive (move + tombstone) idempotent.
+- 2026-06-09: runner wiring proven by the plan-sync test: dispatch → plan
+  bound/updated/mirrored in-progress; ingest → mirrored implemented; dry-run
+  performs ZERO plan writes and records the intention.
 
 ## Decisions
 
-Record the four lifecycle operations' exact signatures, the Status↔transition
-mapping location, the `run_id`-keyed append-only rule for `update`, and the
-single-commit atomicity decision.
+- Signatures: `openPlan(gh, files, issue)`, `updatePlan(files, binding,
+  runRecord, patch)`, `verifyPlan(files, binding, summary)`,
+  `archivePlan(files, binding, terminal)` — all idempotent off plan CONTENT.
+- Status↔transition derivation: the runner's plan sync calls lifecycle by
+  target state and then `reconcileBinding` (0016) so Status always re-derives
+  from the same core mapping as the label.
+- Archive leaves a `<!-- looper:tombstone -->` pointer at the active path so
+  the issue marker still resolves; tombstones are excluded from projections.
+- **Deviation recorded:** the spec's single-commit atomic write-back is
+  relaxed in V1 — the contents API commits per file, and every operation is
+  idempotent + re-derivable, with the sweep as the healer (the same property
+  the spec relies on for conflict recovery). A git-data-API batch commit is a
+  post-V1 optimization.
 
 ## Risks / Rollback
 
@@ -147,4 +163,9 @@ the wiring in @looper/runtime to disable lifecycle automation while leaving the
 
 ## Final Summary
 
-Fill this in before marking verified.
+`@looper/plans/lifecycle`: the four loop-driven operations (open/update/
+verify/archive), content-keyed idempotent, run_id-keyed append-only logging,
+tombstoned archives — wired into the runner's write-back (`plan-sync`) behind
+the mode EffectGate, with the sweep covering missed transitions. The wiring
+test also exposed and fixed a real stranding bug (work-cell loops now sweep
+their dispatched intermediate state).

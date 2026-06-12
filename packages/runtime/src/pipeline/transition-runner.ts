@@ -30,6 +30,8 @@ import {
   renderDispatchMarker,
 } from './dispatch-marker.js';
 import { EffectGate } from './effect-gate.js';
+import { syncPlanAfterTransition } from './plan-sync.js';
+import type { RepoPlanStoreFiles } from '@looper/plans';
 import type { RunRecordStore } from '../telemetry/record-store.js';
 
 /**
@@ -66,6 +68,8 @@ export interface RunnerDeps {
   claimNonce?: () => string;
   /** Forces dry-run for this invocation; can only tighten, never loosen (0009). */
   forceDryRun?: boolean;
+  /** Durable plan store files (M04); absent = plan upkeep skipped. */
+  planFiles?: RepoPlanStoreFiles;
 }
 
 export async function runLoopOnce(
@@ -104,8 +108,31 @@ async function selectItems(
   if (trigger.kind === 'event' && trigger.item) {
     return [await deps.gh.getIssue(trigger.item)];
   }
-  // Cron sweep (or item-less event): scan the loop's from-state.
-  return deps.gh.listIssuesByLabel(repo, stateLabel(loop.transition.from));
+  // Cron sweep (or item-less event): scan every state this loop drives.
+  const items: IssueSnapshot[] = [];
+  for (const state of scanStates(loop, deps.table)) {
+    items.push(...(await deps.gh.listIssuesByLabel(repo, stateLabel(state))));
+  }
+  return items;
+}
+
+/**
+ * The states a loop's sweep scan covers: its from-state, plus the canonical
+ * dispatched intermediate (`in-progress`) for work-cell loops that span it —
+ * otherwise a dispatched item would be invisible to the sweep and stranded
+ * until an event arrived (a real bug the plan-sync test caught).
+ */
+export function scanStates(loop: LoopDefinition, table: TransitionTable): string[] {
+  const states = [loop.transition.from];
+  if (
+    loop.expects &&
+    loop.transition.from !== 'in-progress' &&
+    loop.transition.to !== 'in-progress' &&
+    table.edges.some((e) => e.from === loop.transition.from && e.to === 'in-progress')
+  ) {
+    states.push('in-progress');
+  }
+  return states;
 }
 
 async function processItem(
@@ -235,6 +262,19 @@ async function processItem(
         await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
         await clearAttempts(deps.gh, item.ref);
       });
+      const done = record({
+        status: 'done',
+        transition: `${loop.transition.from}->${loop.transition.to}`,
+      });
+      await syncPlanAfterTransition(
+        deps.gh,
+        deps.planFiles,
+        gate,
+        item,
+        loop.transition.to,
+        done,
+        now,
+      );
       await suggestAdvisory(
         deps,
         loop,
@@ -242,10 +282,7 @@ async function processItem(
         gate,
         `advance \`${loop.transition.from}\` → \`${loop.transition.to}\``,
       );
-      return record({
-        status: 'done',
-        transition: `${loop.transition.from}->${loop.transition.to}`,
-      });
+      return done;
     }
 
     // Work-cell transition: compose → dispatch → persist handle → (maybe) mark
@@ -275,12 +312,23 @@ async function processItem(
         );
         step('write', 'state -> in-progress (dispatched)');
       }
-      return record(
+      const pendingRecord = record(
         { status: 'pending', artifacts: sessionArtifact(handle.signal) },
         brief.briefRef,
       );
+      await syncPlanAfterTransition(
+        deps.gh,
+        deps.planFiles,
+        gate,
+        item,
+        'in-progress',
+        pendingRecord,
+        now,
+      );
+      return pendingRecord;
     }
     // Dispatch blocked by mode: preview only.
+    gate.note('plan', 'would bind issue to a durable plan and update it through the lifecycle');
     await suggestAdvisory(
       deps,
       loop,
@@ -385,7 +433,7 @@ async function ingestPhase(
     await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
     await clearAttempts(deps.gh, item.ref);
   });
-  return record({
+  const done = record({
     status: 'done',
     transition: `${loop.transition.from}->${loop.transition.to}`,
     artifacts: {
@@ -393,6 +441,17 @@ async function ingestPhase(
       ...sessionArtifact(pending.handle.signal),
     },
   });
+  const ingestNow = new Date();
+  await syncPlanAfterTransition(
+    deps.gh,
+    deps.planFiles,
+    gate,
+    item,
+    loop.transition.to,
+    done,
+    ingestNow,
+  );
+  return done;
 }
 
 /** One idempotent advisory comment per (loop, transition) in suggest mode. */

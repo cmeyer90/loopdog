@@ -3,7 +3,7 @@ import { OFF_RAMP_LABELS, STATE_LABEL_PREFIX, stateLabel } from '@looper/core';
 import { isCronDue } from '@looper/config';
 import { clearExpiredClaim } from '@looper/github';
 import type { RunnerDeps } from '../pipeline/transition-runner.js';
-import { runLoopOnItem } from '../pipeline/transition-runner.js';
+import { runLoopOnItem, scanStates } from '../pipeline/transition-runner.js';
 
 /**
  * The cron reconcile sweep (task 0076): the resilience half of the
@@ -48,12 +48,15 @@ export async function runSweep(
     records: [],
   };
 
-  // Group loops by from-state; scan each distinct state once, in table order.
+  // Group loops by every state they drive (from-state + the dispatched
+  // intermediate for work-cell loops); scan each distinct state once.
   const byState = new Map<string, LoopDefinition[]>();
   for (const loop of loops) {
-    const list = byState.get(loop.transition.from) ?? [];
-    list.push(loop);
-    byState.set(loop.transition.from, list);
+    for (const state of scanStates(loop, deps.table)) {
+      const list = byState.get(state) ?? [];
+      if (!list.includes(loop)) list.push(loop);
+      byState.set(state, list);
+    }
   }
   const stateOrder = [...deps.table.states.filter((s) => byState.has(s))];
 

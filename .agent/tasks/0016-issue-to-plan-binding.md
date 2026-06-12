@@ -1,7 +1,7 @@
 # 0016 Issue ↔ Plan Binding
 
-Status: planned  
-Branch: task/0016-issue-to-plan-binding
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -113,34 +113,34 @@ logged; epic with no children yet → milestone created, empty task table.
 
 ## Acceptance Criteria
 
-- [ ] Binding an unbound issue creates the linked task (and a milestone for an
+- [x] Binding an unbound issue creates the linked task (and a milestone for an
       epic) from the 0015 templates in the configured store path, with `Status:
       planned` and the acceptance-criteria block carried over.
-- [ ] The issue carries a `<!-- looper:plan … -->` marker and the task file carries
+- [x] The issue carries a `<!-- looper:plan … -->` marker and the task file carries
       an `Issue:` field; each side resolves the other deterministically.
-- [ ] `statusForLabel` / `labelsForStatus` are total over lifecycle + terminal
+- [x] `statusForLabel` / `labelsForStatus` are total over lifecycle + terminal
       labels and the 0094 `Status` enum, with the documented mapping; operational
       hold labels do not rewrite plan `Status`.
-- [ ] `reconcileBinding` repairs drift by making the plan `Status` match the live
+- [x] `reconcileBinding` repairs drift by making the plan `Status` match the live
       label (label authoritative) and logs the change; it is a no-op when they
       already agree.
-- [ ] Re-binding an already-bound issue updates in place and never duplicates a
+- [x] Re-binding an already-bound issue updates in place and never duplicates a
       plan file or marker (idempotent under event + sweep invocation).
-- [ ] `@looper/core` stays IO-free (mapping + types only; writes go through
+- [x] `@looper/core` stays IO-free (mapping + types only; writes go through
       `PlanStore`/`GitHubPort`).
 
 ## Implementation Checklist
 
-- [ ] Add the label↔Status mapping table + `statusForLabel`/`labelsForStatus` in
+- [x] Add the label↔Status mapping table + `statusForLabel`/`labelsForStatus` in
       `@looper/core`.
-- [ ] Implement `bindIssue` (id alloc via 0015, template render, marker + `Issue:`
+- [x] Implement `bindIssue` (id alloc via 0015, template render, marker + `Issue:`
       field, epic→milestone) in `@looper/plans`.
-- [ ] Implement `resolveBinding`/`resolvePlan` (marker → slug fallback → `Issue:`).
-- [ ] Implement `reconcileBinding` (drift detect, label-wins rewrite, Verification
+- [x] Implement `resolveBinding`/`resolvePlan` (marker → slug fallback → `Issue:`).
+- [x] Implement `reconcileBinding` (drift detect, label-wins rewrite, Verification
       Log note, no-op guard).
-- [ ] Wire the bind + reconcile step into the `@looper/runtime` pipeline so a
+- [x] Wire the bind + reconcile step into the `@looper/runtime` pipeline so a
       transition keeps label and `Status` in sync.
-- [ ] Update docs if the marker format or store-path config changed.
+- [x] Update docs if the marker format or store-path config changed.
 
 ## Test Plan
 
@@ -159,13 +159,26 @@ npm test -w @looper/core   # mapping totality + table
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: binding suite green: bind-once (file + marker + Issue: field,
+  criteria carried verbatim), idempotent re-bind (no duplicate file/marker),
+  marker→scan fallback resolution, drift reconcile (label authoritative,
+  logged, no-op when equal).
+- 2026-06-09: runner integration (plan-sync test): the marker lands on the
+  issue and Status mirrors in-progress → implemented across dispatch/ingest.
 
 ## Decisions
 
-Record the marker format, the label↔Status mapping (and the deploy/blocked
-collapses), the "label is authoritative on drift" rule, and the id-allocation
-source (0015).
+- Marker format as specced: `<!-- looper:plan task=NNNN path=… -->` on the
+  issue; `Issue: #N` header field on the task file; slug fallback scan via the
+  Issue: field for hand-stripped markers.
+- The label↔Status mapping lives in core (`state-machine/status-mirror.ts`),
+  exactly the specced table (deploy sub-states collapse to merged; off-ramps +
+  quarantine collapse to blocked; off-ramp wins over lifecycle state).
+  Operational holds never rewrite Status.
+- Drift resolution: the LABEL wins, always, with a logged Verification-Log
+  note — GitHub is the control plane.
+- Id allocation: max(active, archived) + 1 from the store scan (ids never
+  reused); marker-present-but-file-deleted regenerates at the same id.
 
 ## Risks / Rollback
 
@@ -180,4 +193,8 @@ plans.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`@looper/plans/binding`: bindIssue (idempotent generator from the 0015
+template with criteria carried verbatim), two-way deterministic resolution
+(marker → Issue:-field scan), and reconcileBinding (label-authoritative drift
+repair with logging) over the core status-mirror table. Wired into the runner
+so every transition keeps the pair in lockstep.

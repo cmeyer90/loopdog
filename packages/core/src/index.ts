@@ -86,6 +86,7 @@ export {
   validateLoopTransition,
 } from './state-machine/transition-table.js';
 export { planLabelReconciliation } from './state-machine/label-plan.js';
+export { labelsForStatus, statusForLabel, statusForLabels } from './state-machine/status-mirror.js';
 
 // transitions
 export type {
