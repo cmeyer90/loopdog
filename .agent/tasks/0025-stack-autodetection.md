@@ -1,7 +1,7 @@
 # 0025 Stack Auto-Detection
 
-Status: planned  
-Branch: task/0025-stack-autodetection
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -97,29 +97,29 @@ swallowed into `evidence` not thrown; conflicting strong signals (Node + Python)
 
 ## Acceptance Criteria
 
-- [ ] `detectStack` returns a ranked `DetectionMatch[]` with confidence + evidence
+- [x] `detectStack` returns a ranked `DetectionMatch[]` with confidence + evidence
       for a Node repo, a Python repo, and a mixed repo (both ranked).
-- [ ] A repo with no recognized markers selects the generic adapter (0026), never
+- [x] A repo with no recognized markers selects the generic adapter (0026), never
       throws, and the evidence explains why.
-- [ ] An explicit `adapter:` in `looper.yml` is honored verbatim; detection still
+- [x] An explicit `adapter:` in `looper.yml` is honored verbatim; detection still
       runs and is attached as advisory, never overriding the explicit choice.
-- [ ] Sub-toolchain hints are resolved (e.g. `pnpm-lock.yaml` → `packageManager: pnpm`).
-- [ ] Selection is deterministic: same snapshot → same result, ties broken by the
+- [x] Sub-toolchain hints are resolved (e.g. `pnpm-lock.yaml` → `packageManager: pnpm`).
+- [x] Selection is deterministic: same snapshot → same result, ties broken by the
       fixed priority order regardless of file ordering.
-- [ ] Detection is pure over the injected `RepoFs` (no real `fs`), proven by tests
+- [x] Detection is pure over the injected `RepoFs` (no real `fs`), proven by tests
       using the M18 fakes.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Consume `RepoFs` (declared in `@looper/core` per 0024), define `DetectionMatch`,
+- [x] Consume `RepoFs` (declared in `@looper/core` per 0024), define `DetectionMatch`,
       and provide a `RepoFs` impl backed by the GitHub port / local FS (thin, kept
       out of the pure `detect` core).
-- [ ] Implement per-adapter declarative signal sets for `node` and `python` (0027).
-- [ ] Implement `detectStack` scoring + deterministic tie-break + `chooseAdapter`
+- [x] Implement per-adapter declarative signal sets for `node` and `python` (0027).
+- [x] Implement `detectStack` scoring + deterministic tie-break + `chooseAdapter`
       selection with the confidence floor and generic fallback.
-- [ ] Add `adapter` / `adapters.detect.*` keys to the `@looper/config` schema.
-- [ ] Surface the detection result for `looper init`/`status` (M16).
+- [x] Add `adapter` / `adapters.detect.*` keys to the `@looper/config` schema.
+- [x] Surface the detection result for `looper init`/`status` (M16).
 
 ## Test Plan
 
@@ -134,12 +134,24 @@ snapshot fakes — no real filesystem, no quota.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: adapters suite green (149 tests repo-wide): all three adapters
+  pass the seven-clause conformance kit; detection ranking/floor/override/
+  disable behaviors proven; command-precedence and shell-vs-exec semantics
+  proven.
 
 ## Decisions
 
-Record the signal weights + confidence-floor default, the fixed adapter priority
-order used for tie-breaking, and the exact config keys.
+- `detectStack(repo, adapters, {disable})` is pure over the injected RepoFs;
+  each adapter owns its signal set inside `detect()` (manifest markers,
+  lockfiles → toolchain, weighted confidence) rather than a central rule table
+  — the registry stays the single list to extend.
+- Ranking: confidence desc; exact ties break on the fixed priority order
+  [node, python, generic] (never file-walk order).
+- `chooseAdapter`: explicit `adapter:` config wins (detection attached as
+  advisory); else top match >= floor (default 0.5,
+  `adapter_options.detect.confidence_floor`); else generic. Never throws.
+- Monorepo multi-match: all matches returned + surfaced; path-scoping is
+  explicitly deferred (per spec out-of-scope).
 
 ## Risks / Rollback
 
@@ -151,4 +163,7 @@ evidence so an adopter can correct it during `looper init`. Rollback is config-o
 
 ## Final Summary
 
-Fill this in before marking verified.
+Auto-detection ranks adapter signals deterministically with evidence,
+honors explicit overrides and per-adapter disabling, and falls back to the
+generic adapter below the confidence floor — no repo is unsupported, nothing
+throws.

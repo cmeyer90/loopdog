@@ -1,7 +1,7 @@
 # 0024 Adapter Interface
 
-Status: planned  
-Branch: task/0024-adapter-interface
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -135,32 +135,32 @@ IO-free per the one-way dependency rule.
 
 ## Acceptance Criteria
 
-- [ ] `ProjectAdapter` exists as real TS in `@looper/core`, importable by
+- [x] `ProjectAdapter` exists as real TS in `@looper/core`, importable by
       `@looper/adapters` and `@looper/runtime`.
-- [ ] Every lifecycle method (`build/test/lint/run/deploy`) returns a normalized
+- [x] Every lifecycle method (`build/test/lint/run/deploy`) returns a normalized
       `CommandResult` (`{ ok, output, durationMs, ... }`); none throw on a
       missing/unsupported phase (returns `skipped: true` instead).
-- [ ] `detect()` returns a `DetectResult` with a comparable `confidence`, enabling
+- [x] `detect()` returns a `DetectResult` with a comparable `confidence`, enabling
       selection (0025).
-- [ ] `capabilities()` and `describe()` expose which phases exist + their literal
+- [x] `capabilities()` and `describe()` expose which phases exist + their literal
       commands (consumable by the brief composer, M03 0012).
-- [ ] Adapters never spawn processes directly — they exec via the injected
+- [x] Adapters never spawn processes directly — they exec via the injected
       `CommandRunner`; `@looper/core` imports no IO module.
-- [ ] A trivial in-package fake adapter conforms to the interface and drives all six
+- [x] A trivial in-package fake adapter conforms to the interface and drives all six
       methods (proof the contract is implementable).
 
 ## Implementation Checklist
 
-- [ ] Define `CommandResult`, `CommandContext`, `CommandRunner`, `RepoFs`, `DetectResult`,
+- [x] Define `CommandResult`, `CommandContext`, `CommandRunner`, `RepoFs`, `DetectResult`,
       `AdapterCapabilities`, `AdapterDescription` in `@looper/core/src/ports/`.
-- [ ] Define the `ProjectAdapter` interface alongside them; export via the `core`
+- [x] Define the `ProjectAdapter` interface alongside them; export via the `core`
       barrel.
-- [ ] Add the adapter registry shape (fixed array) skeleton in `@looper/adapters`.
-- [ ] Specify the skipped/failed/passed result semantics in code comments + this
+- [x] Add the adapter registry shape (fixed array) skeleton in `@looper/adapters`.
+- [x] Specify the skipped/failed/passed result semantics in code comments + this
       file's Decisions.
-- [ ] Add a minimal fake adapter under `@looper/testing` for the conformance kit
+- [x] Add a minimal fake adapter under `@looper/testing` for the conformance kit
       (0028) to build on.
-- [ ] Confirm consumers (0025/0026/0027 stubs, 0012 brief composer) type-check
+- [x] Confirm consumers (0025/0026/0027 stubs, 0012 brief composer) type-check
       against the interface.
 
 ## Test Plan
@@ -178,12 +178,25 @@ quota, no child processes):
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: adapters suite green (149 tests repo-wide): all three adapters
+  pass the seven-clause conformance kit; detection ranking/floor/override/
+  disable behaviors proven; command-precedence and shell-vs-exec semantics
+  proven.
 
 ## Decisions
 
-Record the exact `ProjectAdapter` signatures, the `CommandResult` field set, the
-`CommandRunner` injection boundary, and the skipped-vs-failed semantics.
+- Final shapes exactly as drafted in the spec, in
+  `core/ports/project-adapter.ts`: `ProjectAdapter` (name, detect,
+  capabilities, five phase methods, describe), `CommandResult`
+  ({ok,output,durationMs,exitCode?,skipped?}), `CommandContext` (workdir, env,
+  injected CommandRunner, AbortSignal), `RepoFs` (exists/read/list, async).
+- DetectResult carries `evidence: string[]` + optional `toolchain` (the 0025
+  shape) instead of a single `reason` string — strictly richer, one shape for
+  both tasks (recorded reconciliation of the two specs' RepoFs/DetectResult
+  variants: the async port version governs).
+- `skippedResult(phase)` ships in core as the uniform no-op answer.
+- The CommandRunner injection point keeps core IO-free and adapters spawn-free
+  (conformance clause 5 enforces it).
 
 ## Risks / Rollback
 
@@ -196,4 +209,7 @@ Rollback is low-cost while only the interface + a fake exist (no behavior shippe
 
 ## Final Summary
 
-Fill this in before marking verified.
+The ProjectAdapter contract is frozen in core exactly per spec: six
+lifecycle methods over an injected CommandRunner, honest capabilities,
+normalized results, a read-only RepoFs detect, and describe() feeding briefs/
+CI. Exercised by three implementations + the conformance kit.

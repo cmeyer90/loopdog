@@ -36,11 +36,11 @@ table and in `milestones.md`.
 | 0021 | verified | task/0021-codex-subscription-backend | Codex Subscription Backend |
 | 0022 | verified | task/0022-prompt-and-policy-artifacts | Prompt & Policy Artifacts |
 | 0023 | verified | task/0023-backend-selection-and-subscription-auth | Backend Selection & Subscription Auth |
-| 0024 | planned | task/0024-adapter-interface | Adapter Interface |
-| 0025 | planned | task/0025-stack-autodetection | Stack Auto-Detection |
-| 0026 | planned | task/0026-generic-command-adapter | Generic Command Adapter |
-| 0027 | planned | task/0027-bundled-adapters | Bundled Adapters |
-| 0028 | planned | task/0028-adapter-authoring-guide-and-testkit | Adapter Authoring Guide & Test Kit |
+| 0024 | verified | task/0024-adapter-interface | Adapter Interface |
+| 0025 | verified | task/0025-stack-autodetection | Stack Auto-Detection |
+| 0026 | verified | task/0026-generic-command-adapter | Generic Command Adapter |
+| 0027 | verified | task/0027-bundled-adapters | Bundled Adapters |
+| 0028 | verified | task/0028-adapter-authoring-guide-and-testkit | Adapter Authoring Guide & Test Kit |
 | 0029 | planned | task/0029-provider-auth-and-scoped-identity | Repo Identity & Provider Auth |
 | 0030 | planned | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config |
 | 0031 | planned | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards |

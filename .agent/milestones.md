@@ -17,7 +17,7 @@ North-star architecture for the V1 roadmap:
 | 03 | Platform | verified | [GitHub State-Machine Core](milestones/milestone-03-github-state-machine-core.md) |
 | 04 | Platform | verified | [Durable Planning Store](milestones/milestone-04-durable-planning-store.md) |
 | 05 | Platform | verified | [Provider & Execution Backend Abstraction (Claude + Codex subscriptions)](milestones/milestone-05-model-provider-abstraction.md) |
-| 06 | Platform | planned | [Project Adapter System](milestones/milestone-06-project-adapter-system.md) |
+| 06 | Platform | verified | [Project Adapter System](milestones/milestone-06-project-adapter-system.md) |
 | 07 | Platform | planned | [Secrets & Identity (two-plane, subscription-native)](milestones/milestone-07-secrets-and-identity.md) |
 | 08 | Loops | planned | [Grooming & Clarification Loop](milestones/milestone-08-grooming-and-clarification-loop.md) |
 | 09 | Loops | planned | [Implementation Loop](milestones/milestone-09-implementation-loop.md) |
@@ -77,11 +77,11 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0074 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
 | 0022 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0022-prompt-and-policy-artifacts | Prompt & Policy Artifacts |
 | 0023 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0023-backend-selection-and-subscription-auth | Backend Selection & Subscription Auth |
-| 0024 | Milestone 06: Project Adapter System | planned | task/0024-adapter-interface | Adapter Interface |
-| 0025 | Milestone 06: Project Adapter System | planned | task/0025-stack-autodetection | Stack Auto-Detection |
-| 0026 | Milestone 06: Project Adapter System | planned | task/0026-generic-command-adapter | Generic Command Adapter |
-| 0027 | Milestone 06: Project Adapter System | planned | task/0027-bundled-adapters | Bundled Adapters |
-| 0028 | Milestone 06: Project Adapter System | planned | task/0028-adapter-authoring-guide-and-testkit | Adapter Authoring Guide & Test Kit |
+| 0024 | Milestone 06: Project Adapter System | verified | task/0024-adapter-interface | Adapter Interface |
+| 0025 | Milestone 06: Project Adapter System | verified | task/0025-stack-autodetection | Stack Auto-Detection |
+| 0026 | Milestone 06: Project Adapter System | verified | task/0026-generic-command-adapter | Generic Command Adapter |
+| 0027 | Milestone 06: Project Adapter System | verified | task/0027-bundled-adapters | Bundled Adapters |
+| 0028 | Milestone 06: Project Adapter System | verified | task/0028-adapter-authoring-guide-and-testkit | Adapter Authoring Guide & Test Kit |
 | 0029 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | planned | task/0029-provider-auth-and-scoped-identity | Repo Identity & Provider Auth |
 | 0030 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | planned | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config |
 | 0031 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | planned | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards |

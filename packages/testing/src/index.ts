@@ -3,3 +3,10 @@ export { FakeGitHub } from './fake-github/fake-github.js';
 export { FakeBackend } from './fake-backends/fake-backend.js';
 export type { FakeBehavior } from './fake-backends/fake-backend.js';
 export { InMemoryRunRecordStore } from './fake-backends/in-memory-records.js';
+export {
+  ADAPTER_FIXTURES,
+  fakeCommandRunner,
+  repoFsFixture,
+  runAdapterConformance,
+} from './conformance/adapter.js';
+export type { AdapterConformanceOpts, FakeCommandRunner } from './conformance/adapter.js';

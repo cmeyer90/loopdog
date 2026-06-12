@@ -1,7 +1,7 @@
 # 0028 Adapter Authoring Guide & Test Kit
 
-Status: planned  
-Branch: task/0028-adapter-authoring-guide-and-testkit
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -142,37 +142,37 @@ evolve without silently mis-validating an old adapter.
 
 ## Acceptance Criteria
 
-- [ ] `@looper/testing` exports `runAdapterConformance(makeAdapter, opts)` that
+- [x] `@looper/testing` exports `runAdapterConformance(makeAdapter, opts)` that
       registers an `it()` per contract clause and fails with a clear message on any
       violation.
-- [ ] The kit asserts: full method shape; `detect()` confidence in `[0,1]` with
+- [x] The kit asserts: full method shape; `detect()` confidence in `[0,1]` with
       correct `matched`; capability honesty (skipped vs. invoked); `CommandResult`
       normalization (pass/fail/skipped); no direct process spawning; non-empty
       `describe()` for supported phases; idempotent `detect()`.
-- [ ] A reusable fixture library (`node-*`, `python-*`, `empty`) + a scripted
+- [x] A reusable fixture library (`node-*`, `python-*`, `empty`) + a scripted
       `FakeCommandRunner` make the suite deterministic, offline, and process-free.
-- [ ] Both bundled adapters (0027) and the generic adapter (0026) call the kit from
+- [x] Both bundled adapters (0027) and the generic adapter (0026) call the kit from
       their own test suites and pass it.
-- [ ] An intentionally-broken sample adapter (throws on a missing phase, or claims a
+- [x] An intentionally-broken sample adapter (throws on a missing phase, or claims a
       capability it doesn't run) **fails** the kit — proving the kit catches
       violations, not just green paths.
-- [ ] `docs/adapters.md` exists and walks contract → scaffold → detect → commands →
+- [x] `docs/adapters.md` exists and walks contract → scaffold → detect → commands →
       register → verify → publish, with a copyable ~6-line conformance test snippet.
-- [ ] `ADAPTER_CONTRACT_VERSION` is exported and referenced by both the kit and the
+- [x] `ADAPTER_CONTRACT_VERSION` is exported and referenced by both the kit and the
       guide.
-- [ ] Relevant checks pass (lint, typecheck, `vitest`).
+- [x] Relevant checks pass (lint, typecheck, `vitest`).
 
 ## Implementation Checklist
 
-- [ ] Implement `runAdapterConformance` + `AdapterConformanceOpts` in
+- [x] Implement `runAdapterConformance` + `AdapterConformanceOpts` in
       `packages/testing/src/conformance/adapter.ts`; export via the testing barrel.
-- [ ] Add the `FakeCommandRunner` (scripted, call-recording) if not already provided
+- [x] Add the `FakeCommandRunner` (scripted, call-recording) if not already provided
       by the M18 fakes (0083), and the `RepoFs` fixture snapshots.
-- [ ] Add `ADAPTER_CONTRACT_VERSION` to `@looper/core`'s adapter port (0024).
-- [ ] Write a deliberately-broken `BrokenAdapter` test fixture and assert the kit
+- [x] Add `ADAPTER_CONTRACT_VERSION` to `@looper/core`'s adapter port (0024).
+- [x] Write a deliberately-broken `BrokenAdapter` test fixture and assert the kit
       rejects it (negative test for the kit itself).
-- [ ] Wire the kit into 0026 and 0027 test suites.
-- [ ] Author `docs/adapters.md` with the scaffold, the redaction/skip rules, and the
+- [x] Wire the kit into 0026 and 0027 test suites.
+- [x] Author `docs/adapters.md` with the scaffold, the redaction/skip rules, and the
       copyable conformance snippet; cross-link from `docs/codebase.md` adapters row.
 
 ## Test Plan
@@ -193,13 +193,23 @@ npm run -w @looper/testing test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: adapters suite green (149 tests repo-wide): all three adapters
+  pass the seven-clause conformance kit; detection ranking/floor/override/
+  disable behaviors proven; command-precedence and shell-vs-exec semantics
+  proven.
 
 ## Decisions
 
-Record the final `runAdapterConformance` signature and clause list, the fixture
-library layout, how "no direct spawning" is asserted, and the
-`ADAPTER_CONTRACT_VERSION` semantics (advisory vs. hard gate).
+- Kit shape as specced: `runAdapterConformance(makeAdapter, {fixtures,
+  runner?, expectCapabilities?})` registering seven named it() clauses (shape,
+  detect contract, capability honesty, result normalization, no direct
+  spawning, describe coverage, detect idempotence).
+- Fixtures: `repoFsFixture()` builder + the shared ADAPTER_FIXTURES library
+  (node-npm, node-pnpm, python-uv, empty) + `fakeCommandRunner` with scripted
+  exits — fully offline/process-free.
+- Guide at `docs/adapters.md`: contract, rules, walkthrough, kit usage,
+  selection mechanics, config surface. Registration is an explicit PR to the
+  fixed registry (no plugin loader, per the codebase guardrail).
 
 ## Risks / Rollback
 
@@ -219,4 +229,7 @@ behavior; removing them reverts to the bundled adapters' bespoke tests.
 
 ## Final Summary
 
-Fill this in before marking verified.
+The conformance kit in @looper/testing (seven clauses, shared fixtures,
+fake runner) is the single definition of adapter conformance — used by all
+three bundled adapters and documented for third parties in docs/adapters.md
+with a full authoring walkthrough.

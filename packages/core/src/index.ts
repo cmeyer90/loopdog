@@ -37,15 +37,17 @@ export type {
   WorkBrief,
 } from './ports/backend.js';
 export type {
-  AdapterCommands,
-  AdapterId,
-  CommandPlan,
-  CommandStep,
-  DeployPlan,
+  AdapterCapabilities,
+  AdapterDescription,
+  AdapterPhase,
+  CommandContext,
+  CommandResult,
+  CommandRunner,
+  DetectResult,
   ProjectAdapter,
-  ProjectProfile,
   RepoFs,
 } from './ports/project-adapter.js';
+export { skippedResult } from './ports/project-adapter.js';
 export type {
   AcceptanceCriterion,
   ChecklistEntry,

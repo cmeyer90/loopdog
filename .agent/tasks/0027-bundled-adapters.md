@@ -1,7 +1,7 @@
 # 0027 Bundled Adapters
 
-Status: planned  
-Branch: task/0027-bundled-adapters
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -121,29 +121,29 @@ both `pyproject.toml` and
 
 ## Acceptance Criteria
 
-- [ ] A `node` adapter exists implementing the full `ProjectAdapter` contract,
+- [x] A `node` adapter exists implementing the full `ProjectAdapter` contract,
       detecting a Node repo and emitting correct build/test/lint/run commands per
       package manager (npm/pnpm/yarn/bun).
-- [ ] A `python` adapter exists implementing the full contract, detecting a Python
+- [x] A `python` adapter exists implementing the full contract, detecting a Python
       repo and emitting correct commands per runner (uv/poetry/pip).
-- [ ] Capabilities a repo lacks (e.g. no `build` script) report unsupported
+- [x] Capabilities a repo lacks (e.g. no `build` script) report unsupported
       rather than emitting a broken command.
-- [ ] Any per-capability command is overridable via the `looper.yml` `adapter:`
+- [x] Any per-capability command is overridable via the `looper.yml` `adapter:`
       block, with override taking precedence over derived/default.
-- [ ] Both adapters pass the conformance kit (0028) and register for
+- [x] Both adapters pass the conformance kit (0028) and register for
       auto-detection (0025).
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Implement `packages/adapters/src/node/` against the 0024 interface
+- [x] Implement `packages/adapters/src/node/` against the 0024 interface
       (detect + capabilities + command resolution + package-manager detection).
-- [ ] Implement `packages/adapters/src/python/` likewise (runner detection).
-- [ ] Wire `package.json`/`pyproject.toml` script discovery + override precedence.
-- [ ] Register both in the adapter registry (0025) and export via
+- [x] Implement `packages/adapters/src/python/` likewise (runner detection).
+- [x] Wire `package.json`/`pyproject.toml` script discovery + override precedence.
+- [x] Register both in the adapter registry (0025) and export via
       `packages/adapters/src/index.ts`.
-- [ ] Add config schema support for the `adapter:` override block (with 0024/config).
-- [ ] Run the conformance kit (0028) against both; add stack-specific tests.
+- [x] Add config schema support for the `adapter:` override block (with 0024/config).
+- [x] Run the conformance kit (0028) against both; add stack-specific tests.
 
 ## Test Plan
 
@@ -161,12 +161,22 @@ npm run -w @looper/adapters test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: adapters suite green (149 tests repo-wide): all three adapters
+  pass the seven-clause conformance kit; detection ranking/floor/override/
+  disable behaviors proven; command-precedence and shell-vs-exec semantics
+  proven.
 
 ## Decisions
 
-Record the package-manager/runner detection heuristics, the command-resolution
-precedence, and which capabilities each stack supports by default.
+- Node: package.json marker (0.7) boosted to 0.9 by a lockfile which also
+  picks the pm (pnpm/yarn/bun/npm); commands prefer package.json scripts;
+  run falls back to `node <main>`; deploy deliberately absent (config/0026
+  territory); install surfaced via describe().install.
+- Python: pyproject (0.9) else requirements/setup.py/Pipfile (0.6); runner
+  from uv.lock / [tool.poetry] / pip default; pytest preferred with a
+  unittest fallback; ruff when configured; install per runner.
+- Both: precedence override > manifest-derived > toolchain default; missing
+  scripts report capability false + skip (never error).
 
 ## Risks / Rollback
 
@@ -177,4 +187,6 @@ isolated to its `src/<stack>/` folder and registry entry.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Node and Python adapters implement the full contract with honest detection
+evidence, manifest-derived commands, per-stack toolchain resolution, and
+config overrides — both pass the conformance kit alongside generic.

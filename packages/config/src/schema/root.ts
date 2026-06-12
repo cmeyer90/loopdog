@@ -119,6 +119,24 @@ export const rootConfigSchema = z.object({
   authorization: authorizationSchema.default({}),
   resilience: resilienceSchema.default({}),
   adapter: z.string().default('auto'),
+  adapter_options: z
+    .object({
+      package_manager: z.enum(['npm', 'pnpm', 'yarn', 'bun']).optional(),
+      runner: z.enum(['uv', 'poetry', 'pip']).optional(),
+      commands: z
+        .record(
+          z.enum(['build', 'test', 'lint', 'run', 'deploy']),
+          z.union([z.string(), z.array(z.string()), z.null()]),
+        )
+        .optional(),
+      detect: z
+        .object({
+          confidence_floor: z.number().min(0).max(1).default(0.5),
+          disable: z.array(z.string()).default([]),
+        })
+        .default({}),
+    })
+    .default({}),
   defaults: z
     .object({
       blast_radius: z
