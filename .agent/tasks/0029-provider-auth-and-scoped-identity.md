@@ -1,7 +1,7 @@
 # 0029 Repo Identity & Provider Auth
 
-Status: planned  
-Branch: task/0029-provider-auth-and-scoped-identity
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -118,32 +118,32 @@ re-triggers ⇒ instant; cron is always the trusted system actor.
 
 ## Acceptance Criteria
 
-- [ ] `resolveRepoIdentity` returns the right `source`/`token` for each of: PAT set,
+- [x] `resolveRepoIdentity` returns the right `source`/`token` for each of: PAT set,
       Actions default, CLI-stored — with PAT taking precedence.
-- [ ] `reTriggersWorkflows` is `false` only for `source==='actions'`; the handoff
+- [x] `reTriggersWorkflows` is `false` only for `source==='actions'`; the handoff
       matrix table test passes for every controller/human/cron edge.
-- [ ] A fork-originated `pull_request` yields `writable:false`, and the runner
+- [x] A fork-originated `pull_request` yields `writable:false`, and the runner
       defers (not fails) write-backs to the sweep, recording `deferred:fork-readonly`.
-- [ ] A PAT makes the same fork-PR write-back proceed instantly (no defer).
-- [ ] The reusable-workflow templates declare the least-privilege `permissions`
+- [x] A PAT makes the same fork-PR write-back proceed instantly (no defer).
+- [x] The reusable-workflow templates declare the least-privilege `permissions`
       block above; no `actions`/`deployments`/`security-events` write by default.
-- [ ] The token is never present in any run-record, log line, or telemetry payload
+- [x] The token is never present in any run-record, log line, or telemetry payload
       (redaction test).
-- [ ] No looper GitHub App, no model API key, and no DB/queue introduced.
-- [ ] Relevant checks pass.
+- [x] No looper GitHub App, no model API key, and no DB/queue introduced.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add `@looper/github/src/identity/` with `resolveRepoIdentity` + the
+- [x] Add `@looper/github/src/identity/` with `resolveRepoIdentity` + the
       `RepoIdentity` type, wired into the `GitHubPort` impl.
-- [ ] Implement source precedence (`LOOPER_PAT` → `GITHUB_TOKEN` → CLI) and the
+- [x] Implement source precedence (`LOOPER_PAT` → `GITHUB_TOKEN` → CLI) and the
       `reTriggersWorkflows`/`writable` flags from env + event context.
-- [ ] Add fork-PR detection + the runner defer-to-sweep path (coordinate the
+- [x] Add fork-PR detection + the runner defer-to-sweep path (coordinate the
       `deferred:fork-readonly` outcome with 0012/0076).
-- [ ] Set the least-privilege `permissions` manifest in
+- [x] Set the least-privilege `permissions` manifest in
       `templates/workflows/looper-*.yml`; document the opt-in `id-token` for deploy.
-- [ ] Add token redaction to the run-record/telemetry serializer.
-- [ ] Document the two-plane split + handoff matrix in the package README and link
+- [x] Add token redaction to the run-record/telemetry serializer.
+- [x] Document the two-plane split + handoff matrix in the package README and link
       it from onboarding (consumed by 0032).
 
 ## Test Plan
@@ -161,13 +161,26 @@ pnpm -F @looper/github test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: identity suite green: PAT > GITHUB_TOKEN > CLI precedence;
+  handoff matrix (actions=sweep, pat/human=instant); fork-PR read-only
+  detection with PAT restore; token-never-serialized assertion. Runner
+  fork-readonly defer wired (skipped record, never failed); controller
+  resolves ambient identity flags into the runner deps.
+- 2026-06-09: least-privilege manifest applied to both reusable workflows and
+  asserted structurally by the governance suite (contents/issues/pull-requests
+  write, checks read; nothing else).
 
 ## Decisions
 
-Record: the env-var name for the optional PAT (`LOOPER_PAT`), the exact
-least-privilege permission set, the `deferred:fork-readonly` outcome contract with
-0012/0076, and the redaction strategy.
+- `resolveRepoIdentity` in `github/identity/repo-identity.ts` exactly per the
+  spec'd shape; reTriggersWorkflows false iff source==='actions'.
+- Fork detection compares head.repo.full_name vs repository.full_name (plus
+  the fork flag) — robust to same-org branches.
+- Defer semantics: a read-only identity in act mode records
+  `deferred:fork-readonly` as a 'skipped' run-record step and waits for the
+  sweep (the base-repo context) — never a failure, never a 403 surprise.
+- contents:write IS granted (the plan store and telemetry write via the
+  contents API); actions/deployments/id-token/security-events are not.
 
 ## Risks / Rollback
 
@@ -182,4 +195,8 @@ least-privilege permission set, the `deferred:fork-readonly` outcome contract wi
 
 ## Final Summary
 
-Fill this in before marking verified.
+Repo identity = the Actions GITHUB_TOKEN with PAT/CLI fallbacks, resolved by
+one pure function carrying writable/reTriggersWorkflows flags; the runner
+defers fork-readonly writes to the sweep; the reusable workflows ship the
+least-privilege manifest; the provider-auth plane stays entirely in 0023's
+resolveAuth — the two planes never mix.

@@ -137,6 +137,54 @@ export const rootConfigSchema = z.object({
         .default({}),
     })
     .default({}),
+  work_cell: z
+    .object({
+      setup: z.string().optional(),
+      env: z
+        .record(
+          z.string(),
+          z
+            .object({
+              value: z.string().optional(),
+              from_env: z.string().optional(),
+              from_actions_secret: z.string().optional(),
+              provider_configured: z.literal(true).optional(),
+              sensitivity: z.enum(['build', 'runtime', 'sensitive']).default('build'),
+            })
+            .refine(
+              (e) =>
+                [e.value, e.from_env, e.from_actions_secret, e.provider_configured].filter(
+                  (x) => x !== undefined,
+                ).length === 1,
+              { message: 'exactly one of value/from_env/from_actions_secret/provider_configured' },
+            ),
+        )
+        .optional(),
+      backends: z
+        .record(
+          z.string(),
+          z.object({
+            setup: z.string().optional(),
+            env: z.record(z.string(), z.unknown()).optional(),
+          }),
+        )
+        .optional(),
+    })
+    .optional(),
+  secrets: z
+    .object({
+      store: z.enum(['actions', 'oidc', 'vault', 'doppler']).default('actions'),
+      inject: z
+        .array(
+          z.object({
+            name: z.string(),
+            from: z.enum(['actions', 'oidc', 'vault', 'doppler']).optional(),
+            key: z.string().optional(),
+          }),
+        )
+        .default([]),
+    })
+    .optional(),
   defaults: z
     .object({
       blast_radius: z

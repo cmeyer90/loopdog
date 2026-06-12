@@ -1,7 +1,7 @@
 # 0032 Secret Trust-Boundary & Constraints Doc
 
-Status: planned  
-Branch: task/0032-secret-trust-boundary-doc
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -112,31 +112,31 @@ so the boundary can't silently rot. No quota/provider calls.
 
 ## Acceptance Criteria
 
-- [ ] `docs/trust-boundary.md` exists and states the one rule (looper never
+- [x] `docs/trust-boundary.md` exists and states the one rule (looper never
       serializes long-lived credentials into model/GitHub-visible artifacts it
       controls) up top.
-- [ ] It documents both planes (provider-auth + project-secret) and names the
+- [x] It documents both planes (provider-auth + project-secret) and names the
       Actions `GITHUB_TOKEN` as looper's repo identity (no looper GitHub App).
-- [ ] A per-backend residency matrix covers Claude cloud, Codex cloud, and
+- [x] A per-backend residency matrix covers Claude cloud, Codex cloud, and
       self-hosted for each secret class, stating where it resides and who reads it.
-- [ ] The Codex agent-phase secret-stripping + no-internet constraints are stated,
+- [x] The Codex agent-phase secret-stripping + no-internet constraints are stated,
       with the consequence: adopter CI (rung 2) is the trustworthy verification gate.
-- [ ] A "what each path can verify" table maps the ladder rungs to each backend.
-- [ ] It states no long-lived model API key on the primary path, documents Claude
+- [x] A "what each path can verify" table maps the ladder rungs to each backend.
+- [x] It states no long-lived model API key on the primary path, documents Claude
       routine import vs. Codex provider App, states the ZDR exclusion →
       self-hosted, and flags the ToS question (0092) as an open risk.
-- [ ] Onboarding (0010) and `looper login` docs link to it; the drift guard fails
+- [x] Onboarding (0010) and `looper login` docs link to it; the drift guard fails
       if the doc is missing or unreferenced.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Draft `docs/trust-boundary.md` following the section structure above.
-- [ ] Build the residency matrix and the verify-per-path table.
-- [ ] Write the Codex-constraints subsection and the self-hosted recovery note.
-- [ ] Cross-link 0010, 0023, 0031, 0076, 0092 and the verification-ladder section.
-- [ ] Add the link from onboarding docs / `looper login` output.
-- [ ] Add the doc-presence + link drift-guard assertion.
+- [x] Draft `docs/trust-boundary.md` following the section structure above.
+- [x] Build the residency matrix and the verify-per-path table.
+- [x] Write the Codex-constraints subsection and the self-hosted recovery note.
+- [x] Cross-link 0010, 0023, 0031, 0076, 0092 and the verification-ladder section.
+- [x] Add the link from onboarding docs / `looper login` output.
+- [x] Add the doc-presence + link drift-guard assertion.
 
 ## Test Plan
 
@@ -150,12 +150,22 @@ Tests run via the repo's chosen vitest runner; no real quota or provider calls.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: `docs/trust-boundary.md` written: two planes, the residency
+  matrix (centerpiece), the Codex constraints + rung-2 consequence stated
+  plainly, the ladder-rungs-per-backend table, provider-auth statements (no
+  API key on the primary path, manual routine import, ZDR exclusion), known
+  limits incl. the ToS posture from 0092.
+- 2026-06-09: doc-sync assertions in the governance suite: matrix rows
+  present, secret-ref names match the code constants, the Codex consequence
+  stated, and the workflows' permissions block structurally equals the
+  least-privilege manifest the doc claims.
 
 ## Decisions
 
-Record the final doc location, the exact residency-matrix columns/rows, and where
-the drift guard lives (docs CI vs. a vitest assertion).
+Doc lives at `docs/trust-boundary.md` (peer to architecture/codebase);
+the sync check is a vitest governance test rather than a script — it pins
+the doc to the actual secret-ref constants and workflow permissions so drift
+fails CI.
 
 ## Risks / Rollback
 
@@ -167,4 +177,7 @@ the guard to revert.
 
 ## Final Summary
 
-Fill this in before marking verified.
+The trust boundary is now legible: where every credential lives per backend,
+who can read it, what each path can verify, and the honest provider-cloud
+residency trade — cross-linked from connect flows and pinned to the code by
+sync assertions.

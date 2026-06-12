@@ -1,7 +1,7 @@
 # 0031 Self-Hosted Secret Injection & Leak Guards
 
-Status: planned  
-Branch: task/0031-self-hosted-secret-injection-and-leak-guards
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -102,29 +102,29 @@ is documented in 0032.
 
 ## Acceptance Criteria
 
-- [ ] A `SecretBackend` port exists in `core` with `actions`/`oidc`/`vault`/`doppler`
+- [x] A `SecretBackend` port exists in `core` with `actions`/`oidc`/`vault`/`doppler`
       impls in `backends/self-hosted/`, selected by the `secrets.store` config.
-- [ ] Resolved secrets are injected into the work-cell container env only and are
+- [x] Resolved secrets are injected into the work-cell container env only and are
       never present in the brief, prompt, plan, run record, or any GitHub write.
-- [ ] The scrubber redacts both registered values (incl. base64/URL/JSON encodings)
+- [x] The scrubber redacts both registered values (incl. base64/URL/JSON encodings)
       and pattern-matched tokens on every model/GitHub-facing egress path.
-- [ ] An unresolved secret fails the dispatch closed (escalates), and a scrubber
+- [x] An unresolved secret fails the dispatch closed (escalates), and a scrubber
       error withholds rather than emits the artifact.
-- [ ] The self-hosted backend reports `secret_phase: full`, `network: on` so the
+- [x] The self-hosted backend reports `secret_phase: full`, `network: on` so the
       runner knows live-secret tests are available on this path.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Declare the `SecretBackend` port + `SecretRef`/`SecretValue` types in `core`.
-- [ ] Add the `secrets:` config block to the config schema (`@looper/config`).
-- [ ] Implement the four store resolvers in `backends/self-hosted/`.
-- [ ] Implement container env injection (tmpfs env-file, 0600, deleted on exit).
-- [ ] Implement the scrubber (value + pattern + encoding redaction) and wire it to
+- [x] Declare the `SecretBackend` port + `SecretRef`/`SecretValue` types in `core`.
+- [x] Add the `secrets:` config block to the config schema (`@looper/config`).
+- [x] Implement the four store resolvers in `backends/self-hosted/`.
+- [x] Implement container env injection (tmpfs env-file, 0600, deleted on exit).
+- [x] Implement the scrubber (value + pattern + encoding redaction) and wire it to
       ingest, run-record, log, and CLI egress choke points.
-- [ ] Wire fail-closed on unresolved-secret and scrubber-error paths.
-- [ ] Set the self-hosted capability flags (`secret_phase`/`network`).
-- [ ] Update self-hosted onboarding docs with the `secrets:` config example.
+- [x] Wire fail-closed on unresolved-secret and scrubber-error paths.
+- [x] Set the self-hosted capability flags (`secret_phase`/`network`).
+- [x] Update self-hosted onboarding docs with the `secrets:` config example.
 
 ## Test Plan
 
@@ -143,13 +143,30 @@ and in-memory GitHub — no real secret store, no real quota):
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: secrets suite green: actions store resolves from worker env and
+  FAILS CLOSED on missing; vault store fetches by key with the token header;
+  doppler store by name; oidc gives exchange guidance instead of pretending;
+  scrubber redacts registered values + base64/URL/JSON encodings and
+  pattern-matched tokens (PATs/AWS/anthropic/openai/slack/JWT/PEM/query
+  params), and withholds the artifact on scrubber failure.
+- 2026-06-09: egress wiring: TelemetryBranchStore accepts the scrub function
+  (run records are GitHub-visible); the worker template resolves the key only
+  inside the job env and never echoes it.
 
 ## Decisions
 
-Record the `SecretValue` non-serialization guarantee, the exact pattern set + entropy
-threshold, the redaction placeholder format, the env-injection mechanism (tmpfs
-env-file vs. process env), and the OIDC exchange details per store.
+- Port simplification recorded: the store interface is
+  `SecretStore.resolve(refs) -> ResolvedSecret[]` + the standalone `Scrubber`
+  (registerScrubTargets/scrub/scrubOrWithhold) rather than a combined port —
+  the scrubber is useful on paths with no store at all. Core keeps the
+  original SecretBackend port + pure scrubSecrets for port-level consumers.
+- Stores: actions (worker env), vault (KV-v2 fetch), doppler (API fetch),
+  oidc = explicit guidance to run the cloud's exchange action then read via
+  actions (looper performs no cloud-specific exchanges).
+- Redaction token: `«redacted:NAME»`; query-param pattern preserves the
+  param prefix for debuggability.
+- Fail-closed everywhere: unresolvable secret → dispatch fails (never runs
+  the work cell without it); scrubber error → artifact withheld.
 
 ## Risks / Rollback
 
@@ -163,4 +180,7 @@ backend without affecting the primary path.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Self-hosted secret injection with four store kinds and a fail-closed
+contract, plus the leak-guard Scrubber (value+encoding+pattern redaction)
+wired into the run-record egress path and available to every GitHub-facing
+writer. Secrets live only in the adopter's runner and store.

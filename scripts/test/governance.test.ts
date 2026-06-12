@@ -83,3 +83,43 @@ describe('release configuration (task 0005)', () => {
     expect(Object.keys(cli.dependencies ?? {}).filter((d) => d.startsWith('@looper/'))).toEqual([]);
   });
 });
+
+describe('trust-boundary doc (task 0032)', () => {
+  const doc = readFileSync(join(root, 'docs/trust-boundary.md'), 'utf8');
+
+  it('carries the residency matrix rows and per-backend columns', () => {
+    for (const needle of [
+      '| Secret class | Claude cloud | Codex cloud | Self-hosted |',
+      'Looper repo identity',
+      'Provider subscription auth',
+      'Model API key',
+      'Project build/test/deploy secrets',
+      'stripped before the agent phase',
+      'LOOPER_CLAUDE_FIRE_URL',
+      'LOOPER_MODEL_API_KEY',
+    ]) {
+      expect(doc, needle).toContain(needle);
+    }
+  });
+
+  it('states the Codex consequence and the rung-2 rule plainly', () => {
+    expect(doc).toContain('tests needing live credentials or network may not');
+    expect(doc).toContain('regardless of');
+    expect(doc).toContain('ladder rung 2');
+  });
+
+  it('matches the workflows: no looper GitHub App, least-privilege manifest', () => {
+    expect(doc).toContain('No looper GitHub App');
+    for (const wf of ['reusable-events.yml', 'reusable-sweep.yml']) {
+      const parsed = parse(readFileSync(join(root, `.github/workflows/${wf}`), 'utf8')) as {
+        permissions: Record<string, string>;
+      };
+      expect(parsed.permissions, wf).toEqual({
+        contents: 'write',
+        issues: 'write',
+        'pull-requests': 'write',
+        checks: 'read',
+      });
+    }
+  });
+});

@@ -10,7 +10,7 @@ import type {
 } from '@looper/core';
 import { STATE_LABEL_PREFIX, stateLabel } from '@looper/core';
 import { loadConfig, parseDuration } from '@looper/config';
-import { parseActionsEvent } from '@looper/github';
+import { parseActionsEvent, resolveRepoIdentity } from '@looper/github';
 import { RepoPlanStoreFiles, assertSupportedFormatVersion } from '@looper/plans';
 import { createBackendRegistry } from '@looper/backends';
 import type { PromptSource } from '@looper/backends';
@@ -43,6 +43,15 @@ export interface ControllerOptions {
   forceDryRun?: boolean;
 }
 
+function identityFlags(eventPayload?: Record<string, unknown>) {
+  try {
+    const id = resolveRepoIdentity({ ...(eventPayload ? { eventPayload } : {}) });
+    return { writable: id.writable, reTriggersWorkflows: id.reTriggersWorkflows };
+  } catch {
+    return undefined; // no ambient identity (tests inject their own gh)
+  }
+}
+
 export interface EventResult {
   trigger: TriggerEvent;
   matchedLoops: string[];
@@ -56,6 +65,8 @@ export async function handleEvent(
   payload: Record<string, unknown>,
 ): Promise<EventResult> {
   const { config, deps } = await load(opts);
+  const identity = identityFlags(payload);
+  if (identity) deps.identity = identity;
   const now = opts.now?.() ?? new Date();
   const trigger = parseActionsEvent(eventName, payload, opts.repo, now.toISOString());
 

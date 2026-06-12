@@ -41,10 +41,10 @@ table and in `milestones.md`.
 | 0026 | verified | task/0026-generic-command-adapter | Generic Command Adapter |
 | 0027 | verified | task/0027-bundled-adapters | Bundled Adapters |
 | 0028 | verified | task/0028-adapter-authoring-guide-and-testkit | Adapter Authoring Guide & Test Kit |
-| 0029 | planned | task/0029-provider-auth-and-scoped-identity | Repo Identity & Provider Auth |
-| 0030 | planned | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config |
-| 0031 | planned | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards |
-| 0032 | planned | task/0032-secret-trust-boundary-doc | Secret Trust-Boundary & Constraints Doc |
+| 0029 | verified | task/0029-provider-auth-and-scoped-identity | Repo Identity & Provider Auth |
+| 0030 | verified | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config |
+| 0031 | verified | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards |
+| 0032 | verified | task/0032-secret-trust-boundary-doc | Secret Trust-Boundary & Constraints Doc |
 | 0033 | planned | task/0033-grooming-work-cell | Grooming Work Cell |
 | 0034 | planned | task/0034-event-driven-clarification | Event-Driven Clarification |
 | 0035 | planned | task/0035-assumption-vs-block-policy | Assumption-vs-Block Policy |

@@ -1,7 +1,7 @@
 # 0030 Provider Cloud Env & Secret Config
 
-Status: planned  
-Branch: task/0030-provider-cloud-env-and-secrets
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -150,41 +150,41 @@ other's keys across backends.
 
 ## Acceptance Criteria
 
-- [ ] `work_cell.env` (+ `setup`, per-backend overrides) is a validated
+- [x] `work_cell.env` (+ `setup`, per-backend overrides) is a validated
       `@looper/config` schema with `value` / `from_env` / `from_actions_secret` /
       `provider_configured` sources and a `sensitivity` flag.
-- [ ] The `ProviderEnvResolver` renders or validates that declaration according to
+- [x] The `ProviderEnvResolver` renders or validates that declaration according to
       backend capability: Claude routine doctor checklist, Codex env/setup shape,
       self-hosted secret injection handoff.
-- [ ] For Codex, the resolver reports which env entries are setup-only (stripped
+- [x] For Codex, the resolver reports which env entries are setup-only (stripped
       before the agent phase) as `dropped`.
-- [ ] A `sensitivity: sensitive` entry against a provider backend raises a
+- [x] A `sensitivity: sensitive` entry against a provider backend raises a
       validate/doctor warning routing it to self-hosted (0031), and an unset
       `from_env`/`from_actions_secret` reference fails loud before dispatch.
-- [ ] A Claude routine loop cannot claim that GitHub Actions secrets are forwarded
+- [x] A Claude routine loop cannot claim that GitHub Actions secrets are forwarded
       into Claude at `/fire` time; required values must be `provider_configured`,
       CI-only, or self-hosted.
-- [ ] No long-lived model API key is stored on this path; values are forwarded
+- [x] No long-lived model API key is stored on this path; values are forwarded
       from the controller's own Actions job, not a hosted store.
-- [ ] Docs/onboarding state the provider-residency + Codex-stripping caveat and
+- [x] Docs/onboarding state the provider-residency + Codex-stripping caveat and
       name the adopter's CI as the trustworthy gate.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `work_cell.env`/`setup`/`backends.*` schema + validation in
+- [x] Add the `work_cell.env`/`setup`/`backends.*` schema + validation in
       `@looper/config`.
-- [ ] Implement `ProviderEnvResolver` in `@looper/backends` over the `core`
+- [x] Implement `ProviderEnvResolver` in `@looper/backends` over the `core`
       `SecretBackend` port; wire Claude to doctor/checklist validation, Codex to
       dispatch shaping, and self-hosted to 0031.
-- [ ] Implement value sourcing (literal / `from_env` / `from_actions_secret`) at
+- [x] Implement value sourcing (literal / `from_env` / `from_actions_secret`) at
       controller render time only for backends that support forwarding; implement
       `provider_configured` validation for Claude routines.
-- [ ] Implement the `sensitivity` classification + Codex setup-only `dropped`
+- [x] Implement the `sensitivity` classification + Codex setup-only `dropped`
       reporting, reusing 0021 `checkCompatibility`.
-- [ ] Wire the `sensitive`-against-provider warning + unset-reference fail-loud
+- [x] Wire the `sensitive`-against-provider warning + unset-reference fail-loud
       into `looper loops validate` / `doctor`.
-- [ ] Document the residency/stripping caveat (feed 0032) and the adopter-CI gate.
+- [x] Document the residency/stripping caveat (feed 0032) and the adopter-CI gate.
 
 ## Test Plan
 
@@ -204,14 +204,24 @@ secrets consumed.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: provider-env suite green: Claude renders NOTHING at dispatch
+  (drops + provider checklist instead, honoring the M00 no-forwarding
+  decision); Codex renders values but marks every one setup-only (stripped
+  before the agent phase — feeds the 0021 mismatch check); self-hosted gets
+  full injection; `sensitive` entries against provider backends warn with the
+  self-hosted directive; missing sources drop with reasons.
 
 ## Decisions
 
-Record the `work_cell.env` schema (sources + `sensitivity` values), the
-`ResolvedEnv`/`dropped`/`provider_configured` shapes, how `from_actions_secret` is
-mapped in the controller job for forwarding-capable backends, and the resolver's
-place relative to the `SecretBackend` port.
+- Config: root `work_cell.{setup,env,backends}` with per-entry source
+  (value/from_env/from_actions_secret/provider_configured — exactly one,
+  zod-refined) + `sensitivity: build|runtime|sensitive`.
+- Claude mode is declaration/doctor-checklist ONLY: every non-provider_configured
+  entry is dropped with guidance, and everything lands on the providerChecklist
+  the connect/doctor flows print. No value ever crosses to Claude at /fire.
+- Codex mode renders into setup and reports `setupOnly` for all values.
+- Resolver lives in `backends/work-cell/` (resolveWorkCellEnv), pure over the
+  controller env.
 
 ## Risks / Rollback
 
@@ -226,4 +236,7 @@ place relative to the `SecretBackend` port.
 
 ## Final Summary
 
-Fill this in before marking verified.
+The work-cell env declaration + per-backend resolver: honest about what each
+backend can receive (Claude: web-UI checklist only; Codex: setup-only; self-
+hosted: real injection), with sensitivity classification routing
+production-grade secrets away from provider clouds.

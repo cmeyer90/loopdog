@@ -18,7 +18,7 @@ North-star architecture for the V1 roadmap:
 | 04 | Platform | verified | [Durable Planning Store](milestones/milestone-04-durable-planning-store.md) |
 | 05 | Platform | verified | [Provider & Execution Backend Abstraction (Claude + Codex subscriptions)](milestones/milestone-05-model-provider-abstraction.md) |
 | 06 | Platform | verified | [Project Adapter System](milestones/milestone-06-project-adapter-system.md) |
-| 07 | Platform | planned | [Secrets & Identity (two-plane, subscription-native)](milestones/milestone-07-secrets-and-identity.md) |
+| 07 | Platform | verified | [Secrets & Identity (two-plane, subscription-native)](milestones/milestone-07-secrets-and-identity.md) |
 | 08 | Loops | planned | [Grooming & Clarification Loop](milestones/milestone-08-grooming-and-clarification-loop.md) |
 | 09 | Loops | planned | [Implementation Loop](milestones/milestone-09-implementation-loop.md) |
 | 10 | Loops | planned | [Review, Verification Ladder & Merge Loop](milestones/milestone-10-review-verification-ladder-and-merge-loop.md) |
@@ -82,10 +82,10 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0026 | Milestone 06: Project Adapter System | verified | task/0026-generic-command-adapter | Generic Command Adapter |
 | 0027 | Milestone 06: Project Adapter System | verified | task/0027-bundled-adapters | Bundled Adapters |
 | 0028 | Milestone 06: Project Adapter System | verified | task/0028-adapter-authoring-guide-and-testkit | Adapter Authoring Guide & Test Kit |
-| 0029 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | planned | task/0029-provider-auth-and-scoped-identity | Repo Identity & Provider Auth |
-| 0030 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | planned | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config |
-| 0031 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | planned | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards |
-| 0032 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | planned | task/0032-secret-trust-boundary-doc | Secret Trust-Boundary & Constraints Doc |
+| 0029 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | verified | task/0029-provider-auth-and-scoped-identity | Repo Identity & Provider Auth |
+| 0030 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | verified | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config |
+| 0031 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | verified | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards |
+| 0032 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | verified | task/0032-secret-trust-boundary-doc | Secret Trust-Boundary & Constraints Doc |
 | 0033 | Milestone 08: Grooming & Clarification Loop | planned | task/0033-grooming-work-cell | Grooming Work Cell |
 | 0034 | Milestone 08: Grooming & Clarification Loop | planned | task/0034-event-driven-clarification | Event-Driven Clarification |
 | 0035 | Milestone 08: Grooming & Clarification Loop | planned | task/0035-assumption-vs-block-policy | Assumption-vs-Block Policy |

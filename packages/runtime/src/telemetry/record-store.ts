@@ -21,12 +21,14 @@ export class TelemetryBranchStore implements RunRecordStore {
     private readonly gh: GitHubPort,
     private readonly repo: RepoRef,
     private readonly maxRetries = 3,
+    /** Egress scrubber (0031): run records are GitHub-visible artifacts. */
+    private readonly scrub: (text: string) => string = (text) => text,
   ) {}
 
   async append(record: RunRecord): Promise<void> {
     await this.gh.ensureBranch(this.repo, TELEMETRY_BRANCH, { orphan: true });
     const path = runRecordPath(record.trigger.at);
-    const line = JSON.stringify(record);
+    const line = this.scrub(JSON.stringify(record));
     for (let attempt = 0; ; attempt++) {
       const existing = await this.gh.readFile(this.repo, TELEMETRY_BRANCH, path);
       const content = existing ? `${existing.content.replace(/\n$/, '')}\n${line}\n` : `${line}\n`;

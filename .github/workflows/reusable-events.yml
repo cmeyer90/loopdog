@@ -15,10 +15,13 @@ on:
         type: string
         default: latest
 
+# Least-privilege manifest (task 0029). NOT granted: actions, packages,
+# deployments, id-token, security-events. Deploy/OIDC loops opt in per-workflow.
 permissions:
-  contents: read
-  issues: write
-  pull-requests: write
+  contents: write # plan store + telemetry writes via the contents API
+  issues: write # labels = state, claims, comments
+  pull-requests: write # ingest/label/comment on PRs
+  checks: read # CI verdicts for the gates
 
 jobs:
   controller:

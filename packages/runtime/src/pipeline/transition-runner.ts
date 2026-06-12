@@ -73,6 +73,8 @@ export interface RunnerDeps {
   forceDryRun?: boolean;
   /** Durable plan store files (M04); absent = plan upkeep skipped. */
   planFiles?: RepoPlanStoreFiles;
+  /** Repo identity flags (0029): fork-readonly writes defer to the sweep. */
+  identity?: { writable: boolean; reTriggersWorkflows: boolean };
 }
 
 export async function runLoopOnce(
@@ -178,6 +180,13 @@ async function processItem(
   const ours = pending.filter((p) => p.handle.runId.startsWith(`run-${loop.name}-`));
   if (ours.length > 0) {
     return ingestPhase(deps, loop, item, ours[0]!, gate, steps, step, record);
+  }
+
+  // Fork-PR read-only caveat (0029): the event token cannot write — defer the
+  // transition to the sweep (which runs in the base repo's privileged context).
+  if (deps.identity?.writable === false && mode === 'act') {
+    step('gate', 'deferred:fork-readonly (writes defer to the sweep)');
+    return record({ status: 'skipped' });
   }
 
   // Decision: standard state-machine checks + gate + cross-cutting extras.

@@ -8,3 +8,5 @@ export { upsertMarkedComment } from './comments/upsert.js';
 export { SUPPORTED_EVENTS, parseActionsEvent } from './events/parse.js';
 export { ACTIONS_BOT, parseRepoFromRemoteUrl, resolveGitHubAuth } from './identity/identity.js';
 export type { ResolvedAuth } from './identity/identity.js';
+export { handoffMode, isForkPullRequest, resolveRepoIdentity } from './identity/repo-identity.js';
+export type { IdentityContext, RepoIdentity, TokenSource } from './identity/repo-identity.js';

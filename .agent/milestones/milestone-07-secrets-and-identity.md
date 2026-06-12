@@ -1,6 +1,6 @@
 # Milestone 07: Secrets & Identity (two-plane, subscription-native)
 
-Status: planned
+Status: verified
 
 > Background: [Looper Architecture](../../docs/architecture.md) — "Identity &
 > secrets (two planes)" and the execution-model constraints (provider-cloud secret
@@ -43,25 +43,26 @@ documented honestly.
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0029 | planned | task/0029-provider-auth-and-scoped-identity | Repo Identity & Provider Auth | Repo identity = Actions `GITHUB_TOKEN` + cron sweep for handoff (optional PAT for instant); local `looper login` via OAuth device flow / `gh`; provider subscription via Claude routine import / provider App. No looper GitHub App, no manual PATs required. |
-| 0030 | planned | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config | Configure provider sandbox setup scripts + env vars/secrets so tests run. |
-| 0031 | planned | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards | Pluggable backends + sandbox injection + scrubbing for the self-hosted path. |
-| 0032 | planned | task/0032-secret-trust-boundary-doc | Secret Trust-Boundary & Constraints Doc | Document residency, Codex stripping/no-internet, and what each path can verify. |
+| 0029 | verified | task/0029-provider-auth-and-scoped-identity | Repo Identity & Provider Auth | Repo identity = Actions `GITHUB_TOKEN` + cron sweep for handoff (optional PAT for instant); local `looper login` via OAuth device flow / `gh`; provider subscription via Claude routine import / provider App. No looper GitHub App, no manual PATs required. |
+| 0030 | verified | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config | Configure provider sandbox setup scripts + env vars/secrets so tests run. |
+| 0031 | verified | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards | Pluggable backends + sandbox injection + scrubbing for the self-hosted path. |
+| 0032 | verified | task/0032-secret-trust-boundary-doc | Secret Trust-Boundary & Constraints Doc | Document residency, Codex stripping/no-internet, and what each path can verify. |
 
 ## Definition Of Done
 
-- Looper's repo identity is the Actions `GITHUB_TOKEN` (handoffs via the cron
-  sweep; optional PAT for instant) — **no looper GitHub App required**; the work
-  cell authenticates via the user's subscription (the **provider's** App) with no
-  long-lived model API key on the primary path.
-- The work cell can run the project's tests with the secrets it needs — in the
-  provider cloud env (primary; Claude configured in Claude's web UI) or the
-  adopter's runner (self-hosted).
-- The Codex agent-phase secret/internet constraints are documented, with the
-  adopter's CI established as the trustworthy verification gate.
-- A trust-boundary doc states where secrets reside per backend and is referenced
-  from onboarding.
+- [x] Repo identity = Actions `GITHUB_TOKEN` (sweep handoffs; optional
+  LOOPER_PAT for instant; fork-readonly defer) — no looper GitHub App; provider
+  auth = subscription surfaces only, no model API key on the primary path.
+- [x] The work cell can get the secrets it needs per path: provider cloud env
+  declared + checklisted (Claude web-UI residency honored, nothing forwarded),
+  Codex setup-only marking, self-hosted real injection from four store kinds.
+- [x] Codex agent-phase constraints documented (trust-boundary doc + 0021
+  mismatch check) with the adopter's CI as the trustworthy gate.
+- [x] `docs/trust-boundary.md` states residency per backend, with doc-sync
+  assertions; referenced from connect flows and SECURITY.md.
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-09: all four tasks verified; 165 tests green repo-wide (identity
+  precedence/handoff/fork suites, provider-env resolution, secret stores,
+  scrubber incl. encodings + fail-closed, doc-sync governance assertions).

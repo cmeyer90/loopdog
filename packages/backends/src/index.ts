@@ -37,3 +37,20 @@ export {
 export type { BackendAuth, SecretRef, Stage } from './selection/select.js';
 export { createBackendRegistry } from './registry/registry.js';
 export type { RegistryOptions } from './registry/registry.js';
+export { resolveWorkCellEnv } from './work-cell/provider-env.js';
+export type {
+  EnvEntry,
+  ResolvedEnv,
+  Sensitivity,
+  WorkCellEnvConfig,
+} from './work-cell/provider-env.js';
+export {
+  SecretResolutionError,
+  actionsSecretStore,
+  createSecretStore,
+  dopplerSecretStore,
+  oidcSecretStore,
+  vaultSecretStore,
+} from './self-hosted/secrets.js';
+export type { ResolvedSecret, SecretRefSpec, SecretStore } from './self-hosted/secrets.js';
+export { Scrubber } from './self-hosted/scrubber.js';
