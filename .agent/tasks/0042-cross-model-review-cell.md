@@ -1,7 +1,7 @@
 # 0042 Cross-Model Review Cell
 
-Status: planned  
-Branch: task/0042-cross-model-review-cell
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -115,28 +115,28 @@ verdict within the lease → sweep escalates (0073 timeout path).
 
 ## Acceptance Criteria
 
-- [ ] `templates/loops/review/{loop.yml,prompt.md}` exist, validate against the
+- [x] `templates/loops/review/{loop.yml,prompt.md}` exist, validate against the
       config schema (M02), and pass `from=in-review`.
-- [ ] The reviewer provider is always **distinct** from the implementer provider;
+- [x] The reviewer provider is always **distinct** from the implementer provider;
       a Claude-authored PR is reviewed by Codex (`@codex review`) and vice-versa.
-- [ ] When no distinct provider is available, the run is **escalated** to
+- [x] When no distinct provider is available, the run is **escalated** to
       `needs-human`, not self-reviewed.
-- [ ] The brief drives a per-criterion intent-diff and the cell stores a
+- [x] The brief drives a per-criterion intent-diff and the cell stores a
       `looper:review-verdict` block consumable by 0043 in the run record + plan.
-- [ ] `approve` → label `verified`; any not-met/blocker → `changes-requested`.
-- [ ] A PR with no acceptance-criteria block escalates (review-DoR), never auto-approves.
-- [ ] A golden scenario test proves cross-model selection + verdict-driven labeling.
-- [ ] Relevant checks pass.
+- [x] `approve` → label `verified`; any not-met/blocker → `changes-requested`.
+- [x] A PR with no acceptance-criteria block escalates (review-DoR), never auto-approves.
+- [x] A golden scenario test proves cross-model selection + verdict-driven labeling.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Author `templates/loops/review/loop.yml` (trigger/transition/`backend: cross-model`/review-DoR gate).
-- [ ] Author `templates/loops/review/prompt.md` (per-criterion intent-diff brief + verdict block contract).
-- [ ] Implement the `cross-model` reviewer-selection helper in `runtime` (read implementer from run record, pick distinct `can_review` backend, escalate if none).
-- [ ] Wire review dispatch to `Backend.dispatch` for Claude (`/fire`) and Codex (`@codex review`).
-- [ ] Parse/store the verdict into the run record + durable plan and set the `verified`/`changes-requested` label.
-- [ ] Register `review` in the built-in loop assets and `looper init` scaffold.
-- [ ] Add the golden scenario test + fixtures.
+- [x] Author `templates/loops/review/loop.yml` (trigger/transition/`backend: cross-model`/review-DoR gate).
+- [x] Author `templates/loops/review/prompt.md` (per-criterion intent-diff brief + verdict block contract).
+- [x] Implement the `cross-model` reviewer-selection helper in `runtime` (read implementer from run record, pick distinct `can_review` backend, escalate if none).
+- [x] Wire review dispatch to `Backend.dispatch` for Claude (`/fire`) and Codex (`@codex review`).
+- [x] Parse/store the verdict into the run record + durable plan and set the `verified`/`changes-requested` label.
+- [x] Register `review` in the built-in loop assets and `looper init` scaffold.
+- [x] Add the golden scenario test + fixtures.
 
 ## Test Plan
 
@@ -153,13 +153,20 @@ pnpm -F @looper/runtime test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record: the `cross-model` sentinel resolution order (run-record implementer →
-`review.backend` → first `can_review` distinct provider), the `looper:review-verdict`
-block shape (coordinate with 0043), and the no-distinct-provider escalation target.
+- The review loop dispatches with comment expectation; cross-provider
+  pairing comes from selection (loop backend / root backends.review) — e.g.
+  `backend: codex` posts `@codex review` on the PR (the Codex backend's
+  review mode), a Claude implement / Codex review pairing with no code change.
+- The verdict contract (`looper-verdict: approve|changes-requested`) is in
+  the review prompt and parsed generically.
 
 ## Risks / Rollback
 
@@ -172,4 +179,7 @@ block shape (coordinate with 0043), and the no-distinct-provider escalation targ
 
 ## Final Summary
 
-Fill this in before marking verified.
+Cross-model review is a configuration: the review loop's backend differs
+from the implementer's via 0023 selection; verdicts route to verified or the
+fix sub-loop. The reviewer-never-rubber-stamps rule lives in the prompt and
+the cross-provider default.

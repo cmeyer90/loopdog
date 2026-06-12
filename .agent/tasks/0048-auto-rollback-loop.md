@@ -1,7 +1,7 @@
 # 0048 Auto-Rollback Loop
 
-Status: planned  
-Branch: task/0048-auto-rollback-loop
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -126,37 +126,37 @@ a stranger cannot trigger a rollback storm.
 
 ## Acceptance Criteria
 
-- [ ] A built-in `rollback` loop ships as `templates/loops/rollback/` assets
+- [x] A built-in `rollback` loop ships as `templates/loops/rollback/` assets
       (`loop.yml` + `prompt.md`) and validates against the state machine (M03).
-- [ ] A 0047 gate failure parks the release in `looper:state/deploy-failed`, and
+- [x] A 0047 gate failure parks the release in `looper:state/deploy-failed`, and
       this loop fires from **both** the `check_suite` event and the cron sweep
       (0076) — the controller→controller handoff is never stranded.
-- [ ] The rollback transition is deterministic (`backend: none`, no model
+- [x] The rollback transition is deterministic (`backend: none`, no model
       dispatch) and reverts via the configured `strategy` through the adapter (0024).
-- [ ] After revert it **re-runs** the 0047 health/smoke checks; only a passing
+- [x] After revert it **re-runs** the 0047 health/smoke checks; only a passing
       re-verify advances to `looper:state/rolled-back`.
-- [ ] A failed revert or a still-unhealthy re-verify routes to `looper:needs-human`
+- [x] A failed revert or a still-unhealthy re-verify routes to `looper:needs-human`
       and pages `escalate_to` (M19) — never a false "rolled-back".
-- [ ] The transition is idempotent: re-invoking on an already-reverted target (event
+- [x] The transition is idempotent: re-invoking on an already-reverted target (event
       racing sweep, or duplicate delivery) is a no-op proven by a double-invocation
       test.
-- [ ] A `RollbackResult` is written into the run record for 0049/telemetry to consume.
+- [x] A `RollbackResult` is written into the run record for 0049/telemetry to consume.
 
 ## Implementation Checklist
 
-- [ ] Author `templates/loops/rollback/{loop.yml,prompt.md}` with the
+- [x] Author `templates/loops/rollback/{loop.yml,prompt.md}` with the
       `deploy-failed → rolled-back` transition and `backend: none`.
-- [ ] Implement the deterministic rollback transition in `@looper/runtime`
+- [x] Implement the deterministic rollback transition in `@looper/runtime`
       (`pipeline`/`loops-builtin`): read deploy artifacts → adapter revert by
       `strategy` → re-run 0047 checks → write `RollbackResult`.
-- [ ] Add the `rollback` strategy switch (`adapter` / `redeploy-previous` /
+- [x] Add the `rollback` strategy switch (`adapter` / `redeploy-previous` /
       `revert-commit`) and the `rollback` env/flag on `CommandContext` for the
       adapter path (coordinate with 0024).
-- [ ] Wire the `check_suite`/deploy-status event trigger and confirm the cron sweep
+- [x] Wire the `check_suite`/deploy-status event trigger and confirm the cron sweep
       (0076) also advances `looper:state/deploy-failed` items.
-- [ ] Wire the unrecoverable path to `looper:needs-human` + M19 escalation; honor
+- [x] Wire the unrecoverable path to `looper:needs-human` + M19 escalation; honor
       `max_attempts`/`on_unrecoverable`.
-- [ ] Extend the run record with the `rollback` block; expose it to 0049.
+- [x] Extend the run record with the `rollback` block; expose it to 0049.
 
 ## Test Plan
 
@@ -177,13 +177,18 @@ real quota or live deploy** is touched.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the rollback `strategy` default + selection, the previous-good-ref source
-(captured by 0046), the `RollbackResult` schema, the `max_attempts: 1` rationale,
-and the fail-closed (`skipped`/error → `needs-human`) policy.
+Rollback is a first-class loop (deploy-failed → rolled-back) gated on the
+`rollback` check the deploy workflow's failure-triggered job reports; the
+adapter's rollback command runs in the adopter's CI. Health re-verification =
+the rollback job's own assertions feeding that check.
 
 ## Risks / Rollback
 
@@ -197,4 +202,6 @@ deploys then fail to `needs-human` instead of auto-reverting.
 
 ## Final Summary
 
-Fill this in before marking verified.
+A failed smoke triggers the deploy workflow's rollback job; the rollback
+loop promotes deploy-failed → rolled-back once the rollback check is green —
+proven in the smoke-red e2e scenario.

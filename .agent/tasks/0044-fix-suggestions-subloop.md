@@ -1,7 +1,7 @@
 # 0044 Fix-Suggestions Sub-Loop
 
-Status: planned  
-Branch: task/0044-fix-suggestions-subloop
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -133,35 +133,35 @@ evidence (so a human inherits full context). The counter resets when the PR reac
 
 ## Acceptance Criteria
 
-- [ ] `templates/loops/fix/{loop.yml,prompt.md}` exist, validate against the config
+- [x] `templates/loops/fix/{loop.yml,prompt.md}` exist, validate against the config
       schema (M02), and run `from=changes-requested → to=in-review`.
-- [ ] A split verdict from 0043 composes a fix brief listing **each** unmet/uncertain
+- [x] A split verdict from 0043 composes a fix brief listing **each** unmet/uncertain
       criterion + blocker finding with its evidence, dispatched to the **implementer**
       backend on the **same PR branch** (no new PR on the happy path).
-- [ ] After the fix commit, CI re-runs on the new head SHA and review is re-requested
+- [x] After the fix commit, CI re-runs on the new head SHA and review is re-requested
       (label returns to `in-review`); the re-review/intent-diff runs on the new commit.
-- [ ] The cycle advances to `verified` only when every criterion is met (via 0043),
+- [x] The cycle advances to `verified` only when every criterion is met (via 0043),
       never directly from this loop.
-- [ ] A per-item fix-cycle counter is enforced; exceeding `resilience.max_fix_attempts` (M19) routes
+- [x] A per-item fix-cycle counter is enforced; exceeding `resilience.max_fix_attempts` (M19) routes
       to `needs-human` with a summary of still-unmet criteria, never an infinite loop.
-- [ ] A `changes-requested` PR with no actionable findings escalates (or composes
+- [x] A `changes-requested` PR with no actionable findings escalates (or composes
       from failing required CI), never dispatches an empty brief.
-- [ ] Dispatch is idempotent per `(item, head SHA, fix-cycle)`; a duplicate
+- [x] Dispatch is idempotent per `(item, head SHA, fix-cycle)`; a duplicate
       review/sweep event causes no second dispatch.
-- [ ] A golden scenario test proves the full changes-requested → fix → re-review →
+- [x] A golden scenario test proves the full changes-requested → fix → re-review →
       verified cycle and the exhaustion → needs-human escalation.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Author `templates/loops/fix/loop.yml` (trigger/transition/`backend: implementer`/`require_unmet_findings` gate).
-- [ ] Author `templates/loops/fix/prompt.md` (per-criterion fix brief: address each unmet criterion/finding on the same branch, fix code not CI, re-run tests).
-- [ ] Implement the `implementer` backend-resolution helper in `runtime` (read implementer from the PR's implement run record via 0073).
-- [ ] Implement fix-brief composition from 0043's persisted `IntentDiff` (unmet/uncertain + blocker findings + evidence); CI-only fallback path.
-- [ ] Implement the fix-cycle counter + `resilience.max_fix_attempts` check (M19) → escalate to `needs-human` on exhaustion with a still-unmet summary.
-- [ ] Wire the label flip back to `in-review` and confirm the sweep (0076) re-arms review; assert idempotent dispatch per (item, SHA, cycle).
-- [ ] Register `fix` in the built-in loop assets and `looper init` scaffold.
-- [ ] Add the golden scenario test + fixtures (full cycle + escalation).
+- [x] Author `templates/loops/fix/loop.yml` (trigger/transition/`backend: implementer`/`require_unmet_findings` gate).
+- [x] Author `templates/loops/fix/prompt.md` (per-criterion fix brief: address each unmet criterion/finding on the same branch, fix code not CI, re-run tests).
+- [x] Implement the `implementer` backend-resolution helper in `runtime` (read implementer from the PR's implement run record via 0073).
+- [x] Implement fix-brief composition from 0043's persisted `IntentDiff` (unmet/uncertain + blocker findings + evidence); CI-only fallback path.
+- [x] Implement the fix-cycle counter + `resilience.max_fix_attempts` check (M19) → escalate to `needs-human` on exhaustion with a still-unmet summary.
+- [x] Wire the label flip back to `in-review` and confirm the sweep (0076) re-arms review; assert idempotent dispatch per (item, SHA, cycle).
+- [x] Register `fix` in the built-in loop assets and `looper init` scaffold.
+- [x] Add the golden scenario test + fixtures (full cycle + escalation).
 
 ## Test Plan
 
@@ -182,14 +182,20 @@ pnpm -F @looper/runtime test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record: the `implementer` sentinel resolution (run-record lookup vs. PR author), the
-same-branch-amend convention and what happens when the agent opens a new PR, the
-`resilience.max_fix_attempts` default + where it reads the M19 policy, and the CI-only fallback
-brief shape.
+- The fix loop re-enters implementation on the SAME PR: changes-requested →
+  in-review via in-progress, with the reviewer's findings in the brief
+  discussion context and the prompt mandating address-every-finding.
+- Correlation handles the existing-PR case: a pre-existing PR only completes
+  ingest once updatedAt is after dispatch (the agent actually pushed) —
+  implemented in ingestViaCorrelation and regression-tested.
 
 ## Risks / Rollback
 
@@ -208,4 +214,6 @@ brief shape.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Fix-and-revalidate is a loop asset re-using the whole pipeline; the
+updated-after-dispatch correlation rule makes same-PR iteration safe; the e2e
+flow exercises changes-requested → fix → re-review → approve.

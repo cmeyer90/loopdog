@@ -15,6 +15,8 @@ export interface BriefInputs {
   source: PromptSource;
   defaultBranch?: string | undefined;
   testCmd?: string | undefined;
+  /** Recent non-looper comments (clarification replies, review feedback). */
+  comments?: ReadonlyArray<{ author: string; body: string }> | undefined;
 }
 
 export async function composeWorkBrief(inputs: BriefInputs): Promise<WorkBrief> {
@@ -32,6 +34,10 @@ export async function composeWorkBrief(inputs: BriefInputs): Promise<WorkBrief> 
     branch: expectedBranch,
     repo: { defaultBranch: inputs.defaultBranch ?? 'main' },
     adapter: { testCmd: inputs.testCmd },
+    discussion:
+      inputs.comments && inputs.comments.length > 0
+        ? inputs.comments.map((c) => `@${c.author}: ${c.body}`).join('\n\n')
+        : undefined,
   };
   const brief = await compose(ctx, inputs.source);
 

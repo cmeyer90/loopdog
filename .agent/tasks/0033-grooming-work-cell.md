@@ -1,7 +1,7 @@
 # 0033 Grooming Work Cell
 
-Status: planned  
-Branch: task/0033-grooming-work-cell
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -93,9 +93,9 @@ plan-edit PR/comments correlate back on ingest (0073).
 
 ```
 <!-- looper:acceptance-criteria -->
-- [ ] rate limit enforced at 100 req/min per API key   (test: api/ratelimit.test.ts)
-- [ ] returns 429 + Retry-After when exceeded          (test: api/ratelimit.test.ts)
-- [ ] limit is configurable via env var                (manual)
+- [x] rate limit enforced at 100 req/min per API key   (test: api/ratelimit.test.ts)
+- [x] returns 429 + Retry-After when exceeded          (test: api/ratelimit.test.ts)
+- [x] limit is configurable via env var                (manual)
 <!-- /looper:acceptance-criteria -->
 
 ### Scope
@@ -133,35 +133,35 @@ with the criteria mirrored, (d) a contract comment was posted, (e) the label is
 
 ## Acceptance Criteria
 
-- [ ] `templates/loops/groom/loop.yml` exists, validates against the 0006 schema,
+- [x] `templates/loops/groom/loop.yml` exists, validates against the 0006 schema,
       declares `from: needs-grooming → to: ready-for-agent`, `require_dor: false`,
       `tier: safe`, an issue+plan-only blast radius, and `mode: dry-run`.
-- [ ] `templates/loops/groom/prompt.md` produces, when composed (0022), a brief that
+- [x] `templates/loops/groom/prompt.md` produces, when composed (0022), a brief that
       instructs the agent to emit the `<!-- looper:acceptance-criteria -->` block
       (each criterion tagged `test:`/`manual:`), scope bounds, and a test plan, and
       to edit only the issue body + plan files.
-- [ ] The built-in `groom` policy fragment encodes the DoR output contract + the
+- [x] The built-in `groom` policy fragment encodes the DoR output contract + the
       assume-and-proceed bias and is inlined via `{% policy groom %}`.
-- [ ] The DoR output the brief targets parses with the 0014 marker parser and has
+- [x] The DoR output the brief targets parses with the 0014 marker parser and has
       ≥1 `test:`-tagged criterion (biased to testable).
-- [ ] On ingest, the criteria are mirrored into the bound plan (0016), the
+- [x] On ingest, the criteria are mirrored into the bound plan (0016), the
       plan-as-contract comment is posted, and the label advances to
       `ready-for-agent`.
-- [ ] The golden scenario test passes offline on fake GitHub + fake backend (no real
+- [x] The golden scenario test passes offline on fake GitHub + fake backend (no real
       quota) and asserts the full DoR output shape above.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Write `templates/loops/groom/loop.yml` (trigger/transition/backend/gates/blast
+- [x] Write `templates/loops/groom/loop.yml` (trigger/transition/backend/gates/blast
       radius/dry-run) and confirm it validates via `looper loops validate groom`.
-- [ ] Write `templates/loops/groom/prompt.md` (DoR instructions + 0022 placeholders
+- [x] Write `templates/loops/groom/prompt.md` (DoR instructions + 0022 placeholders
       + `{% policy groom %}`).
-- [ ] Ship the built-in `groom` policy fragment in `@looper/runtime`.
-- [ ] Add the fixture raw issue + scripted DoR backend response in `@looper/testing`.
-- [ ] Write the golden scenario test asserting the DoR output shape, plan binding,
+- [x] Ship the built-in `groom` policy fragment in `@looper/runtime`.
+- [x] Add the fixture raw issue + scripted DoR backend response in `@looper/testing`.
+- [x] Write the golden scenario test asserting the DoR output shape, plan binding,
       contract comment, and label advance.
-- [ ] Update the loop walkthrough/docs if the built-in groom asset shape changed.
+- [x] Update the loop walkthrough/docs if the built-in groom asset shape changed.
 
 ## Test Plan
 
@@ -178,14 +178,22 @@ npm test -w @looper/testing    # golden scenario: raw issue → asserted DoR out
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the final `loop.yml` knobs (esp. `require_dor: false` rationale + blast
-radius), the brief's DoR section structure, the `test:`/`manual:` tagging guidance,
-the assume-and-proceed phrasing (and why the hard-block decision defers to 0035),
-and the golden scenario's asserted shape.
+- The grooming work cell is DATA: `templates/loops/groom/{loop.yml,prompt.md}`
+  (plan-update expectation; the prompt mandates the criteria/scope/test-plan
+  blocks, plan creation, the plan-as-contract comment, and the verdict line).
+- Result routing: `looper-verdict: ready` → ready-for-agent;
+  `needs-clarification` → the fallback state. The runner's verdict ingest is
+  generic (loop-actions.ts).
+- Plan binding/opening happens in the runner's plan-sync (M04), so grooming
+  always leaves a bound plan with Status mirroring readiness.
 
 ## Risks / Rollback
 
@@ -200,4 +208,7 @@ by stating assumptions explicitly (human-visible in the contract comment) and by
 
 ## Final Summary
 
-Fill this in before marking verified.
+Grooming ships as loop assets driving needs-grooming → ready-for-agent
+(fallback needs-clarification) with a plan-update work cell, criteria/scope
+authoring instructions, verdict-line routing, and durable-plan binding —
+proven by the e2e lifecycle test.

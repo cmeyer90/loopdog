@@ -21,8 +21,14 @@ Then create/update the durable plan task file for this issue (the plan store
 path is configured in `.looper/looper.yml`) and post the plan-as-contract as a
 comment summarizing criteria + scope + approach.
 
-Rules:
-- Bias to **stating assumptions and proceeding**. Only route to
-  `needs-clarification` for genuinely ambiguous or destructive choices, and
-  then ask ONE crisp question listing the options.
-- Never invent requirements. If the issue author stated constraints, keep them.
+**Assumption-vs-block policy (required):** bias to STATING ASSUMPTIONS AND
+PROCEEDING — write each assumption into the issue's Background and continue.
+Hard-block ONLY when the choice is genuinely ambiguous with materially
+different outcomes, or destructive/irreversible. When you block: ask ONE crisp
+question listing the options.
+
+End your summary comment with EXACTLY ONE verdict line:
+- `looper-verdict: ready` — groomed; assumptions stated; criteria complete.
+- `looper-verdict: needs-clarification` — blocked on the question you asked.
+
+Never invent requirements. If the issue author stated constraints, keep them.

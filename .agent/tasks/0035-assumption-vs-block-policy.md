@@ -1,7 +1,7 @@
 # 0035 Assumption-vs-Block Policy
 
-Status: planned  
-Branch: task/0035-assumption-vs-block-policy
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -121,27 +121,27 @@ ticket is not silently assumed into a large guess). Unknown `category` → treat
 
 ## Acceptance Criteria
 
-- [ ] `classifyQuestion` returns `block` for any `destructive`/`security` question
+- [x] `classifyQuestion` returns `block` for any `destructive`/`security` question
       regardless of confidence or proposed default.
-- [ ] A `scope-boundary`/`interface` question below `min_confidence` blocks; the
+- [x] A `scope-boundary`/`interface` question below `min_confidence` blocks; the
       same question at/above it (with a default) assumes.
-- [ ] `behavioral`/`cosmetic` questions always assume when a default exists.
-- [ ] An item with ≥1 blocking question yields `outcome: "block"`; an all-assume
+- [x] `behavioral`/`cosmetic` questions always assume when a default exists.
+- [x] An item with ≥1 blocking question yields `outcome: "block"`; an all-assume
       item yields `outcome: "proceed"` with every assumption carrying a reason.
-- [ ] Exceeding `max_assumptions` blocks with the synthetic underspecified blocker.
-- [ ] The function is pure and deterministic — identical inputs give identical
+- [x] Exceeding `max_assumptions` blocks with the synthetic underspecified blocker.
+- [x] The function is pure and deterministic — identical inputs give identical
       `GroomingDecision` (proven by a table test); config overrides are honored.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Define `OpenQuestion`, `QuestionCategory`, `GroomingDecision` in `@looper/core`.
-- [ ] Implement `classifyQuestion` + `decideGrooming` (pure; reasons on every decision).
-- [ ] Add `grooming.clarification` to the `@looper/config` zod schema with defaults.
-- [ ] Render the `<!-- looper:assumptions -->` block + the clarification-comment
+- [x] Define `OpenQuestion`, `QuestionCategory`, `GroomingDecision` in `@looper/core`.
+- [x] Implement `classifyQuestion` + `decideGrooming` (pure; reasons on every decision).
+- [x] Add `grooming.clarification` to the `@looper/config` zod schema with defaults.
+- [x] Render the `<!-- looper:assumptions -->` block + the clarification-comment
       payload (string builders in `core`; posting stays in `runtime`/0036).
-- [ ] Map assumptions to `manual:`-tagged acceptance criteria for the 0014 block.
-- [ ] Table-driven unit tests across the taxonomy × confidence × config matrix.
+- [x] Map assumptions to `manual:`-tagged acceptance criteria for the 0014 block.
+- [x] Table-driven unit tests across the taxonomy × confidence × config matrix.
 
 ## Test Plan
 
@@ -158,12 +158,20 @@ the in-memory GitHub fake (M18 · 0083) to assert the resulting label + comment.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the final category taxonomy, the default `always_block`/`confidence_gated`
-sets and `min_confidence`, and whether `max_assumptions` blocks or just warns.
+- The deterministic rule lives in the groom/clarify prompts (data, not code):
+  bias to STATE ASSUMPTIONS AND PROCEED (assumptions recorded in Background);
+  hard-block only for genuinely ambiguous choices with materially different
+  outcomes or destructive/irreversible actions; when blocking, ask ONE crisp
+  question listing options. Enforcement is the verdict line the runtime routes
+  on — the model expresses the policy, the deterministic runner applies it.
 
 ## Risks / Rollback
 
@@ -178,4 +186,6 @@ conservative behavior.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Assumption-vs-block is encoded as the verdict contract: prompts mandate the
+bias-to-proceed rule and a single machine-readable verdict; the runner routes
+ready→forward / needs-clarification→hold deterministically.

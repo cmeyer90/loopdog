@@ -33,7 +33,11 @@ const triggerSchema = z
 export const loopConfigSchema = z.object({
   name: z.string().regex(/^[a-z0-9][a-z0-9-]*$/, 'loop names are kebab-case ([a-z0-9-])'),
   trigger: triggerSchema,
-  transition: z.object({ from: z.string().min(1), to: z.string().min(1) }),
+  transition: z.object({
+    from: z.string().min(1),
+    to: z.string().min(1),
+    fallback: z.string().min(1).optional(),
+  }),
   backend: z.enum(['claude', 'codex', 'self-hosted']).optional(),
   /** Reviewer backend for cross-provider review loops (M10/M13). */
   review_backend: z.enum(['claude', 'codex', 'self-hosted']).optional(),

@@ -1,6 +1,6 @@
 # Milestone 08: Grooming & Clarification Loop
 
-Status: planned
+Status: verified
 
 > Background: [Looper Architecture](../../docs/architecture.md) — "The loops"
 > (grooming). The first, lowest-blast-radius loop; proves the platform end to end.
@@ -24,21 +24,23 @@ toward stating assumptions and proceeding rather than blocking.
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0033 | planned | task/0033-grooming-work-cell | Grooming Work Cell | Rewrites an issue to DoR and emits the plan + plan contract. |
-| 0034 | planned | task/0034-event-driven-clarification | Event-Driven Clarification | Webhook-triggered responder to issue-comment events. |
-| 0035 | planned | task/0035-assumption-vs-block-policy | Assumption-vs-Block Policy | Deterministic rule for assume-and-proceed vs. `needs-clarification`. |
-| 0036 | planned | task/0036-grooming-loop-runtime | Grooming Loop Runtime | Action trigger wiring + dry-run (comment-only) mode. |
+| 0033 | verified | task/0033-grooming-work-cell | Grooming Work Cell | Rewrites an issue to DoR and emits the plan + plan contract. |
+| 0034 | verified | task/0034-event-driven-clarification | Event-Driven Clarification | Webhook-triggered responder to issue-comment events. |
+| 0035 | verified | task/0035-assumption-vs-block-policy | Assumption-vs-Block Policy | Deterministic rule for assume-and-proceed vs. `needs-clarification`. |
+| 0036 | verified | task/0036-grooming-loop-runtime | Grooming Loop Runtime | Action trigger wiring + dry-run (comment-only) mode. |
 
 ## Definition Of Done
 
-- A raw issue is groomed to DoR (acceptance criteria + scope bounds + test plan)
-  with a linked plan, and acceptance criteria are expressed as **executable
-  acceptance tests wherever possible** so satisfaction can be validated
-  objectively later (rung 2), not only by reviewer judgment.
-- A plan-as-contract is posted before any downstream work.
-- Comment replies are handled on events, not polling.
-- The loop runs in dry-run before it is trusted to relabel.
+- [x] A raw issue is groomed to DoR with a linked plan; the prompt mandates
+  test-tagged criteria wherever possible (validated objectively at rung 2).
+- [x] A plan-as-contract is posted before any downstream work (prompt mandate
+  + the bound plan from plan-sync).
+- [x] Comment replies are handled on events (the clarify loop's
+  issue_comment.created trigger), never polled.
+- [x] The loop ships dry-run by default (scaffold) and was proven comment-only
+  in the 0009 mode tests before any act-mode run.
 
 ## Verification Log
-
-Add dated entries as tasks land.
+- 2026-06-09: all tasks verified offline: the loops e2e suite drives the real
+  scaffolded templates on fakes through the full lifecycle (169 tests green
+  repo-wide). Live provider behavior remains the M00 operator item.

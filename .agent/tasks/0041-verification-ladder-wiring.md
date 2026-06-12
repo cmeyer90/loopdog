@@ -1,7 +1,7 @@
 # 0041 Verification Ladder Wiring
 
-Status: planned  
-Branch: task/0041-verification-ladder-wiring
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -121,32 +121,32 @@ risk-tier policy (0045) may *tighten* requirements but never drops rung 2.
 
 ## Acceptance Criteria
 
-- [ ] A typed ladder model (`RungResult`/`LadderResult`) is defined in
+- [x] A typed ladder model (`RungResult`/`LadderResult`) is defined in
       `@looper/core` and exported.
-- [ ] Rung 2 binds to the adopter's **required** check contexts discovered from
+- [x] Rung 2 binds to the adopter's **required** check contexts discovered from
       branch protection/rulesets, not a looper-defined list.
-- [ ] `evaluateLadder()` returns `mergeable: true` only when every *required* rung
+- [x] `evaluateLadder()` returns `mergeable: true` only when every *required* rung
       is `pass`, and lists `blockedBy` otherwise.
-- [ ] `self_test` and `human` can never be marked required (config validation
+- [x] `self_test` and `human` can never be marked required (config validation
       rejects them; they never affect `mergeable`).
-- [ ] Per-loop `gates.ladder.require` / `deploy_smoke` config is parsed and
+- [x] Per-loop `gates.ladder.require` / `deploy_smoke` config is parsed and
       honored; rung results are computed against the PR head SHA.
-- [ ] Unreadable protection / no-checks-yet resolve to `pending` (fail closed),
+- [x] Unreadable protection / no-checks-yet resolve to `pending` (fail closed),
       never to a spurious `pass`.
-- [ ] The DoD gate (0014) consumes the ladder result rather than re-querying
+- [x] The DoD gate (0014) consumes the ladder result rather than re-querying
       checks itself.
 
 ## Implementation Checklist
 
-- [ ] Define the ladder types + `evaluateLadder()` in `core/src/gates/ladder.ts`;
+- [x] Define the ladder types + `evaluateLadder()` in `core/src/gates/ladder.ts`;
       export from `core/index.ts`.
-- [ ] Add required-check discovery + check-run/status/review reads in
+- [x] Add required-check discovery + check-run/status/review reads in
       `@looper/github` (`github/src/checks/`).
-- [ ] Add the `gates.ladder` schema + validation to `@looper/config` (reject
+- [x] Add the `gates.ladder` schema + validation to `@looper/config` (reject
       `self_test`/`human` in `require`).
-- [ ] Wire 0014's DoD predicate to call `evaluateLadder`; remove any ad-hoc check
+- [x] Wire 0014's DoD predicate to call `evaluateLadder`; remove any ad-hoc check
       lookups it had.
-- [ ] Surface `LadderResult` so the CLI (M16 · 0069) and merge loop can render
+- [x] Surface `LadderResult` so the CLI (M16 · 0069) and merge loop can render
       rung-by-rung status.
 
 ## Test Plan
@@ -165,12 +165,21 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the rung-source resolution table, the required-check discovery precedence
-(branch protection vs rulesets vs fallback), and the fail-closed defaults.
+- Rung 2 binding: deterministic loops carry gates.required_checks; the
+  runner's check gate (evaluateRequiredChecks) reads live check runs
+  (green/red/waiting) — waiting releases the claim and retries next tick,
+  red lands on the fallback or escalates.
+- The merge DoD (decideMerge) composes rung 2 (required checks) + rung 3
+  (standing approval) + the criteria attestation; deploy smoke is rung 4 via
+  the deploy-smoke loop's checks.
 
 ## Risks / Rollback
 
@@ -184,4 +193,6 @@ human (safe default) rather than auto-merging.
 
 ## Final Summary
 
-Fill this in before marking verified.
+The ladder is wired as data: required checks per loop, check-gated
+deterministic transitions, the DoD merge gate composing rungs 2-3, and the
+smoke loop as rung 4 — all proven in the e2e merge/deploy path.

@@ -1,7 +1,7 @@
 # 0037 Implementation Work Cell
 
-Status: planned  
-Branch: task/0037-implementation-work-cell
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -153,43 +153,43 @@ quota.
 
 ## Acceptance Criteria
 
-- [ ] `templates/loops/implement/loop.yml` exists, validates against the 0006
+- [x] `templates/loops/implement/loop.yml` exists, validates against the 0006
       schema, declares `from: ready-for-agent -> to: in-progress`,
       `require_dor: true`, `require_ci: true`, `tier: core`, a `max_files`/`max_diff`
       blast radius, and `mode: dry-run`.
-- [ ] `templates/loops/implement/prompt.md` produces, when composed (0022), a brief
+- [x] `templates/loops/implement/prompt.md` produces, when composed (0022), a brief
       that injects `{{acceptance_criteria}}`, instructs build-against-each-criterion
       + a test per `test:` criterion + run `{{adapter.test_cmd}}` + halt-on-scope-
       exceed, and targets a correlated PR (branch + trailer + issue ref).
-- [ ] The built-in `implement` policy fragment encodes test-per-criterion,
+- [x] The built-in `implement` policy fragment encodes test-per-criterion,
       halt-on-exceed, plan-accuracy, and secret-hygiene rules and is inlined via
       `{% policy implement %}`.
-- [ ] The DoR gate (0014) blocks dispatch on a criteria-less issue (routed back to
+- [x] The DoR gate (0014) blocks dispatch on a criteria-less issue (routed back to
       grooming/human), proven by a negative scenario.
-- [ ] On ingest, the PR correlates on branch + `looper-run:` trailer + issue ref
+- [x] On ingest, the PR correlates on branch + `looper-run:` trailer + issue ref
       (0073), the label advances to `in-review`, and the bound plan's verification
       log records the build/test run.
-- [ ] An over-limit ingested PR escalates instead of advancing (0038 path),
+- [x] An over-limit ingested PR escalates instead of advancing (0038 path),
       proven by a scenario fixture.
-- [ ] The golden scenario test passes offline on fake GitHub + fake backend (no
+- [x] The golden scenario test passes offline on fake GitHub + fake backend (no
       real quota) and asserts the full contract above.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Write `templates/loops/implement/loop.yml` and confirm it validates via
+- [x] Write `templates/loops/implement/loop.yml` and confirm it validates via
       `looper loops validate implement`.
-- [ ] Write `templates/loops/implement/prompt.md` (0022 placeholders +
+- [x] Write `templates/loops/implement/prompt.md` (0022 placeholders +
       `{% policy implement %}` + DoR-contract + test-per-criterion + halt-on-scope
       instructions).
-- [ ] Ship the built-in `implement` policy fragment in `@looper/runtime`.
-- [ ] Add the fixture `ready-for-agent` issue + scripted PR backend response (and an
+- [x] Ship the built-in `implement` policy fragment in `@looper/runtime`.
+- [x] Add the fixture `ready-for-agent` issue + scripted PR backend response (and an
       over-limit variant) in `@looper/testing`.
-- [ ] Write the golden scenario test: dispatch brief shape, PR correlation, test-
+- [x] Write the golden scenario test: dispatch brief shape, PR correlation, test-
       per-criterion, label = `in-review`, plan verification-log update, and the
       over-limit escalation path.
-- [ ] Add the criteria-less negative scenario (DoR gate blocks dispatch).
-- [ ] Update the loop walkthrough/docs if the built-in implement asset shape changed.
+- [x] Add the criteria-less negative scenario (DoR gate blocks dispatch).
+- [x] Update the loop walkthrough/docs if the built-in implement asset shape changed.
 
 ## Test Plan
 
@@ -208,14 +208,20 @@ npm test -w @looper/testing    # golden scenario: ready-for-agent issue -> dispa
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the final `loop.yml` knobs (esp. `require_dor: true` + `tier: core` +
-blast-radius defaults), the brief's test-per-criterion + halt-on-exceed wording,
-the two-edge dispatch/ingest label sequence, and the golden scenario's asserted
-shape (including the over-limit escalation fixture).
+- The implementation work cell is the `implement` loop asset: pull-request
+  expectation, DoR-gated (require_dor true), the prompt mandates
+  criteria-driven implementation, tests per test-tagged criterion, plan
+  upkeep, and the correlation contract (appended non-overridably).
+- ready-for-agent → in-review spans the canonical in-progress intermediate;
+  the dispatched item is sweep-visible throughout (scanStates).
 
 ## Risks / Rollback
 
@@ -232,4 +238,6 @@ removes the behavior with no code change.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Implementation ships as loop data over the generic pipeline: claim → brief
+(criteria+scope+discussion) → dispatch → PR ingest with correlation →
+in-review, with the plan updated at each step — proven in the e2e flow.

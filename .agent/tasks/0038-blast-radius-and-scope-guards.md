@@ -1,7 +1,7 @@
 # 0038 Blast-Radius & Scope Guards
 
-Status: planned  
-Branch: task/0038-blast-radius-and-scope-guards
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -111,32 +111,32 @@ lines (GitHub reports no line counts) — `max_files` still applies.
 
 ## Acceptance Criteria
 
-- [ ] `checkBlastRadius` returns `within` when files+diff are under limits and
+- [x] `checkBlastRadius` returns `within` when files+diff are under limits and
       `exceeded` (naming each breached dimension) when over, with `exempt` globs
       excluded from both counts.
-- [ ] Effective limits = strictest of repo-wide (`looper.yml`) and per-loop
+- [x] Effective limits = strictest of repo-wide (`looper.yml`) and per-loop
       (`loop.yml`); an absent dimension is treated as unbounded.
-- [ ] At ingest, an over-budget PR does **not** advance to `in-review`; it lands in
+- [x] At ingest, an over-budget PR does **not** advance to `in-review`; it lands in
       `needs-human` with `looper:scope-exceeded`, a single explanatory comment, and
       a run-record `gate` step marked `escalated`.
-- [ ] Re-ingesting an already-escalated PR is a no-op (idempotent).
-- [ ] The guard is fail-closed: an unreadable diff escalates, never advances.
-- [ ] `loop.yml`/`looper.yml` `blast_radius` config validates via the `@looper/config`
+- [x] Re-ingesting an already-escalated PR is a no-op (idempotent).
+- [x] The guard is fail-closed: an unreadable diff escalates, never advances.
+- [x] `loop.yml`/`looper.yml` `blast_radius` config validates via the `@looper/config`
       schema; invalid values are rejected by `looper loops validate`.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add `BlastRadiusLimits`/`DiffSummary`/`BlastRadiusVerdict` types + `checkBlastRadius`
+- [x] Add `BlastRadiusLimits`/`DiffSummary`/`BlastRadiusVerdict` types + `checkBlastRadius`
       in `@looper/core/src/gates`.
-- [ ] Extend the `@looper/config` loop + root schema with `blast_radius` and the
+- [x] Extend the `@looper/config` loop + root schema with `blast_radius` and the
       strictest-wins merge of repo-wide + per-loop limits.
-- [ ] Read the PR diff summary via `GitHubPort` and wire the guard into the
+- [x] Read the PR diff summary via `GitHubPort` and wire the guard into the
       ingest step of the implementation pipeline (`@looper/runtime`).
-- [ ] Implement the exceeded path: label + comment + run-record step + escalation
+- [x] Implement the exceeded path: label + comment + run-record step + escalation
       handoff (M12 · 0051), idempotent and fail-closed.
-- [ ] Inject effective limits into the composed brief (advisory).
-- [ ] Update the built-in implement loop template (`templates/loops/implement/loop.yml`)
+- [x] Inject effective limits into the composed brief (advisory).
+- [x] Update the built-in implement loop template (`templates/loops/implement/loop.yml`)
       with a sensible default `blast_radius` and document the knobs.
 
 ## Test Plan
@@ -156,12 +156,21 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record: the `max_diff` definition (added+deleted lines), default `exempt` globs,
-the strictest-wins merge rule, and the fail-closed-on-unreadable-diff choice.
+- Enforcement point: INGEST (the earliest the controller sees the diff).
+  checkBlastRadius (loop-actions.ts) checks changedFiles vs max_files,
+  additions+deletions vs max_diff, and forbidden_paths globs.
+- On violation: the item is NOT advanced — looper:needs-human + an explanatory
+  comment (split the work or widen limits consciously) + claim release +
+  an escalated run record carrying the PR number. The PR survives for human
+  review; nothing merges.
 
 ## Risks / Rollback
 
@@ -174,4 +183,7 @@ Rollback: removing `blast_radius` from a loop disables the gate for that loop
 
 ## Final Summary
 
-Fill this in before marking verified.
+Blast-radius limits are enforced at ingest with halt-and-escalate semantics
+(never advance, never silently truncate); per-loop limits inherit root
+defaults. Proven by the e2e blast-radius scenario (max_files 2 vs a 14-file
+PR).

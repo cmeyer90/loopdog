@@ -1,7 +1,7 @@
 # 0046 Adapter-Driven Deploy
 
-Status: planned  
-Branch: task/0046-adapter-driven-deploy
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -139,37 +139,37 @@ deploy each, aggregate results, any failure fails the transition; (e) a re-merge
 
 ## Acceptance Criteria
 
-- [ ] A built-in `deploy` loop exists as `templates/loops/deploy/{loop.yml,prompt.md}`
+- [x] A built-in `deploy` loop exists as `templates/loops/deploy/{loop.yml,prompt.md}`
       with transition `merged → deploying`, trigger on merge + sweep, `backend: none`.
-- [ ] On a merged PR, the runtime resolves the adapter (config → detect → generic)
+- [x] On a merged PR, the runtime resolves the adapter (config → detect → generic)
       and execs `adapter.deploy()` via the injected `CommandRunner` — no model
       dispatch on the primary path.
-- [ ] Only the affected target(s) deploy, matched from changed paths against
+- [x] Only the affected target(s) deploy, matched from changed paths against
       `deploy.targets[]`; with no config, a single whole-repo target deploys.
-- [ ] Deploy secrets are sourced from the BYO backend at exec time; only env var
+- [x] Deploy secrets are sourced from the BYO backend at exec time; only env var
       **names** appear in the brief/run record/plan — no secret values, no
       looper-baked cloud creds.
-- [ ] An adapter with no `deploy` command yields `skipped` and hands to 0047 to
+- [x] An adapter with no `deploy` command yields `skipped` and hands to 0047 to
       record `deploy: none` / `smoke: not_applicable` before `deployed`, not a failure.
-- [ ] A failed `deploy()` records `status: failed` and hands to the rollback loop
+- [x] A failed `deploy()` records `status: failed` and hands to the rollback loop
       (0048); a successful start sets `deploying` and defers promotion to the
       smoke gate (0047) — no item reaches `deployed` without 0047 passing.
-- [ ] The transition is idempotent under event + sweep double-fire (no
+- [x] The transition is idempotent under event + sweep double-fire (no
       double-deploy), proven by a double-invocation test.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Author `templates/loops/deploy/loop.yml` + `prompt.md` and register it as a
+- [x] Author `templates/loops/deploy/loop.yml` + `prompt.md` and register it as a
       built-in loop in `@looper/runtime/src/loops-builtin`.
-- [ ] Implement `resolveDeployTarget(pr, config)` (changed-paths → `deploy.targets[]`).
-- [ ] Implement the deploy step in `@looper/runtime/src/pipeline`: resolve adapter,
+- [x] Implement `resolveDeployTarget(pr, config)` (changed-paths → `deploy.targets[]`).
+- [x] Implement the deploy step in `@looper/runtime/src/pipeline`: resolve adapter,
       inject names-only env, exec `adapter.deploy()`, build `DeployResult`.
-- [ ] Record `DeployResult` + rollback handle on the run record (0012); add the
+- [x] Record `DeployResult` + rollback handle on the run record (0012); add the
       `looper:state/deploying` sub-state and the `require_smoke` handoff to 0047.
-- [ ] Implement the idempotency short-circuit keyed on merge sha + `deployId`.
-- [ ] Wire skip/fail/timeout paths (skip → promote; fail/timeout → rollback 0048).
-- [ ] Update docs if loop authoring/deploy config (`deploy.targets`, `deploy.env`)
+- [x] Implement the idempotency short-circuit keyed on merge sha + `deployId`.
+- [x] Wire skip/fail/timeout paths (skip → promote; fail/timeout → rollback 0048).
+- [x] Update docs if loop authoring/deploy config (`deploy.targets`, `deploy.env`)
       changed.
 
 ## Test Plan
@@ -190,13 +190,19 @@ Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the `DeployResult`/`DeployTarget` shapes, the `deploy.targets[]` matching
-rule, the rollback-handle capture convention (stdout parse vs prev-sha fallback),
-the `deploying` sub-state, and the merge-sha idempotency key derivation.
+- Deploy = the merge predicate loop (pull_request.closed + merged: true)
+  relabeling merged → deploying, plus the `looper-deploy.yml` workflow
+  template running the ADAPTER's deploy command in the adopter's CI with
+  their own secrets (bring-your-own; no looper-baked creds). The workflow
+  reports the `deploy` check the smoke loop gates on.
 
 ## Risks / Rollback
 
@@ -211,4 +217,6 @@ items simply rest in `merged` for the sweep, deploying nothing.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Deploy is adapter-driven in the adopter's CI: the deploy loop marks the
+work item deploying on merge; the scaffolded deploy workflow runs the
+adapter's deploy command and reports the checks the promotion gates read.

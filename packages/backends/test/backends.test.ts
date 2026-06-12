@@ -249,12 +249,31 @@ describe('self-hosted backend (0074)', () => {
 
   it('ingests the worker PR through the same correlation as everyone else', async () => {
     const gh = new FakeGitHub();
-    const backend = new SelfHostedBackend({ gh });
+    const backend = new SelfHostedBackend({ gh, now: () => new Date('2026-06-09T12:00:00Z') });
     const h = await backend.dispatch(brief);
     expect(await backend.ingest(h)).toEqual({ status: 'pending' });
-    gh.seedPull({ ref: { ...repo, number: 200 }, headRef: brief.expectedBranch, body: '' });
+    gh.seedPull({
+      ref: { ...repo, number: 200 },
+      headRef: brief.expectedBranch,
+      body: '',
+      updatedAt: '2026-06-09T12:30:00Z', // the worker pushed AFTER dispatch
+    });
     const result = await backend.ingest(h);
     expect(result).toMatchObject({ status: 'completed', matchedBy: 'branch-name' });
+
+    // a pre-existing untouched PR does NOT complete (fix-loop semantics, 0044)
+    const stale = await backend.dispatch({
+      ...brief,
+      runId: 'run-2',
+      expectedBranch: 'looper/x/9-run-2',
+    });
+    gh.seedPull({
+      ref: { ...repo, number: 201 },
+      headRef: 'looper/x/9-run-2',
+      body: '',
+      updatedAt: '2026-06-09T10:00:00Z', // BEFORE dispatch — no new push yet
+    });
+    expect(await backend.ingest(stale)).toEqual({ status: 'pending' });
   });
 });
 

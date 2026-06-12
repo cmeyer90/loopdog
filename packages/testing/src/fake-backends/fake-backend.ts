@@ -26,8 +26,17 @@ export class FakeBackend implements ExecutionBackend {
   /** How many ingest polls return pending before completion. */
   pendingIngests = 0;
   readonly dispatched: WorkBrief[] = [];
+  /**
+   * Scripted work-cell simulation, run once at ingest-completion time (e.g.
+   * "groom the issue body", "post a verdict comment"). Receives the fake and
+   * the handle; the trailer comment/PR is still created by the backend.
+   */
+  simulate?: (gh: FakeGitHub, handle: DispatchHandle) => Promise<void>;
+  /** Verdict line appended to comment-shaped results (e.g. 'looper-verdict: ready'). */
+  resultVerdict?: string;
   private sessions = 0;
   private polls = new Map<string, number>();
+  private simulated = new Set<string>();
 
   constructor(
     private readonly gh: FakeGitHub,
@@ -78,11 +87,16 @@ export class FakeBackend implements ExecutionBackend {
     this.polls.set(handle.runId, polls);
     if (polls <= this.pendingIngests) return { status: 'pending' };
 
+    if (this.simulate && !this.simulated.has(handle.runId)) {
+      this.simulated.add(handle.runId);
+      await this.simulate(this.gh, handle);
+    }
+
     if (handle.expectation === 'pull-request') {
       const obeys = this.behavior !== 'rogue-pr';
       const headRef = obeys ? handle.expectedBranch : `agent/whimsical-branch-${polls}`;
       const body = obeys
-        ? `Implements the brief.\n\n${handle.expectedTrailer}`
+        ? `Implements #${handle.item.number}.\n\n${handle.expectedTrailer}`
         : 'Implements the brief. (no trailer)';
       // Find or create the provider's PR on the fake GitHub.
       const existing = await this.gh.listPullRequestsByHeadPrefix(
@@ -104,6 +118,20 @@ export class FakeBackend implements ExecutionBackend {
         matchedBy: obeys ? 'branch-name' : 'dispatch-signal',
       };
     }
-    return { status: 'completed', matchedBy: 'dispatch-signal' };
+    // comment / plan-update results: post the work cell's summary comment
+    // (with the verdict line + trailer) as the provider bot.
+    const previousActor = this.gh.actor;
+    this.gh.actor = { login: `${this.id}-provider[bot]`, type: 'Bot' };
+    const { id } = await this.gh.createComment(
+      handle.item,
+      [
+        'Work cell summary.',
+        ...(this.resultVerdict ? [this.resultVerdict] : []),
+        '',
+        handle.expectedTrailer,
+      ].join('\n'),
+    );
+    this.gh.actor = previousActor;
+    return { status: 'completed', commentId: id, matchedBy: 'dispatch-signal' };
   }
 }

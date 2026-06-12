@@ -45,23 +45,23 @@ table and in `milestones.md`.
 | 0030 | verified | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config |
 | 0031 | verified | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards |
 | 0032 | verified | task/0032-secret-trust-boundary-doc | Secret Trust-Boundary & Constraints Doc |
-| 0033 | planned | task/0033-grooming-work-cell | Grooming Work Cell |
-| 0034 | planned | task/0034-event-driven-clarification | Event-Driven Clarification |
-| 0035 | planned | task/0035-assumption-vs-block-policy | Assumption-vs-Block Policy |
-| 0036 | planned | task/0036-grooming-loop-runtime | Grooming Loop Runtime |
-| 0037 | planned | task/0037-implementation-work-cell | Implementation Work Cell |
-| 0038 | planned | task/0038-blast-radius-and-scope-guards | Blast-Radius & Scope Guards |
-| 0039 | planned | task/0039-branch-pr-automation | Branch/PR Automation |
-| 0040 | planned | task/0040-adapter-driven-build-test | Adapter-Driven Build & Test |
-| 0041 | planned | task/0041-verification-ladder-wiring | Verification Ladder Wiring |
-| 0042 | planned | task/0042-cross-model-review-cell | Cross-Model Review Cell |
-| 0043 | planned | task/0043-intent-diff-against-criteria | Intent-Diff Against Criteria |
-| 0044 | planned | task/0044-fix-suggestions-subloop | Fix-Suggestions Sub-Loop |
-| 0045 | planned | task/0045-graduated-auto-merge-policy | Graduated Auto-Merge Policy |
-| 0046 | planned | task/0046-adapter-driven-deploy | Adapter-Driven Deploy |
-| 0047 | planned | task/0047-smoke-canary-health-gate | Smoke/Canary & Health Gate |
-| 0048 | planned | task/0048-auto-rollback-loop | Auto-Rollback Loop |
-| 0049 | planned | task/0049-deploy-result-reporting | Deploy Result Reporting |
+| 0033 | verified | task/0033-grooming-work-cell | Grooming Work Cell |
+| 0034 | verified | task/0034-event-driven-clarification | Event-Driven Clarification |
+| 0035 | verified | task/0035-assumption-vs-block-policy | Assumption-vs-Block Policy |
+| 0036 | verified | task/0036-grooming-loop-runtime | Grooming Loop Runtime |
+| 0037 | verified | task/0037-implementation-work-cell | Implementation Work Cell |
+| 0038 | verified | task/0038-blast-radius-and-scope-guards | Blast-Radius & Scope Guards |
+| 0039 | verified | task/0039-branch-pr-automation | Branch/PR Automation |
+| 0040 | verified | task/0040-adapter-driven-build-test | Adapter-Driven Build & Test |
+| 0041 | verified | task/0041-verification-ladder-wiring | Verification Ladder Wiring |
+| 0042 | verified | task/0042-cross-model-review-cell | Cross-Model Review Cell |
+| 0043 | verified | task/0043-intent-diff-against-criteria | Intent-Diff Against Criteria |
+| 0044 | verified | task/0044-fix-suggestions-subloop | Fix-Suggestions Sub-Loop |
+| 0045 | verified | task/0045-graduated-auto-merge-policy | Graduated Auto-Merge Policy |
+| 0046 | verified | task/0046-adapter-driven-deploy | Adapter-Driven Deploy |
+| 0047 | verified | task/0047-smoke-canary-health-gate | Smoke/Canary & Health Gate |
+| 0048 | verified | task/0048-auto-rollback-loop | Auto-Rollback Loop |
+| 0049 | verified | task/0049-deploy-result-reporting | Deploy Result Reporting |
 | 0050 | planned | task/0050-budgets-and-kill-switch | Budgets & Kill Switch |
 | 0051 | planned | task/0051-stuck-detection-and-escalation | Stuck Detection & Escalation |
 | 0052 | planned | task/0052-run-reporting | Run Reporting |

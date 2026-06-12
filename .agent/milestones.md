@@ -19,10 +19,10 @@ North-star architecture for the V1 roadmap:
 | 05 | Platform | verified | [Provider & Execution Backend Abstraction (Claude + Codex subscriptions)](milestones/milestone-05-model-provider-abstraction.md) |
 | 06 | Platform | verified | [Project Adapter System](milestones/milestone-06-project-adapter-system.md) |
 | 07 | Platform | verified | [Secrets & Identity (two-plane, subscription-native)](milestones/milestone-07-secrets-and-identity.md) |
-| 08 | Loops | planned | [Grooming & Clarification Loop](milestones/milestone-08-grooming-and-clarification-loop.md) |
-| 09 | Loops | planned | [Implementation Loop](milestones/milestone-09-implementation-loop.md) |
-| 10 | Loops | planned | [Review, Verification Ladder & Merge Loop](milestones/milestone-10-review-verification-ladder-and-merge-loop.md) |
-| 11 | Loops | planned | [Deploy & Operational Verification](milestones/milestone-11-deploy-and-operational-verification.md) |
+| 08 | Loops | verified | [Grooming & Clarification Loop](milestones/milestone-08-grooming-and-clarification-loop.md) |
+| 09 | Loops | verified | [Implementation Loop](milestones/milestone-09-implementation-loop.md) |
+| 10 | Loops | verified | [Review, Verification Ladder & Merge Loop](milestones/milestone-10-review-verification-ladder-and-merge-loop.md) |
+| 11 | Loops | verified | [Deploy & Operational Verification](milestones/milestone-11-deploy-and-operational-verification.md) |
 | 12 | Cross-cutting | planned | [Observability, Cost & Safety](milestones/milestone-12-observability-cost-and-safety.md) |
 | 13 | Cross-cutting | planned | [Multi-Model Orchestration](milestones/milestone-13-multi-model-orchestration.md) |
 | 14 | Release | planned | [Documentation, Examples & Trust](milestones/milestone-14-documentation-examples-and-trust.md) |
@@ -86,23 +86,23 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0030 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | verified | task/0030-provider-cloud-env-and-secrets | Provider Cloud Env & Secret Config |
 | 0031 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | verified | task/0031-self-hosted-secret-injection-and-leak-guards | Self-Hosted Secret Injection & Leak Guards |
 | 0032 | Milestone 07: Secrets & Identity (two-plane, subscription-native) | verified | task/0032-secret-trust-boundary-doc | Secret Trust-Boundary & Constraints Doc |
-| 0033 | Milestone 08: Grooming & Clarification Loop | planned | task/0033-grooming-work-cell | Grooming Work Cell |
-| 0034 | Milestone 08: Grooming & Clarification Loop | planned | task/0034-event-driven-clarification | Event-Driven Clarification |
-| 0035 | Milestone 08: Grooming & Clarification Loop | planned | task/0035-assumption-vs-block-policy | Assumption-vs-Block Policy |
-| 0036 | Milestone 08: Grooming & Clarification Loop | planned | task/0036-grooming-loop-runtime | Grooming Loop Runtime |
-| 0037 | Milestone 09: Implementation Loop | planned | task/0037-implementation-work-cell | Implementation Work Cell |
-| 0038 | Milestone 09: Implementation Loop | planned | task/0038-blast-radius-and-scope-guards | Blast-Radius & Scope Guards |
-| 0039 | Milestone 09: Implementation Loop | planned | task/0039-branch-pr-automation | Branch/PR Automation |
-| 0040 | Milestone 09: Implementation Loop | planned | task/0040-adapter-driven-build-test | Adapter-Driven Build & Test |
-| 0041 | Milestone 10: Review, Verification Ladder & Merge Loop | planned | task/0041-verification-ladder-wiring | Verification Ladder Wiring |
-| 0042 | Milestone 10: Review, Verification Ladder & Merge Loop | planned | task/0042-cross-model-review-cell | Cross-Model Review Cell |
-| 0043 | Milestone 10: Review, Verification Ladder & Merge Loop | planned | task/0043-intent-diff-against-criteria | Intent-Diff Against Criteria |
-| 0044 | Milestone 10: Review, Verification Ladder & Merge Loop | planned | task/0044-fix-suggestions-subloop | Fix-Suggestions Sub-Loop |
-| 0045 | Milestone 10: Review, Verification Ladder & Merge Loop | planned | task/0045-graduated-auto-merge-policy | Graduated Auto-Merge Policy |
-| 0046 | Milestone 11: Deploy & Operational Verification | planned | task/0046-adapter-driven-deploy | Adapter-Driven Deploy |
-| 0047 | Milestone 11: Deploy & Operational Verification | planned | task/0047-smoke-canary-health-gate | Smoke/Canary & Health Gate |
-| 0048 | Milestone 11: Deploy & Operational Verification | planned | task/0048-auto-rollback-loop | Auto-Rollback Loop |
-| 0049 | Milestone 11: Deploy & Operational Verification | planned | task/0049-deploy-result-reporting | Deploy Result Reporting |
+| 0033 | Milestone 08: Grooming & Clarification Loop | verified | task/0033-grooming-work-cell | Grooming Work Cell |
+| 0034 | Milestone 08: Grooming & Clarification Loop | verified | task/0034-event-driven-clarification | Event-Driven Clarification |
+| 0035 | Milestone 08: Grooming & Clarification Loop | verified | task/0035-assumption-vs-block-policy | Assumption-vs-Block Policy |
+| 0036 | Milestone 08: Grooming & Clarification Loop | verified | task/0036-grooming-loop-runtime | Grooming Loop Runtime |
+| 0037 | Milestone 09: Implementation Loop | verified | task/0037-implementation-work-cell | Implementation Work Cell |
+| 0038 | Milestone 09: Implementation Loop | verified | task/0038-blast-radius-and-scope-guards | Blast-Radius & Scope Guards |
+| 0039 | Milestone 09: Implementation Loop | verified | task/0039-branch-pr-automation | Branch/PR Automation |
+| 0040 | Milestone 09: Implementation Loop | verified | task/0040-adapter-driven-build-test | Adapter-Driven Build & Test |
+| 0041 | Milestone 10: Review, Verification Ladder & Merge Loop | verified | task/0041-verification-ladder-wiring | Verification Ladder Wiring |
+| 0042 | Milestone 10: Review, Verification Ladder & Merge Loop | verified | task/0042-cross-model-review-cell | Cross-Model Review Cell |
+| 0043 | Milestone 10: Review, Verification Ladder & Merge Loop | verified | task/0043-intent-diff-against-criteria | Intent-Diff Against Criteria |
+| 0044 | Milestone 10: Review, Verification Ladder & Merge Loop | verified | task/0044-fix-suggestions-subloop | Fix-Suggestions Sub-Loop |
+| 0045 | Milestone 10: Review, Verification Ladder & Merge Loop | verified | task/0045-graduated-auto-merge-policy | Graduated Auto-Merge Policy |
+| 0046 | Milestone 11: Deploy & Operational Verification | verified | task/0046-adapter-driven-deploy | Adapter-Driven Deploy |
+| 0047 | Milestone 11: Deploy & Operational Verification | verified | task/0047-smoke-canary-health-gate | Smoke/Canary & Health Gate |
+| 0048 | Milestone 11: Deploy & Operational Verification | verified | task/0048-auto-rollback-loop | Auto-Rollback Loop |
+| 0049 | Milestone 11: Deploy & Operational Verification | verified | task/0049-deploy-result-reporting | Deploy Result Reporting |
 | 0050 | Milestone 12: Observability, Cost & Safety | planned | task/0050-budgets-and-kill-switch | Budgets & Kill Switch |
 | 0075 | Milestone 12: Observability, Cost & Safety | planned | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
 | 0051 | Milestone 12: Observability, Cost & Safety | planned | task/0051-stuck-detection-and-escalation | Stuck Detection & Escalation |

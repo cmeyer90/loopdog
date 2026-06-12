@@ -1,7 +1,7 @@
 # 0045 Graduated Auto-Merge Policy
 
-Status: planned  
-Branch: task/0045-graduated-auto-merge-policy
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -134,35 +134,35 @@ human and corrects the label.
 
 ## Acceptance Criteria
 
-- [ ] `deriveTier` returns `core` if any changed path matches a `core` glob, `safe`
+- [x] `deriveTier` returns `core` if any changed path matches a `core` glob, `safe`
       only if every path matches `safe`, and `core` for any unmatched path.
-- [ ] `gates.tier` acts as a strictness ceiling; the strictest of {glob, ceiling}
+- [x] `gates.tier` acts as a strictness ceiling; the strictest of {glob, ceiling}
       wins, proven by a loop pinned `core` over `safe`-looking paths.
-- [ ] The effective tier is written as a single trusted `looper:tier/<tier>` label,
+- [x] The effective tier is written as a single trusted `looper:tier/<tier>` label,
       re-derived on `synchronize` and on the sweep.
-- [ ] A stranger-applied `looper:tier/safe` on a `core` PR is **corrected**, not
+- [x] A stranger-applied `looper:tier/safe` on a `core` PR is **corrected**, not
       honored; the merge decision uses the recomputed tier, never the raw label.
-- [ ] `tier:core` is never auto-merged regardless of loop mode (held for human).
-- [ ] `tier:safe` + `mode: act` + `ladder.mergeable` + no CODEOWNERS path →
+- [x] `tier:core` is never auto-merged regardless of loop mode (held for human).
+- [x] `tier:safe` + `mode: act` + `ladder.mergeable` + no CODEOWNERS path →
       `auto_merge`; the PR is squash-merged and labeled `looper:state/merged`.
-- [ ] A non-green ladder yields `blocked` (no merge), re-evaluated on the next event.
-- [ ] `hold_for_human` posts exactly one explanatory comment (idempotent).
-- [ ] Relevant checks pass.
+- [x] A non-green ladder yields `blocked` (no merge), re-evaluated on the next event.
+- [x] `hold_for_human` posts exactly one explanatory comment (idempotent).
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Implement `deriveTier` + `TierDecision` in `core/src/merge/tier.ts`
+- [x] Implement `deriveTier` + `TierDecision` in `core/src/merge/tier.ts`
       (strictest-wins, ceiling, unmatched→core); export from `core/index.ts`.
-- [ ] Implement `decideMerge` policy engine in `core/src/merge/policy.ts` per the
+- [x] Implement `decideMerge` policy engine in `core/src/merge/policy.ts` per the
       decision table.
-- [ ] Add tier-label write/reconcile + provenance check in `github/src/merge/`
+- [x] Add tier-label write/reconcile + provenance check in `github/src/merge/`
       (reuse `github/src/labels/`).
-- [ ] Add the squash-merge action + `verified -> merged` write-back + `looper-merge`
+- [x] Add the squash-merge action + `verified -> merged` write-back + `looper-merge`
       trailer in `@looper/github`.
-- [ ] Add the CODEOWNERS-path match helper (read adopter `.github/CODEOWNERS`).
-- [ ] Ship the built-in merge loop asset (`templates/loops/merge/`) in
+- [x] Add the CODEOWNERS-path match helper (read adopter `.github/CODEOWNERS`).
+- [x] Ship the built-in merge loop asset (`templates/loops/merge/`) in
       `@looper/runtime`, wiring the policy into the transition (0012).
-- [ ] Record the merge decision in the run record (0012) for telemetry (M12).
+- [x] Record the merge decision in the run record (0012) for telemetry (M12).
 
 ## Test Plan
 
@@ -182,13 +182,21 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the strictest-wins + unmatched→core rule, the `gates.tier`-as-ceiling
-semantics, the label-provenance/recompute trust model, and the merge-method
-(squash) + trailer convention.
+- Policy = three layers: (1) the promote guard — a tier:core merge loop can
+  NEVER be promoted to act (the dial a loop must not turn itself); (2) the
+  runtime DoD gate (decideMerge): required checks green + standing approval +
+  every criterion attested, else blocked (with reasons commented) or waiting;
+  (3) the merge API call is squash with refusal handling.
+- Merged state mirrors to the bound issue; the closed PR keeps its terminal
+  label and drops out of sweeps (deploy states ride the open issue).
 
 ## Risks / Rollback
 
@@ -204,4 +212,6 @@ no PR is stranded, only un-auto-merged.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Graduated auto-merge: human-gated by default (dry-run + tier:core promote
+guard), DoD-gated at runtime, squash-merged with issue mirroring when every
+rung passes — proven in the e2e merge step with checks + approval seeded.

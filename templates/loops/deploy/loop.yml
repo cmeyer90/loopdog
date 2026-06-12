@@ -1,4 +1,6 @@
-# Deploy: on merge, deploy via the project adapter; smoke-gate + auto-rollback.
+# Deploy entry: on merge, mark the item deploying. The actual deployment runs
+# in YOUR CI through the project adapter's deploy command (see looper-deploy
+# workflow template); the smoke loop promotes or fails it.
 name: deploy
 trigger:
   github_event: pull_request

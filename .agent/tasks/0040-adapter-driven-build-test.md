@@ -1,7 +1,7 @@
 # 0040 Adapter-Driven Build & Test
 
-Status: planned  
-Branch: task/0040-adapter-driven-build-test
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -94,29 +94,29 @@ adapter id + command digests on the run record (0012) for tracing.
 
 ## Acceptance Criteria
 
-- [ ] Adapter resolution honors explicit config, then auto-detect, then generic,
+- [x] Adapter resolution honors explicit config, then auto-detect, then generic,
       returning `build`/`test`/`lint` specs (each nullable).
-- [ ] The composed brief contains a Build & Test section with the resolved
+- [x] The composed brief contains a Build & Test section with the resolved
       commands and an in-sandbox "run before opening PR" instruction.
-- [ ] A `null` test command renders an explicit "CI is sole gate" note, not an
+- [x] A `null` test command renders an explicit "CI is sole gate" note, not an
       empty/omitted section.
-- [ ] After ingest, the adopter's CI required-check result is read via the GitHub
+- [x] After ingest, the adopter's CI required-check result is read via the GitHub
       port and exposed as the build/test verdict to the merge gate.
-- [ ] Sandbox-pass / CI-fail resolves in CI's favor (no merge; routes to fix loop).
-- [ ] No build/test command is executed by controller code; no secret values
+- [x] Sandbox-pass / CI-fail resolves in CI's favor (no merge; routes to fix loop).
+- [x] No build/test command is executed by controller code; no secret values
       appear in the brief or run record.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add `resolveBuildTest(adapter)` + config-override → detect → generic logic in
+- [x] Add `resolveBuildTest(adapter)` + config-override → detect → generic logic in
       `@looper/runtime/src/pipeline`.
-- [ ] Extend brief composition to render the Build & Test section (incl. the
+- [x] Extend brief composition to render the Build & Test section (incl. the
       null-test note).
-- [ ] Add `readCiVerdict(github, pr)` over `@looper/github` required checks.
-- [ ] Wire the verdict into the run record (0012) and expose it to the merge gate.
-- [ ] Handle pending-CI (defer to sweep 0076) and sandbox≠CI divergence.
-- [ ] Update docs if loop authoring/brief shape changed.
+- [x] Add `readCiVerdict(github, pr)` over `@looper/github` required checks.
+- [x] Wire the verdict into the run record (0012) and expose it to the merge gate.
+- [x] Handle pending-CI (defer to sweep 0076) and sandbox≠CI divergence.
+- [x] Update docs if loop authoring/brief shape changed.
 
 ## Test Plan
 
@@ -133,12 +133,20 @@ Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the adapter-resolution precedence, the brief Build & Test template shape,
-the CI-verdict structure, and the rule that CI overrides the sandbox self-report.
+- The brief carries the adapter's commands: ComposeContext.adapter.testCmd
+  ({{adapter.test_cmd}} placeholder) — the work cell runs what the adopter's
+  CI runs. The adopter's CI re-verifies on the PR (rung 2) via required
+  checks the merge DoD reads (gates.required_checks: [lint, test, build]).
+- Detect-driven seeding of testCmd into the controller compose path uses the
+  M06 registry (describe().commands.test).
 
 ## Risks / Rollback
 
@@ -151,4 +159,7 @@ report.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Build/test is adapter-described, sandbox-executed, and CI-re-verified: the
+brief tells the work cell the project's real commands, and the merge gate
+trusts only the adopter's required checks — independent of where the work
+cell ran.

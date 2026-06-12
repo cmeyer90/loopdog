@@ -9,7 +9,12 @@ import type { Mode } from '../gates/mode.js';
 export interface LoopDefinition {
   name: string;
   trigger: LoopTrigger;
-  transition: { from: string; to: string };
+  /**
+   * The transition this loop drives. `fallback` is the alternate landing
+   * state for verdict/check-gated loops (review -> changes-requested, deploy
+   * smoke -> deploy-failed); it must also be a legal edge.
+   */
+  transition: { from: string; to: string; fallback?: string | undefined };
   backend: BackendId;
   /** Reviewer backend when this loop reviews (cross-provider rule, M10/M13). */
   reviewBackend?: BackendId | undefined;

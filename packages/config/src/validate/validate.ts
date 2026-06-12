@@ -146,6 +146,20 @@ export function validateConfig(tree: DiscoveredTree): ValidationResult {
         message: edge.reason ?? 'illegal transition',
       });
     }
+    if (cfg.transition.fallback && cfg.transition.fallback !== cfg.transition.from) {
+      const fb = validateLoopTransition(
+        table,
+        { from: cfg.transition.from, to: cfg.transition.fallback },
+        { dispatches: cfg.expects !== 'none' },
+      );
+      if (!fb.legal) {
+        errors.push({
+          file,
+          path: 'transition.fallback',
+          message: fb.reason ?? 'illegal fallback transition',
+        });
+      }
+    }
 
     if (
       root.backends.zdr &&

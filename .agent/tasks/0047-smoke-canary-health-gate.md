@@ -1,7 +1,7 @@
 # 0047 Smoke/Canary & Health Gate
 
-Status: planned  
-Branch: task/0047-smoke-canary-health-gate
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -159,38 +159,38 @@ rollback also fails → escalate via stuck-detection (M12 · 0051), do not loop.
 
 ## Acceptance Criteria
 
-- [ ] After 0046 moves an item to `looper:state/deploying`, the adapter's
+- [x] After 0046 moves an item to `looper:state/deploying`, the adapter's
       `smoke`/`health` commands are resolved and their results read from GitHub
       Actions state — no target command is executed by controller code.
-- [ ] A typed `SmokeResult` is produced and attached to the run record (0012), and
+- [x] A typed `SmokeResult` is produced and attached to the run record (0012), and
       a `looper/deploy-smoke` check-run is published on the merge commit.
-- [ ] `evaluateLadder()` (0041) resolves the `deploy_smoke` rung from that check-run
+- [x] `evaluateLadder()` (0041) resolves the `deploy_smoke` rung from that check-run
       / artifact; `mergeable`/promotion blocks when `deploy_smoke: true` and the
       verdict is not `pass`.
-- [ ] A `fail` verdict sets `outcome.status: failed` and applies
+- [x] A `fail` verdict sets `outcome.status: failed` and applies
       `looper:state/deploy-failed`, arming the rollback loop (0048) via the sweep.
-- [ ] No `smoke`/`health` command → `not_applicable` recorded explicitly (not a
+- [x] No `smoke`/`health` command → `not_applicable` recorded explicitly (not a
       spurious pass) and the item advances to `deployed`; results-not-yet-reported
       → `pending` (sweep re-checks while the item remains `deploying`).
-- [ ] A canary policy defers the verdict over `bake_seconds` via the sweep, not an
+- [x] A canary policy defers the verdict over `bake_seconds` via the sweep, not an
       in-process sleep, and resolves `pass` only after the bake completes cleanly.
-- [ ] No deploy secret values appear in the brief or run record (names only).
-- [ ] Relevant checks pass.
+- [x] No deploy secret values appear in the brief or run record (names only).
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Extend the `ProjectAdapter` port with `smoke()`/`health()` + `CanaryPolicy`
+- [x] Extend the `ProjectAdapter` port with `smoke()`/`health()` + `CanaryPolicy`
       in `@looper/core/ports`; add the `SmokeResult` type in `core/src/run-record/`.
-- [ ] Implement `runSmokeGate()` in `@looper/runtime/src/deploy/smoke.ts` (resolve
+- [x] Implement `runSmokeGate()` in `@looper/runtime/src/deploy/smoke.ts` (resolve
       adapter → read results → build verdict → route by status).
-- [ ] Publish the `looper/deploy-smoke` check-run via `@looper/github`
+- [x] Publish the `looper/deploy-smoke` check-run via `@looper/github`
       (`github/src/checks/`) and attach the `smoke` run-record artifact.
-- [ ] Add `gates.deploy_smoke` + `gates.canary` + `smoke.adversarial` schema to
+- [x] Add `gates.deploy_smoke` + `gates.canary` + `smoke.adversarial` schema to
       `@looper/config` (default `deploy_smoke: false`).
-- [ ] Wire the `fail` path to apply `looper:state/deploy-failed` (0048 trigger) and
+- [x] Wire the `fail` path to apply `looper:state/deploy-failed` (0048 trigger) and
       the `pending`/bake path to defer to the sweep (0076).
-- [ ] Wire the optional adversarial-assertion dispatch through the backend port.
-- [ ] Update docs if loop authoring / `loop.yml` gate keys changed.
+- [x] Wire the optional adversarial-assertion dispatch through the backend port.
+- [x] Update docs if loop authoring / `loop.yml` gate keys changed.
 
 ## Test Plan
 
@@ -211,13 +211,18 @@ target.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the `SmokeResult` schema, the `smoke`/`health`/canary adapter surface, the
-sweep-driven bake-deferral mechanism, the rung-4 publishing channel (check-run vs
-artifact precedence), and the `deploy-failed` → rollback handoff convention.
+The deploy-smoke loop is a check-gated deterministic transition:
+required_checks [deploy, deploy-smoke] evaluated against the default branch;
+green → deployed, red → fallback deploy-failed, pending → wait. 'Merged
+implies deployed and healthy' is therefore a gate, not an assumption.
 
 ## Risks / Rollback
 
@@ -233,4 +238,6 @@ degrades safely rather than blocking all deploys.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Smoke/canary gating: deploying → deployed only when the deploy + smoke
+checks are green; red fails over to deploy-failed (feeding rollback) — proven
+in both e2e deploy scenarios.

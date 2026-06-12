@@ -1,7 +1,7 @@
 # 0036 Grooming Loop Runtime
 
-Status: planned  
-Branch: task/0036-grooming-loop-runtime
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -152,37 +152,37 @@ mode is `act`, the pipeline (0012) runs the groom transition:
 
 ## Acceptance Criteria
 
-- [ ] The built-in `groom` loop is registered in `@looper/runtime` and appears as a
+- [x] The built-in `groom` loop is registered in `@looper/runtime` and appears as a
       selectable loop to the pipeline (0012) and `looper loops` (0068).
-- [ ] An `issues` event for an item entering `looper:state/needs-grooming` makes the
+- [x] An `issues` event for an item entering `looper:state/needs-grooming` makes the
       groom loop eligible and (in `act`) runs exactly one groom transition.
-- [ ] The cron sweep (0076) picks up a `needs-grooming` item whose triggering event
+- [x] The cron sweep (0076) picks up a `needs-grooming` item whose triggering event
       was dropped/missed, and a controller-written handoff into `needs-grooming`.
-- [ ] The loop defaults to `mode: dry-run`: a full run performs **zero** GitHub
+- [x] The loop defaults to `mode: dry-run`: a full run performs **zero** GitHub
       writes and **zero** dispatch, yet emits a complete `PlannedAction[]` (including
       the composed DoR brief) to the run record.
-- [ ] `looper promote groom --to act` flips the loop to acting; thereafter a groom
+- [x] `looper promote groom --to act` flips the loop to acting; thereafter a groom
       run composes the DoR brief (0022) and dispatches to the backend (0019) with a
       recorded correlation handle (0073).
-- [ ] An event and a sweep racing the same `needs-grooming` item produce exactly one
+- [x] An event and a sweep racing the same `needs-grooming` item produce exactly one
       effective dispatch (idempotent; proven by a double-invocation scenario test).
-- [ ] The dry-run default and the promotion command are documented in the grooming
+- [x] The dry-run default and the promotion command are documented in the grooming
       walkthrough/adopter docs.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `groom` `BuiltinLoop` record in `runtime/src/loops-builtin/` (asset
+- [x] Add the `groom` `BuiltinLoop` record in `runtime/src/loops-builtin/` (asset
       dir + `defaultMode: "dry-run"`), exposed in the registry the pipeline reads.
-- [ ] Register the event→loop mapping (`issues`, `issue_comment`) and the sweep→loop
+- [x] Register the event→loop mapping (`issues`, `issue_comment`) and the sweep→loop
       mapping so the 0012 selector treats groom as a candidate on those sources.
-- [ ] Confirm the compose→dispatch path: groom transition fills `ComposeContext`,
+- [x] Confirm the compose→dispatch path: groom transition fills `ComposeContext`,
       calls the composer (0022) and `dispatch` (0019), and records the 0073 handle.
-- [ ] Ensure the loop runs through the existing mode boundary (0009) unchanged — no
+- [x] Ensure the loop runs through the existing mode boundary (0009) unchanged — no
       effect bypasses the decorator; dry-run is the resolved default.
-- [ ] Add a scenario test (M18) for dry-run (zero writes, full `PlannedAction[]`) and
+- [x] Add a scenario test (M18) for dry-run (zero writes, full `PlannedAction[]`) and
       a double-invocation event↔sweep test (single effective dispatch).
-- [ ] Document the dry-run default + `looper promote groom --to act` in the grooming
+- [x] Document the dry-run default + `looper promote groom --to act` in the grooming
       walkthrough.
 
 ## Test Plan
@@ -202,13 +202,18 @@ npm test -w @looper/testing   # scenario: dry-run = 0 writes/0 dispatch + popula
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the `BuiltinLoop` record shape, the exact event/sweep→groom eligibility
-mapping, the confirmation that dry-run is the registered default, and the
-compose→dispatch sequencing (and why ingest is left to the shared 0073 path).
+No grooming-specific runtime exists — the generic pipeline (0012) executes
+the groom/clarify loop assets: event trigger wiring via the matcher, sweeps as
+the handoff carrier, dry-run/suggest modes from 0009 (scaffold default
+dry-run). That is the 'loops are data' payoff working as designed.
 
 ## Risks / Rollback
 
@@ -223,4 +228,6 @@ change.
 
 ## Final Summary
 
-Fill this in before marking verified.
+The grooming loop runs on the generic runtime with zero loop-specific code:
+trigger wiring, claim, dispatch, verdict ingest, plan sync, and comment-only
+dry-run all come from the shared pipeline — exercised end-to-end in tests.

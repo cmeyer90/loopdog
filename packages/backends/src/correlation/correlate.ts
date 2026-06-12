@@ -55,6 +55,11 @@ export async function ingestViaCorrelation(
   if (handle.expectation === 'pull-request') {
     const found = await findCorrelatedPr(gh, handle);
     if (!found) return { status: 'pending' };
+    // Fix-loop case (0044): when the PR pre-existed the dispatch, completion
+    // means the agent PUSHED (updatedAt after dispatch) — not mere existence.
+    const updatedAfterDispatch =
+      Date.parse(found.pr.updatedAt) >= Date.parse(handle.dispatchedAt) - 60_000;
+    if (!updatedAfterDispatch) return { status: 'pending' };
     return { status: 'completed', pr: found.pr, matchedBy: found.matchedBy };
   }
   // comment / plan-update expectations: look for a marker comment from the run.

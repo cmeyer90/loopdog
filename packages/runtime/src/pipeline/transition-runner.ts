@@ -17,9 +17,11 @@ import {
   decideTransition,
   deriveRunId,
   evaluateDor,
+  parseCriteriaBlock,
   standardChecks,
   stateLabel,
   stateOfLabels,
+  upsertCriteriaBlock,
 } from '@looper/core';
 import { acquireClaim, releaseClaim, upsertMarkedComment } from '@looper/github';
 import type { PromptSource } from '@looper/backends';
@@ -31,6 +33,14 @@ import {
   renderDispatchMarker,
 } from './dispatch-marker.js';
 import { EffectGate } from './effect-gate.js';
+import {
+  checkBlastRadius,
+  decideMerge,
+  evaluateRequiredChecks,
+  linkedIssue,
+  parseVerdict,
+  verdictTarget,
+} from './loop-actions.js';
 import { syncPlanAfterTransition } from './plan-sync.js';
 import type { RepoPlanStoreFiles } from '@looper/plans';
 import type { RunRecordStore } from '../telemetry/record-store.js';
@@ -75,6 +85,8 @@ export interface RunnerDeps {
   planFiles?: RepoPlanStoreFiles;
   /** Repo identity flags (0029): fork-readonly writes defer to the sweep. */
   identity?: { writable: boolean; reTriggersWorkflows: boolean };
+  /** The repo default branch (deploy-state checks run against it). */
+  defaultBranch?: string;
 }
 
 export async function runLoopOnce(
@@ -265,34 +277,111 @@ async function processItem(
 
   try {
     if (!loop.expects) {
-      // Deterministic transition: apply and release in one invocation.
-      await gate.mutate('label', `state -> ${loop.transition.to}`, () =>
-        applyStateChange(deps, item, loop.transition.to),
-      );
-      step('write', `state -> ${loop.transition.to}`);
+      // Deterministic transition (kind-aware): check-gated (deploy smoke),
+      // DoD-gated merge, or a plain relabel.
+      let target = loop.transition.to;
+
+      // Check gate (0041/0047): required checks decide the landing state.
+      if (
+        loop.gates.requiredChecks &&
+        loop.gates.requiredChecks.length > 0 &&
+        target !== 'merged'
+      ) {
+        const ref = await checksRef(deps, item);
+        const runs = await deps.gh.listCheckRuns(
+          { owner: item.ref.owner, repo: item.ref.repo },
+          ref,
+        );
+        const gateResult = evaluateRequiredChecks(runs, loop.gates.requiredChecks);
+        step('gate', `required checks on ${ref}: ${gateResult}`);
+        if (gateResult === 'waiting') {
+          await gate.mutate('claim', 'release (checks pending)', () =>
+            releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
+          );
+          return null; // re-evaluated next tick
+        }
+        if (gateResult === 'red') {
+          if (!loop.transition.fallback) {
+            await gate.mutate('label', 'add looper:needs-human', () =>
+              deps.gh.addLabels(item.ref, ['looper:needs-human']),
+            );
+            await gate.mutate('claim', 'release', () =>
+              releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
+            );
+            return record({
+              status: 'escalated',
+              failure: {
+                class: 'terminal',
+                reason: 'required checks failed; no fallback declared',
+              },
+            });
+          }
+          target = loop.transition.fallback;
+        }
+      }
+
+      // The merge action (0045): DoD-gated, then an actual merge API call.
+      if (loop.transition.to === 'merged' && item.kind === 'pull-request') {
+        const pr = await deps.gh.getPullRequest(item.ref);
+        const decision = await decideMerge(deps.gh, loop, pr);
+        step('gate', `merge decision: ${decision.action}`);
+        if (decision.action !== 'merge') {
+          await gate.mutate('claim', `release (merge ${decision.action})`, () =>
+            releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
+          );
+          if (decision.action === 'blocked') {
+            await gate.comment('merge blocked notice', () =>
+              deps.gh.createComment(
+                item.ref,
+                `🛑 looper merge blocked (DoD):\n${decision.reasons.map((r) => `- ${r}`).join('\n')}`,
+              ),
+            );
+            return record({ status: 'skipped' });
+          }
+          return null; // waiting on checks/review — next tick
+        }
+        const merged = await gate.mutate('label', 'merge PR', () =>
+          deps.gh.mergePullRequest(item.ref, { method: 'squash' }),
+        );
+        if (merged && !merged.merged) {
+          await gate.mutate('claim', 'release (merge refused)', () =>
+            releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
+          );
+          return record({
+            status: 'failed',
+            failure: {
+              class: 'transient',
+              reason: 'merge API refused (head moved or not mergeable)',
+            },
+          });
+        }
+        step('write', 'merged PR');
+        // mirror the state onto the bound issue as well
+        const issue = await linkedIssue(deps.gh, pr);
+        if (issue) {
+          await gate.mutate('label', `linked issue #${issue.ref.number} -> merged`, () =>
+            applyStateChange(deps, issue, 'merged'),
+          );
+        }
+      }
+
+      await gate.mutate('label', `state -> ${target}`, () => applyStateChange(deps, item, target));
+      step('write', `state -> ${target}`);
       await gate.mutate('claim', 'release', async () => {
         await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
         await clearAttempts(deps.gh, item.ref);
       });
       const done = record({
         status: 'done',
-        transition: `${loop.transition.from}->${loop.transition.to}`,
+        transition: `${loop.transition.from}->${target}`,
       });
-      await syncPlanAfterTransition(
-        deps.gh,
-        deps.planFiles,
-        gate,
-        item,
-        loop.transition.to,
-        done,
-        now,
-      );
+      await syncPlanAfterTransition(deps.gh, deps.planFiles, gate, item, target, done, now);
       await suggestAdvisory(
         deps,
         loop,
         item,
         gate,
-        `advance \`${loop.transition.from}\` → \`${loop.transition.to}\``,
+        `advance \`${loop.transition.from}\` → \`${target}\``,
       );
       return done;
     }
@@ -300,7 +389,18 @@ async function processItem(
     // Work-cell transition: compose → dispatch → persist handle → (maybe) mark
     // the intermediate state. Ingest happens on a later invocation.
     const source = deps.promptSource ?? promptSourceFromReader(deps.readPrompt, loop);
-    const brief = await composeWorkBrief({ loop, item, runId, source });
+    const discussion = (await deps.gh.listComments(item.ref))
+      .filter((c) => !c.body.includes('<!-- looper'))
+      .slice(-10)
+      .map((c) => ({ author: c.author.login, body: c.body.slice(0, 2000) }));
+    const brief = await composeWorkBrief({
+      loop,
+      item,
+      runId,
+      source,
+      comments: discussion,
+      defaultBranch: deps.defaultBranch,
+    });
     gate.note('compose', brief.briefRef);
     step('compose', brief.briefRef);
 
@@ -422,7 +522,76 @@ async function ingestPhase(
     return record({ status: 'failed', failure: { class: 'transient', reason: result.reason } });
   }
 
-  // Completed: advance to the loop's target state, link artifacts, release.
+  // Blast-radius guard (0038): scope-exceeding work halts and escalates —
+  // the PR is never advanced into review.
+  if (result.pr) {
+    const changed = await deps.gh.listPullRequestFiles(result.pr.ref);
+    const violation = checkBlastRadius(loop, result.pr, changed);
+    if (violation) {
+      step('gate', `blast radius: ${violation.reason}`);
+      if (marker) {
+        await gate.mutate('comment', 'mark dispatch resolved (blast radius)', () =>
+          deps.gh.updateComment(
+            item.ref,
+            pending.commentId,
+            markDispatchResolved(marker.body, `halted: ${violation.reason}`),
+          ),
+        );
+      }
+      await gate.mutate('label', 'add looper:needs-human', () =>
+        deps.gh.addLabels(item.ref, ['looper:needs-human']),
+      );
+      await gate.comment('blast-radius escalation', () =>
+        deps.gh.createComment(
+          item.ref,
+          `🚨 looper halted: ${violation.reason}. PR #${result.pr!.ref.number} needs a human ` +
+            'decision (split the work or widen the loop limits consciously).',
+        ),
+      );
+      await gate.mutate('claim', 'release', () =>
+        releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
+      );
+      return record({
+        status: 'escalated',
+        failure: { class: 'terminal', reason: violation.reason },
+        artifacts: { pr: result.pr.ref.number },
+      });
+    }
+  }
+
+  // Verdict routing (0033/0042): comment-shaped results may land on the
+  // fallback state (changes-requested, needs-clarification).
+  let target = loop.transition.to;
+  if (!result.pr && result.commentId !== undefined) {
+    const verdictComment = (await deps.gh.listComments(item.ref)).find(
+      (c) => c.id === result.commentId,
+    );
+    const verdict = verdictComment ? parseVerdict(verdictComment.body) : null;
+    target = verdictTarget(loop, verdict);
+    step('gate', `verdict: ${verdict ?? '(none)'} -> ${target}`);
+
+    // Intent-diff attestation (0043): an approving review verdict means the
+    // reviewer judged EVERY acceptance criterion met — mirror that onto the
+    // issue's criteria block so the DoD merge gate can read it from GitHub
+    // state alone. Unmet criteria route to the fallback, never here.
+    if (target === 'verified') {
+      const live = await deps.gh.getIssue(item.ref);
+      const { criteria } = parseCriteriaBlock(live.body);
+      if (criteria && criteria.some((c) => !c.met)) {
+        await gate.mutate('label', 'attest criteria (review approved)', () =>
+          deps.gh.updateIssueBody(
+            item.ref,
+            upsertCriteriaBlock(
+              live.body,
+              criteria.map((c) => ({ ...c, met: true })),
+            ),
+          ),
+        );
+      }
+    }
+  }
+
+  // Completed: advance to the landing state, link artifacts, release.
   const note = result.pr
     ? `ingested PR #${result.pr.ref.number} (matched by ${result.matchedBy})`
     : `ingested result (matched by ${result.matchedBy})`;
@@ -431,38 +600,28 @@ async function ingestPhase(
       deps.gh.updateComment(item.ref, pending.commentId, markDispatchResolved(marker.body, note)),
     );
   }
-  await gate.mutate('label', `state -> ${loop.transition.to}`, () =>
-    applyStateChange(deps, item, loop.transition.to),
-  );
+  await gate.mutate('label', `state -> ${target}`, () => applyStateChange(deps, item, target));
   if (result.pr) {
     const pr = result.pr;
-    await gate.mutate('label', `label PR #${pr.ref.number} ${loop.transition.to}`, () =>
-      deps.gh.addLabels(pr.ref, [stateLabel(loop.transition.to)]),
+    await gate.mutate('label', `label PR #${pr.ref.number} ${target}`, () =>
+      deps.gh.addLabels(pr.ref, [stateLabel(target)]),
     );
   }
-  step('write', `state -> ${loop.transition.to}`);
+  step('write', `state -> ${target}`);
   await gate.mutate('claim', 'release', async () => {
     await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
     await clearAttempts(deps.gh, item.ref);
   });
   const done = record({
     status: 'done',
-    transition: `${loop.transition.from}->${loop.transition.to}`,
+    transition: `${loop.transition.from}->${target}`,
     artifacts: {
       ...(result.pr ? { pr: result.pr.ref.number } : {}),
       ...sessionArtifact(pending.handle.signal),
     },
   });
   const ingestNow = new Date();
-  await syncPlanAfterTransition(
-    deps.gh,
-    deps.planFiles,
-    gate,
-    item,
-    loop.transition.to,
-    done,
-    ingestNow,
-  );
+  await syncPlanAfterTransition(deps.gh, deps.planFiles, gate, item, target, done, ingestNow);
   return done;
 }
 
@@ -485,6 +644,15 @@ async function suggestAdvisory(
         `Promote with \`looper promote ${loop.name} --to act\` when ready.`,
     ).then(() => {}),
   );
+}
+
+/** Which git ref a deterministic loop's checks run against. */
+async function checksRef(deps: RunnerDeps, item: IssueSnapshot): Promise<string> {
+  if (item.kind === 'pull-request') {
+    const pr = await deps.gh.getPullRequest(item.ref);
+    return pr.merged ? (deps.defaultBranch ?? 'main') : pr.headRef;
+  }
+  return deps.defaultBranch ?? 'main';
 }
 
 async function applyStateChange(deps: RunnerDeps, item: IssueSnapshot, to: string): Promise<void> {

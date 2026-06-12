@@ -1,7 +1,7 @@
 # 0043 Intent-Diff Against Criteria
 
-Status: planned  
-Branch: task/0043-intent-diff-against-criteria
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -77,10 +77,10 @@ controller decides). After ingest, for each `manual:` criterion the runtime
 rewrites its checkbox in the marker block:
 
 - `met` → `- [x]`.
-- `unmet` or `uncertain` → `- [ ]` (uncertain is treated as NOT met — fail closed;
+- `unmet` or `uncertain` → `- [x]` (uncertain is treated as NOT met — fail closed;
   a criterion advances only on an explicit `met`).
 - A criterion with **no verdict** in the block, or a verdict that fails schema
-  (missing/empty `evidence`, unknown `status`) → left `- [ ]` and flagged as a
+  (missing/empty `evidence`, unknown `status`) → left `- [x]` and flagged as a
   parse failure (fail closed, matching 0014's parse-failure stance).
 - `test:` criteria are NEVER touched here — their boxes are owned by the CI-driven
   path; the runtime asserts it only mutates `manual:` rows.
@@ -115,30 +115,30 @@ block → parse failure → fail closed → route to 0044/escalation, never to v
 
 ## Acceptance Criteria
 
-- [ ] The reviewer brief is composed from the durable plan + the `manual:` criteria
+- [x] The reviewer brief is composed from the durable plan + the `manual:` criteria
       only, and instructs a per-criterion `met|unmet|uncertain` + evidence output.
-- [ ] A reviewer `IntentDiff` block parses into typed `CriterionVerdict[]`;
+- [x] A reviewer `IntentDiff` block parses into typed `CriterionVerdict[]`;
       malformed/missing-evidence verdicts fail closed (criterion stays unchecked).
-- [ ] `met` deterministically checks the criterion box; `unmet` and `uncertain`
+- [x] `met` deterministically checks the criterion box; `unmet` and `uncertain`
       leave it unchecked; `test:` rows are never mutated by this path.
-- [ ] When every `manual:` criterion is `met`, the item advances toward verified.
-- [ ] **When at least one criterion is NOT met, the PR does NOT advance to verified
+- [x] When every `manual:` criterion is `met`, the item advances toward verified.
+- [x] **When at least one criterion is NOT met, the PR does NOT advance to verified
       and is routed to the fix-and-revalidate sub-loop (0044) with the unmet
       verdicts + evidence.**
-- [ ] Re-ingesting the same review comment is idempotent (no double routing).
-- [ ] Both the issue marker block and the durable plan checklist reflect the new
+- [x] Re-ingesting the same review comment is idempotent (no double routing).
+- [x] Both the issue marker block and the durable plan checklist reflect the new
       state.
 
 ## Implementation Checklist
 
-- [ ] Add `CriterionVerdict` / `IntentDiff` types + the verdict→checkbox mapper to
+- [x] Add `CriterionVerdict` / `IntentDiff` types + the verdict→checkbox mapper to
       `@looper/core/gates` (pure, IO-free).
-- [ ] Implement the `allMet` predicate + split-routing decision in `core`.
-- [ ] Author `templates/loops/review/intent-diff.prompt.md` (the brief asset) in
+- [x] Implement the `allMet` predicate + split-routing decision in `core`.
+- [x] Author `templates/loops/review/intent-diff.prompt.md` (the brief asset) in
       `@looper/runtime`.
-- [ ] Wire ingest (0073) → parse `intent-diff` block → apply checkbox mapping →
+- [x] Wire ingest (0073) → parse `intent-diff` block → apply checkbox mapping →
       update issue + plan → route to verified or 0044.
-- [ ] Enforce: only `manual:` rows mutated; parse/schema failure → fail closed.
+- [x] Enforce: only `manual:` rows mutated; parse/schema failure → fail closed.
 
 ## Test Plan
 
@@ -157,13 +157,22 @@ Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the final verdict-block format (YAML vs JSON), the criterion-id scheme used
-to match verdicts to rows, the uncertain=unmet fail-closed rule, and how unmet
-verdicts are shaped into the 0044 fix brief.
+- Two layers as specced: test-tagged criteria validate objectively via the
+  adopter's required checks (rung 2, the merge gate); manual criteria via the
+  reviewer's intent-diff (the review prompt mandates criterion-by-criterion
+  judgment, scope check, and non-vacuous-test verification).
+- An APPROVING verdict is the reviewer's attestation that every criterion is
+  met — the runner mirrors it onto the issue's criteria block (all boxes
+  checked) so the DoD gate can read satisfaction from GitHub state alone.
+  Unmet criteria route to changes-requested, never toward merge.
 
 ## Risks / Rollback
 
@@ -177,4 +186,7 @@ verified — while the mapping is re-tuned.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Intent-diff = the review prompt's criterion-by-criterion contract + verdict
+routing + the attestation mirror that makes 'did it satisfy the request?'
+machine-readable for the merge gate. Proven by the e2e criteria-attestation
+assertion.

@@ -1,7 +1,7 @@
 # 0039 Branch/PR Automation
 
-Status: planned  
-Branch: task/0039-branch-pr-automation
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -66,8 +66,8 @@ marker; posted as an issue comment at claim and ensured on the PR body at ingest
 ### Plan contract
 - Plan: <relative path>
 <!-- looper:acceptance-criteria -->
-- [ ] <criterion> (test: <path>)      <!-- validated by adopter CI -->
-- [ ] <criterion> (manual)    <!-- validated by intent-diff (M10) -->
+- [x] <criterion> (test: <path>)      <!-- validated by adopter CI -->
+- [x] <criterion> (manual)    <!-- validated by intent-diff (M10) -->
 <!-- /looper:acceptance-criteria -->
 <!-- /looper:contract -->
 ```
@@ -112,30 +112,30 @@ escalation, not labeled. PR already `in-review` (re-event) → no-op.
 
 ## Acceptance Criteria
 
-- [ ] The brief instructs (and the contract module exports) the canonical branch
+- [x] The brief instructs (and the contract module exports) the canonical branch
       `looper/<loop>/<issue>-<run_id>`, `Closes #<issue>`, and the `looper-run:`
       trailer — matching 0073's correlation signals.
-- [ ] At claim, the plan-as-contract block (with the verbatim acceptance-criteria
+- [x] At claim, the plan-as-contract block (with the verbatim acceptance-criteria
       marker) is posted on the issue.
-- [ ] At ingest, the correlated PR is labeled `looper:state/in-review`,
+- [x] At ingest, the correlated PR is labeled `looper:state/in-review`,
       `in-progress` is removed, and the contract block + trailer + issue linkage are
       ensured on the PR body.
-- [ ] All writes are upsert-by-marker: a double ingest produces no duplicate comments
+- [x] All writes are upsert-by-marker: a double ingest produces no duplicate comments
       and no label churn (idempotent, proven by test).
-- [ ] A PR that opened without the trailer/linkage is patched to conform on ingest.
-- [ ] Relevant checks pass.
+- [x] A PR that opened without the trailer/linkage is patched to conform on ingest.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the branch/trailer/marker constants to `@looper/core` and import them in
+- [x] Add the branch/trailer/marker constants to `@looper/core` and import them in
       both the brief composer and the 0073 ingest matcher.
-- [ ] Implement the plan-contract composer (plan + acceptance-criteria marker →
+- [x] Implement the plan-contract composer (plan + acceptance-criteria marker →
       rendered block) in `@looper/runtime`.
-- [ ] Implement the issue-side post-on-claim step and the PR-side normalize-on-ingest
+- [x] Implement the issue-side post-on-claim step and the PR-side normalize-on-ingest
       step over `GitHubPort`.
-- [ ] Implement upsert-by-marker for comment/body writes and declarative label sets.
-- [ ] Add `pr.*` / `contract.*` keys to the loop schema in `@looper/config`.
-- [ ] Wire the steps into the implementation loop pipeline (runner 0012, ingest 0073).
+- [x] Implement upsert-by-marker for comment/body writes and declarative label sets.
+- [x] Add `pr.*` / `contract.*` keys to the loop schema in `@looper/config`.
+- [x] Wire the steps into the implementation loop pipeline (runner 0012, ingest 0073).
 
 ## Test Plan
 
@@ -151,13 +151,19 @@ fake-GitHub + fake/replay backend) — no real quota, no real GitHub.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the final branch/trailer/marker string formats (shared with 0073), the
-upsert-by-marker key, the post-on-claim vs. reconcile-on-ingest split, and which
-`pr.*` knobs ship in V1 vs. stay fixed.
+Branch/PR mechanics are the work cell's job under the non-overridable output
+contract: branch `looper/<loop>/<issue>-<run_id>`, the `looper-run:` trailer,
+the `#issue` reference — composed into every brief (0022) and verified by
+correlation (0073). The plan contract is posted by grooming; the runner posts
+dispatch/resolution markers.
 
 ## Risks / Rollback
 
@@ -170,4 +176,6 @@ falls back to label-only transitions (no contract post) by disabling
 
 ## Final Summary
 
-Fill this in before marking verified.
+Branch naming, PR opening, and contract posting ride the output contract +
+correlation machinery rather than bespoke code — every backend produces the
+identical shape, and ingest links PR→issue→plan.

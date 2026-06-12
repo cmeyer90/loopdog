@@ -28,6 +28,8 @@ export interface ComposeContext {
   branch: string;
   repo: { defaultBranch: string };
   adapter: { testCmd?: string | undefined };
+  /** Recent human/agent discussion (clarifications, review feedback). */
+  discussion?: string | undefined;
 }
 
 export interface Brief {
@@ -128,6 +130,7 @@ export async function compose(ctx: ComposeContext, src: PromptSource): Promise<B
     '### Acceptance criteria',
     '',
     '{{acceptance_criteria}}',
+    ...(ctx.discussion ? ['', '### Recent discussion (newest last)', '', ctx.discussion] : []),
   ].join('\n');
 
   const text = substitute(`${body}\n${context}`, ctx);

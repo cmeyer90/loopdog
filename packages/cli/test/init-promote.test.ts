@@ -39,13 +39,17 @@ describe('looper init (0007)', () => {
         '.github/workflows/looper-sweep.yml',
       ]),
     );
-    // six built-in loops, all summarized for the preview
+    // the built-in loop set, all summarized for the preview
     expect(plan.loops.map((l) => l.name).sort()).toEqual([
+      'clarify',
       'deploy',
+      'deploy-smoke',
+      'fix',
       'groom',
       'implement',
       'merge',
       'review',
+      'rollback',
       'triage',
     ]);
 

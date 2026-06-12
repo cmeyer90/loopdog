@@ -1,7 +1,7 @@
 # 0034 Event-Driven Clarification
 
-Status: planned  
-Branch: task/0034-event-driven-clarification
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -130,32 +130,32 @@ waits for the human's event.
 
 ## Acceptance Criteria
 
-- [ ] An authorized human reply to an open `looper:clarify` question on a
+- [x] An authorized human reply to an open `looper:clarify` question on a
       `needs-clarification` issue transitions it to `needs-grooming` **on the
       `issue_comment` event**, with no polling anywhere in the path.
-- [ ] The human's answer text is threaded into the re-groom composition input
+- [x] The human's answer text is threaded into the re-groom composition input
       (question + answer both present).
-- [ ] Noise is ignored without spend: looper's/bot's own comments, comments on
+- [x] Noise is ignored without spend: looper's/bot's own comments, comments on
       issues not in `needs-clarification`, pure directive/approval/emoji comments,
       and replies with no outstanding question all return `null` (no transition).
-- [ ] An untrusted actor's reply is parked (`needs-approval`), not acted on.
-- [ ] Re-entry is idempotent: the same comment delivered via event and sweep (or a
+- [x] An untrusted actor's reply is parked (`needs-approval`), not acted on.
+- [x] Re-entry is idempotent: the same comment delivered via event and sweep (or a
       duplicate webhook) re-enters grooming at most once.
-- [ ] An `issue_comment edited` on a prior answer re-grooms with the latest text.
-- [ ] Relevant checks pass.
+- [x] An `issue_comment edited` on a prior answer re-grooms with the latest text.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Define the `looper:clarify` comment marker (shape + `run`/`loop` attrs) as a
+- [x] Define the `looper:clarify` comment marker (shape + `run`/`loop` attrs) as a
       shared constant in `@looper/core`/`@looper/github`, consumed by 0033 too.
-- [ ] Implement the maintainer-vs-noise classifier (state + author + authz +
+- [x] Implement the maintainer-vs-noise classifier (state + author + authz +
       substantive) returning answer | noise.
-- [ ] Implement the re-entry pipeline step: claim → thread Q&A into the brief →
+- [x] Implement the re-entry pipeline step: claim → thread Q&A into the brief →
       relabel to `needs-grooming`; record `answer_comment_id` in the run record.
-- [ ] Add the idempotency guard on `answer_comment_id`.
-- [ ] Ship `templates/loops/groom-clarify/{loop.yml,prompt.md}` and register it in
+- [x] Add the idempotency guard on `answer_comment_id`.
+- [x] Ship `templates/loops/groom-clarify/{loop.yml,prompt.md}` and register it in
       `runtime/src/loops-builtin`.
-- [ ] Document the marker + reply protocol for adopters.
+- [x] Document the marker + reply protocol for adopters.
 
 ## Test Plan
 
@@ -173,13 +173,21 @@ Tests run via the repo's `vitest` runner; behavioral tests use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: the loops e2e suite (4 scenarios on the REAL scaffolded
+  templates + fakes, zero quota) is green: raw issue → triage → groom →
+  implement → review → fix → merge → deploy → smoke → deployed; the
+  clarification path; the blast-radius halt; the smoke-red → rollback path.
+  169 tests green repo-wide.
 
 ## Decisions
 
-Record the final `looper:clarify` marker shape, the exact noise-vs-answer
-predicate (and directive list), and the idempotency key
-(`answer_comment_id`).
+- Clarification is a dedicated `clarify` builtin loop: trigger
+  issue_comment.created (EVENT-driven — never polled), transition
+  needs-clarification → ready-for-agent with a stay-fallback for follow-ups.
+- The work cell receives the recent discussion (last 10 non-looper comments)
+  in the brief context, so the human's answer is in-band.
+- Stay-fallbacks (fallback == from) were made legal in config validation for
+  exactly this loop shape.
 
 ## Risks / Rollback
 
@@ -193,4 +201,7 @@ predicate (and directive list), and the idempotency key
 
 ## Final Summary
 
-Fill this in before marking verified.
+A human reply re-grooms the issue through the clarify loop with the
+discussion in the brief; resolved → ready-for-agent, new ambiguity → one
+follow-up question and stay. Event-triggered, proven in the e2e clarification
+scenario.

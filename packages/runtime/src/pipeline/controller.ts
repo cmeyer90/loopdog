@@ -141,6 +141,7 @@ async function load(opts: ControllerOptions): Promise<{
     readPrompt: (loop: LoopDefinition) => readPromptFile(opts.repoDir, loop),
     promptSource: createFsPromptSource(opts.repoDir, opts.templatesDir),
     planFiles,
+    defaultBranch: meta.defaultBranch,
     ...(opts.botLogin ? { botLogin: opts.botLogin } : {}),
     ...(opts.now ? { now: opts.now } : {}),
     ...(opts.forceDryRun ? { forceDryRun: true } : {}),
