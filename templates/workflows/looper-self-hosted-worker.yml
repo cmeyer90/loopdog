@@ -1,0 +1,64 @@
+# Looper self-hosted worker (task 0074) — THE ESCAPE HATCH for ZDR orgs,
+# no-subscription users, and tests needing live secrets/network. This is the
+# ONLY place a model API key exists; it runs on YOUR compute, dispatched by
+# looper's controller via workflow_dispatch. Install it only when a loop
+# selects `backend: self-hosted` (`looper connect default self-hosted`).
+name: looper-self-hosted-worker
+on:
+  workflow_dispatch:
+    inputs:
+      run_id: { description: looper run id, required: true }
+      loop: { description: loop name, required: true }
+      issue: { description: issue number, required: true }
+      branch: { description: branch the work must land on, required: true }
+      trailer: { description: required PR body trailer, required: true }
+      agent: { description: 'claude | codex', default: claude }
+      api_key_secret:
+        { description: secret NAME holding the model API key, default: LOOPER_MODEL_API_KEY }
+      brief: { description: the composed work brief, required: true }
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  work:
+    runs-on: ubuntu-latest # or your self-hosted runner label
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - name: write brief
+        env:
+          BRIEF: ${{ inputs.brief }}
+        run: printf '%s' "$BRIEF" > /tmp/looper-brief.md
+      - name: run the work cell (the one place a model API key exists)
+        env:
+          # resolved lazily, only inside this job; never logged
+          ANTHROPIC_API_KEY: ${{ inputs.agent == 'claude' && secrets[inputs.api_key_secret] || '' }}
+          OPENAI_API_KEY: ${{ inputs.agent == 'codex' && secrets[inputs.api_key_secret] || '' }}
+        run: |
+          set -euo pipefail
+          git checkout -b "${{ inputs.branch }}"
+          if [ "${{ inputs.agent }}" = "claude" ]; then
+            npx --yes @anthropic-ai/claude-code -p "$(cat /tmp/looper-brief.md)" --permission-mode acceptEdits
+          else
+            npx --yes @openai/codex exec --full-auto "$(cat /tmp/looper-brief.md)"
+          fi
+      - name: open the correlated PR
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -euo pipefail
+          git config user.name "looper-worker"
+          git config user.email "looper-worker@users.noreply.github.com"
+          git add -A
+          git commit -m "looper: ${{ inputs.loop }} run ${{ inputs.run_id }} (#${{ inputs.issue }})" || true
+          git push origin "${{ inputs.branch }}"
+          gh pr create \
+            --title "looper(${{ inputs.loop }}): #${{ inputs.issue }}" \
+            --body "$(printf 'Automated change for #%s.\n\n%s' "${{ inputs.issue }}" "${{ inputs.trailer }}")" \
+            --head "${{ inputs.branch }}"

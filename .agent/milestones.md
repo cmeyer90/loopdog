@@ -16,7 +16,7 @@ North-star architecture for the V1 roadmap:
 | 02 | Platform | implemented | [Attachment & Configuration Model](milestones/milestone-02-attachment-and-configuration-model.md) |
 | 03 | Platform | verified | [GitHub State-Machine Core](milestones/milestone-03-github-state-machine-core.md) |
 | 04 | Platform | verified | [Durable Planning Store](milestones/milestone-04-durable-planning-store.md) |
-| 05 | Platform | planned | [Provider & Execution Backend Abstraction (Claude + Codex subscriptions)](milestones/milestone-05-model-provider-abstraction.md) |
+| 05 | Platform | verified | [Provider & Execution Backend Abstraction (Claude + Codex subscriptions)](milestones/milestone-05-model-provider-abstraction.md) |
 | 06 | Platform | planned | [Project Adapter System](milestones/milestone-06-project-adapter-system.md) |
 | 07 | Platform | planned | [Secrets & Identity (two-plane, subscription-native)](milestones/milestone-07-secrets-and-identity.md) |
 | 08 | Loops | planned | [Grooming & Clarification Loop](milestones/milestone-08-grooming-and-clarification-loop.md) |
@@ -70,13 +70,13 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0016 | Milestone 04: Durable Planning Store | verified | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding |
 | 0017 | Milestone 04: Durable Planning Store | verified | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation |
 | 0018 | Milestone 04: Durable Planning Store | verified | task/0018-plan-index-maintenance | Plan Index Maintenance |
-| 0019 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0019-execution-backend-interface | Execution Backend Interface |
-| 0020 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0020-claude-subscription-backend | Claude Subscription Backend |
-| 0021 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0021-codex-subscription-backend | Codex Subscription Backend |
-| 0073 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) |
-| 0074 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
-| 0022 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0022-prompt-and-policy-artifacts | Prompt & Policy Artifacts |
-| 0023 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | planned | task/0023-backend-selection-and-subscription-auth | Backend Selection & Subscription Auth |
+| 0019 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0019-execution-backend-interface | Execution Backend Interface |
+| 0020 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0020-claude-subscription-backend | Claude Subscription Backend |
+| 0021 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0021-codex-subscription-backend | Codex Subscription Backend |
+| 0073 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) |
+| 0074 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
+| 0022 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0022-prompt-and-policy-artifacts | Prompt & Policy Artifacts |
+| 0023 | Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions) | verified | task/0023-backend-selection-and-subscription-auth | Backend Selection & Subscription Auth |
 | 0024 | Milestone 06: Project Adapter System | planned | task/0024-adapter-interface | Adapter Interface |
 | 0025 | Milestone 06: Project Adapter System | planned | task/0025-stack-autodetection | Stack Auto-Detection |
 | 0026 | Milestone 06: Project Adapter System | planned | task/0026-generic-command-adapter | Generic Command Adapter |

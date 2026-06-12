@@ -28,18 +28,20 @@ export interface ExecutionBackend {
 export type BackendId = 'claude' | 'codex' | 'self-hosted' | (string & {});
 
 export interface BackendCapabilities {
-  /** How work is dispatched. */
-  dispatchSurface: 'http-fire' | 'github-mention' | 'local-exec';
-  /** Can dispatch run with no human/browser present? */
-  headless: boolean;
-  /** Where the work cell runs and whose secrets it can see. */
-  sandbox: 'provider-cloud' | 'self-hosted';
-  /** Can the work cell reach the network during the agent phase? */
-  sandboxInternet: 'yes' | 'no' | 'configurable';
-  /** Can the work cell run the project's tests with live secrets? */
-  liveSecretsInSandbox: boolean;
-  /** The dispatch-time correlation signal this backend records. */
-  correlationSignal: 'session-id' | 'comment-id' | 'process-exit';
+  /** How this backend is invoked (0019). */
+  triggerModes: Array<'api_fire' | 'mention' | 'github_event' | 'self_hosted_dispatch'>;
+  /** Does the backend host a sandbox that can run the project's tests? */
+  runsSandbox: boolean;
+  /** When secrets are available in that sandbox (Codex strips before agent phase). */
+  secretPhase: 'full' | 'setup-only' | 'none';
+  /** Network availability during the agent phase. */
+  network: 'on' | 'setup-only' | 'off';
+  opensPr: boolean;
+  supportsReview: boolean;
+  /** Can a Zero-Data-Retention org use this backend? */
+  zdrCompatible: boolean;
+  /** Provider rate cap; null = no provider cap (bounded only by resilience). */
+  throughput: { tasksPerHour: number | null };
   /** Honest quota note shown by the CLI (e.g. "~5 cloud tasks/hr on lower tiers"). */
   quotaNote: string;
 }
@@ -77,6 +79,7 @@ export interface DispatchHandle {
 export type CorrelationSignal =
   | { kind: 'claude-session'; sessionId: string; sessionUrl?: string | undefined }
   | { kind: 'codex-mention'; commentId: number; mentionedAt: string }
+  | { kind: 'workflow-run'; workflowFile: string; dispatchedAt: string }
   | { kind: 'local-process'; pid?: number | undefined; startedAt: string };
 
 export type IngestResult =
@@ -86,6 +89,6 @@ export type IngestResult =
       pr?: PullRequestSnapshot | undefined;
       commentId?: number | undefined;
       /** Which signal matched — telemetry for the 0093 honor-rate question. */
-      matchedBy: 'dispatch-signal' | 'branch-name' | 'pr-trailer';
+      matchedBy: 'dispatch-signal' | 'branch-name' | 'pr-trailer' | 'issue-ref';
     }
   | { status: 'failed'; reason: string };

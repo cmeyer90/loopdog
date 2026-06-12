@@ -3,6 +3,7 @@ import { readFile, appendFile } from 'node:fs/promises';
 import { OctokitGitHub, resolveGitHubAuth, ACTIONS_BOT } from '@looper/github';
 import { TelemetryBranchStore, handleEvent, handleSweep } from '@looper/runtime';
 import type { ExecutionBackend } from '@looper/core';
+import { findTemplatesDir } from '../assets.js';
 
 /**
  * `looper controller event|sweep` — the entrypoint the reusable Actions
@@ -12,7 +13,7 @@ import type { ExecutionBackend } from '@looper/core';
 
 export function registerController(
   program: Command,
-  backends: ReadonlyMap<string, ExecutionBackend>,
+  backends?: ReadonlyMap<string, ExecutionBackend>,
 ): void {
   const controller = program
     .command('controller')
@@ -44,11 +45,12 @@ export function registerController(
             repoDir: opts.path,
             repo,
             gh,
-            backends,
+            ...(backends ? { backends } : {}),
             records: new TelemetryBranchStore(gh, repo),
             botLogin: ACTIONS_BOT.login,
+            templatesDir: await findTemplatesDir().catch(() => undefined),
             ...(opts.dryRun ? { forceDryRun: true } : {}),
-          },
+          } as Parameters<typeof handleEvent>[0],
           opts.eventName,
           payload,
         );
@@ -77,11 +79,12 @@ export function registerController(
         repoDir: opts.path,
         repo,
         gh,
-        backends,
+        ...(backends ? { backends } : {}),
         records: new TelemetryBranchStore(gh, repo),
         botLogin: ACTIONS_BOT.login,
+        templatesDir: await findTemplatesDir().catch(() => undefined),
         ...(opts.dryRun ? { forceDryRun: true } : {}),
-      });
+      } as Parameters<typeof handleSweep>[0]);
       const lines = [
         `sweep: scanned ${summary.scannedStates.length} state(s), ` +
           `${summary.candidates} candidate(s), processed ${summary.processed.length}, ` +

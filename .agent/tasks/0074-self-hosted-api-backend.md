@@ -1,7 +1,7 @@
 # 0074 Self-Hosted / API Backend (secondary)
 
-Status: planned  
-Branch: task/0074-self-hosted-api-backend
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -135,38 +135,38 @@ rejected with a directive *to this backend* (0020/0023).
 
 ## Acceptance Criteria
 
-- [ ] `SelfHostedBackend` conforms to the 0019 interface with capabilities exactly
+- [x] `SelfHostedBackend` conforms to the 0019 interface with capabilities exactly
       `secret_phase: full`, `network: on`, `zdr_compatible: true`,
       `throughput.tasks_per_hour: null`, `trigger_modes: [self_hosted_dispatch]`.
-- [ ] `dispatch` triggers the adopter-owned worker workflow via the GitHub port
+- [x] `dispatch` triggers the adopter-owned worker workflow via the GitHub port
       with the run inputs, resolving the model API key only as a `SecretRef`
       (lazily, inside the worker) and never logging it.
-- [ ] The worker produces a PR on branch `looper/<loop>/<issue>-<run_id>` with the
+- [x] The worker produces a PR on branch `looper/<loop>/<issue>-<run_id>` with the
       `looper-run: <run_id>` trailer and `#<issue>` ref, so `ingest` correlates it
       via 0073 exactly like the subscription backends; unrelated events → `null`.
-- [ ] A gate requiring live secrets / agent-phase network — a mismatch against
+- [x] A gate requiring live secrets / agent-phase network — a mismatch against
       Codex (0021) — passes against this backend (no mismatch flagged).
-- [ ] A failed/crashed worker run (non-zero exit or no PR within the lease) is
+- [x] A failed/crashed worker run (non-zero exit or no PR within the lease) is
       reported and escalated via 0073/0076, not stranded.
-- [ ] `looper init` scaffolds `looper-self-hosted-worker.yml` only when a
+- [x] `looper init` scaffolds `looper-self-hosted-worker.yml` only when a
       self-hosted backend is configured; a missing worker workflow is an actionable
       validate/doctor error.
-- [ ] `self-hosted` is registered in the backend registry (0023) and selectable
+- [x] `self-hosted` is registered in the backend registry (0023) and selectable
       per loop/stage with no schema change.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Implement `SelfHostedBackend.capabilities()` with the full-capability shape.
-- [ ] Implement `dispatch` triggering the worker workflow over the GitHub port,
+- [x] Implement `SelfHostedBackend.capabilities()` with the full-capability shape.
+- [x] Implement `dispatch` triggering the worker workflow over the GitHub port,
       passing `run_id`/`loop`/`issue`/`brief_ref`/`agent`/`api_key_secret`.
-- [ ] Implement the agent-CLI runner boundary (`claude -p` / `codex exec`) with
+- [x] Implement the agent-CLI runner boundary (`claude -p` / `codex exec`) with
       lazy `SecretRef` resolution + log scrubbing.
-- [ ] Implement `ingest` delegating to the 0073 matcher + the `null` / failure /
+- [x] Implement `ingest` delegating to the 0073 matcher + the `null` / failure /
       `workflow_run`-failure paths.
-- [ ] Add `templates/workflows/looper-self-hosted-worker.yml` + wire `looper init`
+- [x] Add `templates/workflows/looper-self-hosted-worker.yml` + wire `looper init`
       to scaffold it when configured.
-- [ ] Register `self-hosted` in the backend registry; add a fake self-hosted
+- [x] Register `self-hosted` in the backend registry; add a fake self-hosted
       backend + worker simulation to `@looper/testing`.
 
 ## Test Plan
@@ -190,14 +190,31 @@ model call**.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: backend suite green: dispatch triggers the worker workflow with
+  the full input set and the API key travels as a NAME only (asserted: no
+  plaintext anywhere in the dispatch); full-capability shape (secret full /
+  network on / zdr true / uncapped); the same secret/network gate that
+  mismatches Codex passes here; ingest correlates the worker PR identically
+  to the subscription backends.
+- 2026-06-09: worker template authored (`templates/workflows/
+  looper-self-hosted-worker.yml`); `looper init` deliberately skips it
+  (opt-in escape hatch).
 
 ## Decisions
 
-Record the worker-dispatch mechanism chosen (`workflow_dispatch` vs.
-`repository_dispatch`), the worker-input shape, the agent-CLI invocation strings
-(`claude -p` / `codex exec`), how the API-key `SecretRef` is resolved + scrubbed,
-and the exact capability values (esp. `zdr_compatible` + null cap).
+- Worker dispatch mechanism: `workflow_dispatch` (new `dispatchWorkflow` on
+  the GitHubPort) — inputs {run_id, loop, issue, branch, trailer, agent,
+  api_key_secret, brief}. repository_dispatch rejected (payload limits, no
+  per-input typing).
+- Agent CLI invocations isolated in `agentCommand()`: `claude -p <brief>
+  --permission-mode acceptEdits` / `codex exec --full-auto <brief>` — a flag
+  drift is a one-place fix.
+- API-key custody: the secret NAME flows through dispatch; the VALUE resolves
+  only inside the worker job's env (`secrets[inputs.api_key_secret]`), never
+  in looper code or logs.
+- Worker template is opt-in: init skips it; `looper connect default
+  self-hosted` is the path that introduces it (validate/doctor check lands
+  with M16).
 
 ## Risks / Rollback
 
@@ -216,4 +233,8 @@ and the exact capability values (esp. `zdr_compatible` + null cap).
 
 ## Final Summary
 
-Fill this in before marking verified.
+`SelfHostedBackend`: the first-class secondary that recovers live secrets,
+network, ZDR compatibility, and uncapped throughput by running the work cell
+on adopter compute. workflow_dispatch dispatch with name-only key custody, the
+identical correlation contract (providers are interchangeable to ingest), the
+isolated agent-CLI boundary, and the opt-in worker template.

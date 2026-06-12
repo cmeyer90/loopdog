@@ -380,6 +380,20 @@ export class OctokitGitHub implements GitHubPort {
     }
   }
 
+  async dispatchWorkflow(
+    repo: { owner: string; repo: string },
+    workflowFile: string,
+    ref: string,
+    inputs: Record<string, string>,
+  ): Promise<void> {
+    await this.octokit.rest.actions.createWorkflowDispatch({
+      ...repo,
+      workflow_id: workflowFile,
+      ref,
+      inputs,
+    });
+  }
+
   // ---- IdentityPort ----
 
   async getAuthenticatedActor(): Promise<ActorRef> {

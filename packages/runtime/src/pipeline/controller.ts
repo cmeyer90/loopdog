@@ -12,6 +12,8 @@ import { STATE_LABEL_PREFIX, stateLabel } from '@looper/core';
 import { loadConfig, parseDuration } from '@looper/config';
 import { parseActionsEvent } from '@looper/github';
 import { RepoPlanStoreFiles, assertSupportedFormatVersion } from '@looper/plans';
+import { createBackendRegistry } from '@looper/backends';
+import type { PromptSource } from '@looper/backends';
 import type { RunnerDeps } from './transition-runner.js';
 import { runLoopOnce } from './transition-runner.js';
 import { matchLoopsForEvent } from '../triggers/match.js';
@@ -30,8 +32,11 @@ export interface ControllerOptions {
   repoDir: string;
   repo: RepoRef;
   gh: GitHubPort;
-  backends: ReadonlyMap<string, ExecutionBackend>;
+  /** Empty/omitted = the default registry (claude/codex/self-hosted). */
+  backends?: ReadonlyMap<string, ExecutionBackend>;
   records: RunRecordStore;
+  /** Built-in templates dir (for prompt fallbacks); optional. */
+  templatesDir?: string;
   botLogin?: string;
   now?: () => Date;
   /** One-invocation tighten-only override (0009). */
@@ -110,12 +115,20 @@ async function load(opts: ControllerOptions): Promise<{
     meta.defaultBranch,
     planStoreCfg.path,
   );
+  const backends =
+    opts.backends && opts.backends.size > 0
+      ? opts.backends
+      : createBackendRegistry({
+          gh: opts.gh,
+          selfHosted: { defaultBranch: meta.defaultBranch },
+        });
   const deps: RunnerDeps = {
     gh: opts.gh,
-    backends: opts.backends,
+    backends,
     records: opts.records,
     table: result.config.table,
     readPrompt: (loop: LoopDefinition) => readPromptFile(opts.repoDir, loop),
+    promptSource: createFsPromptSource(opts.repoDir, opts.templatesDir),
     planFiles,
     ...(opts.botLogin ? { botLogin: opts.botLogin } : {}),
     ...(opts.now ? { now: opts.now } : {}),
@@ -126,6 +139,25 @@ async function load(opts: ControllerOptions): Promise<{
 
 async function readPromptFile(repoDir: string, loop: LoopDefinition): Promise<string> {
   return readFile(join(repoDir, loop.promptPath), 'utf8');
+}
+
+/** Layered prompt source over the checked-out repo (+ shipped templates). */
+export function createFsPromptSource(repoDir: string, templatesDir?: string): PromptSource {
+  const tryRead = (path: string) =>
+    readFile(path, 'utf8').then(
+      (t) => t,
+      () => null,
+    );
+  return {
+    builtin: (loop) =>
+      templatesDir
+        ? tryRead(join(templatesDir, 'loops', loop, 'prompt.md'))
+        : Promise.resolve(null),
+    repo: (loop) => tryRead(join(repoDir, '.looper', 'loops', loop, 'prompt.md')),
+    overlay: (loop, backend) =>
+      tryRead(join(repoDir, '.looper', 'loops', loop, `prompt.${backend}.md`)),
+    policy: (name) => tryRead(join(repoDir, '.looper', 'policies', `${name}.md`)),
+  };
 }
 
 // '*/5 * * * *' → 5; friendly and fixed-time intervals → the sweep default 5.

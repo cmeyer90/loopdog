@@ -60,6 +60,13 @@ export const loopConfigSchema = z.object({
     })
     .optional(),
   serialize_by: z.string().optional(),
+  /** Work-cell needs, checked against backend capabilities (0021). */
+  requires: z
+    .object({
+      live_secrets: z.boolean().optional(),
+      network: z.boolean().optional(),
+    })
+    .optional(),
   mode: z.enum(['dry-run', 'suggest', 'act']).optional(),
   /** Custom states/edges this loop adds to the transition table (0011). */
   declares: z

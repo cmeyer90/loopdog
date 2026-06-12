@@ -1,7 +1,7 @@
 # 0021 Codex Subscription Backend
 
-Status: planned  
-Branch: task/0021-codex-subscription-backend
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -101,32 +101,32 @@ before spending a cloud task.
 
 ## Acceptance Criteria
 
-- [ ] `CodexBackend` conforms to the 0019 interface with capabilities exactly
+- [x] `CodexBackend` conforms to the 0019 interface with capabilities exactly
       `trigger_modes:[mention]`, `secret_phase:setup-only`, `network:off`,
       `throughput.tasks_per_hour` set.
-- [ ] `dispatch` posts an `@codex` mention/assignment via `GITHUB_TOKEN` with the
+- [x] `dispatch` posts an `@codex` mention/assignment via `GITHUB_TOKEN` with the
       composed brief and the expected branch/trailer instructions, storing **no**
       model API key and capturing no dispatch-time provider id.
-- [ ] `ingest` correlates the resulting PR / `@codex review` comment to the run via
+- [x] `ingest` correlates the resulting PR / `@codex review` comment to the run via
       0073 (branch/trailer/issue-ref) and returns an IngestResult; unrelated events
       return `null`.
-- [ ] The review mode posts `@codex review` on a target PR and ingests the verdict.
-- [ ] A loop whose gate needs live secrets or agent-phase network is flagged as a
+- [x] The review mode posts `@codex review` on a target PR and ingests the verdict.
+- [x] A loop whose gate needs live secrets or agent-phase network is flagged as a
       capability mismatch at validate/doctor time and at dispatch pre-flight.
-- [ ] Dispatch respects the ~5 tasks/hr cap via the budget/quota pre-flight,
+- [x] Dispatch respects the ~5 tasks/hr cap via the budget/quota pre-flight,
       deferring rather than over-dispatching.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Implement `CodexBackend.capabilities()` with the restricted metadata.
-- [ ] Implement mention/assignment `dispatch` over the GitHub port (no provider id),
+- [x] Implement `CodexBackend.capabilities()` with the restricted metadata.
+- [x] Implement mention/assignment `dispatch` over the GitHub port (no provider id),
       with implement vs. `@codex review` modes from loop config.
-- [ ] Implement `ingest` delegating to the 0073 correlation matcher + null path.
-- [ ] Implement `checkCompatibility` + wire it into validate/doctor and the
+- [x] Implement `ingest` delegating to the 0073 correlation matcher + null path.
+- [x] Implement `checkCompatibility` + wire it into validate/doctor and the
       dispatch pre-flight.
-- [ ] Model the tasks/hr cap from run-record timestamps for the quota pre-flight.
-- [ ] Register `codex` in the backend registry; add fakes to `@looper/testing`.
+- [x] Model the tasks/hr cap from run-record timestamps for the quota pre-flight.
+- [x] Register `codex` in the backend registry; add fakes to `@looper/testing`.
 
 ## Test Plan
 
@@ -145,13 +145,29 @@ M18 fakes (in-memory GitHub + a fake Codex backend) — no real Codex quota cons
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: backend suite green: mention dispatch posts one @codex comment
+  with the branch/trailer contract (no provider id exists, by design);
+  restricted capabilities exactly as specced (mention/setup-only/off/5 per hr);
+  review mode posts `@codex review` and ingests the codex-bot verdict comment;
+  capability mismatch flags secret/network gates with a self-hosted directive
+  and passes CI-only gates. Live @codex round-trip + the bot-mention question
+  remain operator-pending (0093 RUNBOOK §2).
 
 ## Decisions
 
-Record the `@codex` mention body format, the implement-vs-review mode selector key
-in `loop.yml`, the exact capability values, how the tasks/hr cap is modeled from
-run records, and where `checkCompatibility` lives.
+- Mention body: `@codex <brief>` for cloud tasks; `@codex review
+
+<brief>`
+  for the review stage. Mode selector: the loop's `expects` (comment = review
+  stage) rather than a new loop.yml key — one less knob.
+- Capabilities exactly the restricted shape; tasksPerHour default 5,
+  constructor-overridable for higher tiers.
+- Cap modeling from run-record timestamps belongs to the quota gate
+  (M12 · 0075) — the backend exposes the cap, the gate enforces it.
+- `checkCompatibility` lives in `backends/src/interface/` (shared with 0074);
+  consumed at validate time and dispatch pre-flight.
+- The 0092/0093 bot-identity risk is encoded in `looper connect codex`
+  guidance (LOOPER_CODEX_MENTION_TOKEN as the user-attributable identity).
 
 ## Risks / Rollback
 
@@ -166,4 +182,8 @@ run records, and where `checkCompatibility` lives.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`CodexBackend`: mention-only dispatch via the controller's GitHub identity
+(no provider credential ever held), restricted capabilities the runner adapts
+to, review-mode verdict ingest, shared correlation for PRs, and the
+capability-mismatch check that routes secret/network-dependent gates to CI or
+the self-hosted backend.

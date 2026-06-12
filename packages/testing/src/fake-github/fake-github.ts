@@ -31,6 +31,8 @@ export class FakeGitHub implements GitHubPort {
   readonly mutations: string[] = [];
 
   actor: ActorRef = { login: 'github-actions[bot]', type: 'Bot' };
+  /** Base instant for the fake's deterministic monotonic clock. */
+  clockBase = '2026-06-09T12:00:00Z';
   defaultBranch = 'main';
   visibility: 'public' | 'private' | 'internal' = 'public';
 
@@ -165,7 +167,8 @@ export class FakeGitHub implements GitHubPort {
       body,
       author: structuredClone(this.actor),
       authorAssociation: 'NONE',
-      createdAt: new Date(0).toISOString(),
+      // deterministic monotonic clock: comment N is N seconds past the base
+      createdAt: new Date(Date.parse(this.clockBase) + id * 1000).toISOString(),
     });
     this.comments.set(key(ref), list);
     this.mutations.push(`createComment ${key(ref)} #${id}`);
@@ -366,6 +369,30 @@ export class FakeGitHub implements GitHubPort {
       if (first) names.add(first);
     }
     return [...names].sort();
+  }
+
+  /** workflow_dispatch deliveries recorded for assertions (0074). */
+  readonly workflowDispatches: Array<{
+    repo: string;
+    workflowFile: string;
+    ref: string;
+    inputs: Record<string, string>;
+  }> = [];
+
+  async dispatchWorkflow(
+    repo: { owner: string; repo: string },
+    workflowFile: string,
+    ref: string,
+    inputs: Record<string, string>,
+  ): Promise<void> {
+    this.beforeOp('dispatchWorkflow');
+    this.workflowDispatches.push({
+      repo: `${repo.owner}/${repo.repo}`,
+      workflowFile,
+      ref,
+      inputs: { ...inputs },
+    });
+    this.mutations.push(`dispatchWorkflow ${repo.owner}/${repo.repo} ${workflowFile}`);
   }
 
   // ---- IdentityPort ----

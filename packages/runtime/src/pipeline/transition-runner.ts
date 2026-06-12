@@ -22,7 +22,8 @@ import {
   stateOfLabels,
 } from '@looper/core';
 import { acquireClaim, releaseClaim, upsertMarkedComment } from '@looper/github';
-import { composeBrief } from './brief.js';
+import type { PromptSource } from '@looper/backends';
+import { composeWorkBrief, promptSourceFromReader } from './brief.js';
 import { bumpAttempts, clearAttempts, parseAttempts } from './attempts.js';
 import {
   findPendingDispatches,
@@ -51,6 +52,8 @@ export interface RunnerDeps {
   table: TransitionTable;
   /** Reads a loop's prompt artifact text (from the checked-out repo). */
   readPrompt: (loop: LoopDefinition) => Promise<string>;
+  /** Full layered prompt source (0022); defaults to a readPrompt wrapper. */
+  promptSource?: PromptSource;
   /**
    * Extra pre-flight checks composed in by cross-cutting concerns:
    * authorization (M17), budget/quota/kill-switch (M12), resilience (M19).
@@ -287,8 +290,8 @@ async function processItem(
 
     // Work-cell transition: compose → dispatch → persist handle → (maybe) mark
     // the intermediate state. Ingest happens on a later invocation.
-    const promptText = await deps.readPrompt(loop);
-    const brief = composeBrief({ loop, item, runId, promptText });
+    const source = deps.promptSource ?? promptSourceFromReader(deps.readPrompt, loop);
+    const brief = await composeWorkBrief({ loop, item, runId, source });
     gate.note('compose', brief.briefRef);
     step('compose', brief.briefRef);
 

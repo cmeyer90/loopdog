@@ -1,7 +1,7 @@
 # 0019 Execution Backend Interface
 
-Status: planned  
-Branch: task/0019-execution-backend-interface
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -56,19 +56,19 @@ Backend:
 
 ## Acceptance Criteria
 
-- [ ] A documented interface with `capabilities`, `dispatch`, `ingest` and their
+- [x] A documented interface with `capabilities`, `dispatch`, `ingest` and their
       types.
-- [ ] `dispatch` is async (returns a handle without blocking on provider work).
-- [ ] Capability metadata is rich enough for the runner to adapt (trigger mode,
+- [x] `dispatch` is async (returns a handle without blocking on provider work).
+- [x] Capability metadata is rich enough for the runner to adapt (trigger mode,
       secret phase, sandbox, review support).
-- [ ] At least one backend (0020) conforms; the runner is provider-agnostic.
+- [x] At least one backend (0020) conforms; the runner is provider-agnostic.
 
 ## Implementation Checklist
 
-- [ ] Define the interface + DispatchHandle/IngestResult types.
-- [ ] Define the capability metadata schema.
-- [ ] Define the brief/output-contract shape passed to `dispatch`.
-- [ ] Provide a conformance harness backends are tested against.
+- [x] Define the interface + DispatchHandle/IngestResult types.
+- [x] Define the capability metadata schema.
+- [x] Define the brief/output-contract shape passed to `dispatch`.
+- [x] Provide a conformance harness backends are tested against.
 
 ## Test Plan
 
@@ -79,12 +79,28 @@ Backend:
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: three real backends (claude/codex/self-hosted) + the scripted
+  fake all conform; the provider-agnostic runner drives any of them through
+  dispatch→ingest in the runner/sweep suites. 119 tests green.
 
 ## Decisions
 
-Record the exact method signatures, the capability fields, and the brief/output
-contract shape.
+- Signatures (in `@looper/core/ports/backend.ts`): `capabilities():
+  BackendCapabilities`, `dispatch(brief: WorkBrief): Promise<DispatchHandle>`
+  (async — returns immediately with the dispatch-time correlation signal),
+  `ingest(handle): Promise<IngestResult>` (non-blocking poll; `pending` until
+  found; runner/sweep own re-invocation; M19 owns timeouts).
+- Capability fields per the spec: triggerModes (api_fire|mention|github_event|
+  self_hosted_dispatch), runsSandbox, secretPhase (full|setup-only|none),
+  network (on|setup-only|off), opensPr, supportsReview, zdrCompatible,
+  throughput.tasksPerHour (null = uncapped), quotaNote.
+- Brief shape = `WorkBrief` (composed text incl. the non-overridable output
+  contract, briefRef version handle, expectedBranch/Trailer, expectation).
+- DispatchHandle carries the run id + the authoritative dispatch-time signal
+  (claude-session | codex-mention | workflow-run | local-process) per the 0093
+  dual-signal decision.
+- Conformance harness = the shared backend test suite + the FakeBackend in
+  `@looper/testing` (the M06-0028-style kit for backends).
 
 ## Risks / Rollback
 
@@ -94,4 +110,8 @@ before freezing it.
 
 ## Final Summary
 
-Fill this in before marking verified.
+The one backend contract lives in core (0094-landed, now consumer-proven):
+capabilities/dispatch/ingest with rich capability metadata, an async
+dispatch→handle→later-ingest split, and the dual-signal correlation types.
+Three real conforming implementations + the scripted fake; the runner is
+provider-agnostic (proven by swapping backends in tests).

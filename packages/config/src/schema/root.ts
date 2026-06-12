@@ -60,7 +60,19 @@ export const resilienceSchema = z.object({
 export const rootConfigSchema = z.object({
   version: z.literal(1),
   backends: z
-    .object({ default: z.enum(['claude', 'codex', 'self-hosted']).default('claude') })
+    .object({
+      default: z.enum(['claude', 'codex', 'self-hosted']).default('claude'),
+      /** Default backend for the review stage (cross-provider review, 0023). */
+      review: z.enum(['claude', 'codex', 'self-hosted']).optional(),
+      /** Zero-Data-Retention org: Claude cloud routines are excluded. */
+      zdr: z.boolean().default(false),
+      self_hosted: z
+        .object({
+          agent: z.enum(['claude', 'codex']).default('claude'),
+          api_key_secret: z.string().default('LOOPER_MODEL_API_KEY'),
+        })
+        .default({}),
+    })
     .default({}),
   plan_store: z
     .union([

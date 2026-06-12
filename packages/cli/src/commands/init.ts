@@ -118,6 +118,9 @@ export async function buildScaffoldPlan(
     }
   }
   for (const wf of (await readdir(join(templatesDir, 'workflows'))).sort()) {
+    // The self-hosted worker is the opt-in escape hatch — scaffolded only when
+    // a self-hosted backend is configured (looper connect default self-hosted).
+    if (wf === 'looper-self-hosted-worker.yml') continue;
     await add(join(templatesDir, 'workflows', wf), join('.github', 'workflows', wf));
   }
 

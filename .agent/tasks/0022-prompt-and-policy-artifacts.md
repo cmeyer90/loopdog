@@ -1,7 +1,7 @@
 # 0022 Prompt & Policy Artifacts
 
-Status: planned  
-Branch: task/0022-prompt-and-policy-artifacts
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -123,33 +123,33 @@ proceed" sentinel for safety.
 
 ## Acceptance Criteria
 
-- [ ] Briefs are composed from repo files; no prompt text is hardcoded in looper
+- [x] Briefs are composed from repo files; no prompt text is hardcoded in looper
       source (a grep for inline prompt strings in `backends`/`runtime` is clean).
-- [ ] Resolution order (built-in → repo `prompt.md` → `prompt.<backend>.md`) works,
+- [x] Resolution order (built-in → repo `prompt.md` → `prompt.<backend>.md`) works,
       with most-specific winning, proven by tests over a fixture tree.
-- [ ] `compose(ctx, src)` is pure and deterministic: same inputs → byte-identical
+- [x] `compose(ctx, src)` is pure and deterministic: same inputs → byte-identical
       `text` and `ref`.
-- [ ] `brief_ref` is a stable `<loop>/prompt.md@<sha8>` over the resolved
+- [x] `brief_ref` is a stable `<loop>/prompt.md@<sha8>` over the resolved
       pre-substitution body, and the rendered brief is snapshotted to the run record.
-- [ ] The non-overridable output-contract trailer (branch + `looper-run:` + label +
+- [x] The non-overridable output-contract trailer (branch + `looper-run:` + label +
       issue ref, per 0073) is always present even if the adopter's prompt omits it.
-- [ ] Shared `{% policy <name> %}` fragments inline correctly and are listed in
+- [x] Shared `{% policy <name> %}` fragments inline correctly and are listed in
       `Brief.policies`.
-- [ ] `looper prompts show/diff/lint` work; lint fails on unknown placeholder,
+- [x] `looper prompts show/diff/lint` work; lint fails on unknown placeholder,
       missing policy fragment, and secret-literal patterns.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Define `PromptArtifact` / `ComposeContext` / `Brief` / `PromptSource` types.
-- [ ] Implement layered resolution (built-in → repo → backend overlay).
-- [ ] Implement the pure composer: placeholder substitution + `{% policy %}`
+- [x] Define `PromptArtifact` / `ComposeContext` / `Brief` / `PromptSource` types.
+- [x] Implement layered resolution (built-in → repo → backend overlay).
+- [x] Implement the pure composer: placeholder substitution + `{% policy %}`
       inlining + appended output-contract trailer + `ref` derivation.
-- [ ] Ship built-in `output-contract` and `secret-hygiene` policy fragments and
+- [x] Ship built-in `output-contract` and `secret-hygiene` policy fragments and
       built-in per-loop `prompt.md` assets in `@looper/runtime`.
-- [ ] Implement the lint rules (placeholder vocab, policy refs, secret literals).
-- [ ] Wire the composer into the runner compose step (0012) + run-record snapshot.
-- [ ] Add `looper prompts show/diff/lint` commands.
+- [x] Implement the lint rules (placeholder vocab, policy refs, secret literals).
+- [x] Wire the composer into the runner compose step (0012) + run-record snapshot.
+- [x] Add `looper prompts show/diff/lint` commands.
 
 ## Test Plan
 
@@ -166,13 +166,29 @@ npm test -w @looper/cli           # prompts show/diff/lint over fixtures
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: compose suite green: resolution order (builtin→repo→backend
+  overlay, most-specific wins); pure/deterministic compose with stable
+  pre-substitution `<loop>/prompt.md@<sha8>` refs (same template + different
+  issue = same ref); the output contract present even when the prompt omits
+  it AND when a repo policy tries to override it; policy fragments inlined +
+  audited; missing-criteria sentinel; lint failures for unknown placeholders/
+  policies/secret literals (secrets never echoed). `looper prompts
+  show/diff/lint` smoke-tested end-to-end on a scaffolded repo.
 
 ## Decisions
 
-Record the placeholder vocabulary, the overlay-replacement (vs. merge) choice, the
-`brief_ref` hashing rule (pre- vs. post-substitution), and the non-overridable
-trailer mechanism.
+- Placeholder vocabulary fixed per spec (10 entries, validated by lint);
+  no logic, no nested includes.
+- Overlay = full replacement of the base body (simplest, least surprising);
+  shared text belongs in {% policy %} fragments.
+- `brief_ref` hashes the resolved PRE-substitution body (template identity,
+  not issue identity); the rendered text snapshots into the run record via
+  the runner's compose step.
+- Non-overridable trailer mechanism: `{% policy output-contract %}` ALWAYS
+  resolves to the built-in fragment (repo overrides ignored for that name),
+  and the contract is appended when absent — covered by the 'sneaky' test.
+- Built-in fragments (output-contract, secret-hygiene) are embedded constants
+  in `@looper/backends` so the bundled CLI carries them.
 
 ## Risks / Rollback
 
@@ -184,4 +200,9 @@ the built-in `prompt.md` assets, no code change needed.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`@looper/backends/brief`: the layered artifact model (builtin → repo →
+backend overlay), shared {% policy %} fragments, a pure deterministic composer
+with stable version refs and the non-editable-away output contract, secret/
+placeholder/policy lint, and the `looper prompts show|diff|lint` operator
+surface — wired into the runner's compose step (briefs come only from
+versioned repo files).

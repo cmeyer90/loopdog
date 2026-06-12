@@ -38,12 +38,14 @@ export class FakeBackend implements ExecutionBackend {
 
   capabilities(): BackendCapabilities {
     return {
-      dispatchSurface: 'http-fire',
-      headless: true,
-      sandbox: 'provider-cloud',
-      sandboxInternet: 'configurable',
-      liveSecretsInSandbox: false,
-      correlationSignal: 'session-id',
+      triggerModes: ['api_fire'],
+      runsSandbox: true,
+      secretPhase: 'full',
+      network: 'on',
+      opensPr: true,
+      supportsReview: true,
+      zdrCompatible: true,
+      throughput: { tasksPerHour: null },
       quotaNote: 'fake backend — unlimited, free',
     };
   }

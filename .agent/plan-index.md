@@ -31,11 +31,11 @@ table and in `milestones.md`.
 | 0016 | verified | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding |
 | 0017 | verified | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation |
 | 0018 | verified | task/0018-plan-index-maintenance | Plan Index Maintenance |
-| 0019 | planned | task/0019-execution-backend-interface | Execution Backend Interface |
-| 0020 | planned | task/0020-claude-subscription-backend | Claude Subscription Backend |
-| 0021 | planned | task/0021-codex-subscription-backend | Codex Subscription Backend |
-| 0022 | planned | task/0022-prompt-and-policy-artifacts | Prompt & Policy Artifacts |
-| 0023 | planned | task/0023-backend-selection-and-subscription-auth | Backend Selection & Subscription Auth |
+| 0019 | verified | task/0019-execution-backend-interface | Execution Backend Interface |
+| 0020 | verified | task/0020-claude-subscription-backend | Claude Subscription Backend |
+| 0021 | verified | task/0021-codex-subscription-backend | Codex Subscription Backend |
+| 0022 | verified | task/0022-prompt-and-policy-artifacts | Prompt & Policy Artifacts |
+| 0023 | verified | task/0023-backend-selection-and-subscription-auth | Backend Selection & Subscription Auth |
 | 0024 | planned | task/0024-adapter-interface | Adapter Interface |
 | 0025 | planned | task/0025-stack-autodetection | Stack Auto-Detection |
 | 0026 | planned | task/0026-generic-command-adapter | Generic Command Adapter |
@@ -85,8 +85,8 @@ table and in `milestones.md`.
 | 0070 | planned | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`) |
 | 0071 | planned | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`looper status` + control verbs) |
 | 0072 | planned | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) |
-| 0073 | planned | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) |
-| 0074 | planned | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
+| 0073 | verified | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) |
+| 0074 | verified | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
 | 0075 | planned | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
 | 0076 | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
 | 0077 | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |

@@ -1,7 +1,7 @@
 # 0073 Dispatch & Result Ingestion (correlation)
 
-Status: planned  
-Branch: task/0073-dispatch-and-result-ingestion
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -57,21 +57,21 @@ ingests the existing PR instead of firing again.
 
 ## Acceptance Criteria
 
-- [ ] A dispatched run is correlated to its PR via branch name, body marker, and
+- [x] A dispatched run is correlated to its PR via branch name, body marker, and
       issue ref (any sufficient), and unrelated PRs are ignored.
-- [ ] Ingest updates the run record, the durable plan, and the item label, and is
+- [x] Ingest updates the run record, the durable plan, and the item label, and is
       idempotent under duplicate event delivery.
-- [ ] A dispatch that never yields a PR within the lease is detected by the sweep
+- [x] A dispatch that never yields a PR within the lease is detected by the sweep
       and escalated, not stranded.
-- [ ] A re-invocation ingests the existing PR rather than double-dispatching.
+- [x] A re-invocation ingests the existing PR rather than double-dispatching.
 
 ## Implementation Checklist
 
-- [ ] Define the correlation scheme (branch + marker + issue ref) and brief
+- [x] Define the correlation scheme (branch + marker + issue ref) and brief
       instructions that produce it.
-- [ ] Implement the ingest matcher + the not-ours `null` path.
-- [ ] Implement idempotent ingest + plan/label updates.
-- [ ] Implement the sweep-driven timeout/no-result escalation.
+- [x] Implement the ingest matcher + the not-ours `null` path.
+- [x] Implement idempotent ingest + plan/label updates.
+- [x] Implement the sweep-driven timeout/no-result escalation.
 
 ## Test Plan
 
@@ -83,12 +83,30 @@ ingests the existing PR instead of firing again.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: correlation suite green: branch→trailer→issue-ref precedence;
+  human-authored and pre-dispatch bot PRs rejected (not ours); exact-branch
+  fast path + fallback scanning; idempotent ingest proven at the runner level
+  (third invocation no-op; dispatch markers resolve exactly once); re-invocation
+  ingests the existing PR instead of double-dispatching (runner suite).
+- 2026-06-09: timeout path: expired-lease reclaim + attempts escalation proven
+  in the sweep suite (a no-result dispatch cannot strand an item).
 
 ## Decisions
 
-Record the branch/marker conventions, match precedence, and the lease-timeout
-default.
+- Conventions per spec: branch `looper/<loop>/<issue>-<run_id>`; PR trailer
+  `looper-run: <run_id>`; issue-ref fallback requires bot author AND
+  created-after-dispatch (60s clock skew allowed) — guards against matching a
+  human's PR that merely mentions the issue.
+- Match precedence: branch (exact, cheap) → trailer → issue-ref; `matchedBy`
+  is recorded on every IngestResult so live honor-rates (0093) accumulate in
+  run records for free.
+- The dispatch-time signal in the handle (session id / mention comment id /
+  workflow dispatch) is the authoritative record of the dispatch (0093) — it
+  rides the persisted dispatch marker comment; PR matching identifies the
+  artifact.
+- Lease-timeout default: 30 min (0013's DEFAULT_LEASE_TTL_MINUTES); the sweep
+  reclaims and the attempts ceiling escalates (M19 refines into
+  dispatch_timeout).
 
 ## Risks / Rollback
 
@@ -98,4 +116,9 @@ land before any loop runs in `act` mode. Spike it against a real provider early.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`@looper/backends/correlation`: the shared three-signal matcher
+(branch/trailer/issue-ref with bot+time guards), exact-branch fast path,
+`ingestViaCorrelation` used by all three backends, `matchedBy` telemetry, and
+the runner/sweep idempotency + timeout integration. The riskiest primitive is
+landed with defense in depth and offline proofs; live honor-rate measurement
+remains the 0093 operator item.

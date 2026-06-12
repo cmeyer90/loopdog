@@ -1,6 +1,6 @@
 # Milestone 05: Provider & Execution Backend Abstraction (Claude + Codex subscriptions)
 
-Status: planned
+Status: verified (live provider round-trips operator-pending per M00)
 
 > Background: [Looper Architecture](../../docs/architecture.md) — "Execution
 > model: orchestrate provider cloud agents over GitHub" and "Verified provider
@@ -39,25 +39,37 @@ model API calls on the primary path.
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0019 | planned | task/0019-execution-backend-interface | Execution Backend Interface | The `dispatch(brief) → ingest(result)` contract + capability metadata. |
-| 0020 | planned | task/0020-claude-subscription-backend | Claude Subscription Backend | Dispatch via imported Claude routine `/fire` URL/token + cloud sessions. |
-| 0021 | planned | task/0021-codex-subscription-backend | Codex Subscription Backend | Dispatch via GitHub `@codex` mention/assignment; ingest its PRs. |
-| 0073 | planned | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) | Translate provider-agent output (PRs, comments) into GitHub state + plan updates. |
-| 0074 | planned | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) | Adopter self-hosts the execution container + brings own API key; recovers full secret/network access, no rate caps, ZDR support. |
-| 0022 | planned | task/0022-prompt-and-policy-artifacts | Prompt & Policy Artifacts | Versioned, overridable brief/prompt/policy files per loop + backend. |
-| 0023 | planned | task/0023-backend-selection-and-subscription-auth | Backend Selection & Subscription Auth | Per-loop backend choice + subscription auth (Claude routine import; provider App where applicable). |
+| 0019 | verified | task/0019-execution-backend-interface | Execution Backend Interface | The `dispatch(brief) → ingest(result)` contract + capability metadata. |
+| 0020 | verified | task/0020-claude-subscription-backend | Claude Subscription Backend | Dispatch via imported Claude routine `/fire` URL/token + cloud sessions. |
+| 0021 | verified | task/0021-codex-subscription-backend | Codex Subscription Backend | Dispatch via GitHub `@codex` mention/assignment; ingest its PRs. |
+| 0073 | verified | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) | Translate provider-agent output (PRs, comments) into GitHub state + plan updates. |
+| 0074 | verified | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) | Adopter self-hosts the execution container + brings own API key; recovers full secret/network access, no rate caps, ZDR support. |
+| 0022 | verified | task/0022-prompt-and-policy-artifacts | Prompt & Policy Artifacts | Versioned, overridable brief/prompt/policy files per loop + backend. |
+| 0023 | verified | task/0023-backend-selection-and-subscription-auth | Backend Selection & Subscription Auth | Per-loop backend choice + subscription auth (Claude routine import; provider App where applicable). |
 
 ## Definition Of Done
 
-- A documented execution-backend interface exists with ≥2 conforming subscription
-  backends (Claude, Codex) and the optional self-hosted backend.
-- A loop can dispatch work to a provider cloud agent and ingest the resulting PR,
-  with no direct model API call by looper on the primary path.
-- Backends are selectable per loop and per stage (implement vs. review).
-- Prompts/briefs live in the repo and can be overridden by adopters.
-- Subscription auth (Claude imported `/fire` URL/token refs; provider App where
-  applicable) is resolved without storing a long-lived model API key.
+- [x] A documented execution-backend interface exists with ≥2 conforming
+  subscription backends (Claude, Codex) and the optional self-hosted backend
+  (+ the scripted fake — four conforming implementations).
+- [x] A loop can dispatch work to a provider cloud agent and ingest the
+  resulting PR, with no direct model API call by looper on the primary path
+  (proven offline against the fakes; live round-trips are the 0093 operator
+  items).
+- [x] Backends are selectable per loop and per stage (implement vs. review)
+  via the core precedence resolver applied at config resolution.
+- [x] Prompts/briefs live in the repo and can be overridden by adopters
+  (layered artifacts + non-overridable output contract + prompts CLI).
+- [x] Subscription auth (Claude imported `/fire` URL/token refs; provider App
+  for Codex) resolves without storing a long-lived model API key —
+  self-hosted is the only key-bearing variant, and it carries the NAME only.
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-09: all seven tasks landed; 119 tests green repo-wide incl. the
+  backends suites (correlation precedence + guards, claude /fire with pinned
+  beta header, codex mention + review verdict, self-hosted worker dispatch
+  with name-only key custody, composer + lint, selection/auth table).
+- 2026-06-09: `looper prompts show/diff/lint` smoke-tested on a scaffolded
+  repo; the controller now builds the default registry internally so the CLI
+  stays inside its dependency boundary.

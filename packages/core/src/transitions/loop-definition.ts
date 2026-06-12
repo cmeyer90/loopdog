@@ -28,6 +28,8 @@ export interface LoopDefinition {
   expects?: 'pull-request' | 'comment' | 'plan-update' | undefined;
   /** Advisory same-area serialization key (task 0013 `serialize_by`). */
   serializeBy?: string | undefined;
+  /** Work-cell needs, checked against backend capabilities (0021 mismatch). */
+  requires?: { liveSecrets?: boolean | undefined; network?: boolean | undefined } | undefined;
 }
 
 export type LoopMode = Mode;

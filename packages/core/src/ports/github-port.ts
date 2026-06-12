@@ -105,6 +105,13 @@ export interface RepoFilesPort {
 export interface IdentityPort {
   /** Who the controller is acting as (e.g. 'github-actions[bot]'). */
   getAuthenticatedActor(): Promise<ActorRef>;
+  /** Trigger a workflow_dispatch (the self-hosted worker, 0074). */
+  dispatchWorkflow(
+    repo: { owner: string; repo: string },
+    workflowFile: string,
+    ref: string,
+    inputs: Record<string, string>,
+  ): Promise<void>;
   getRepoMeta(repo: { owner: string; repo: string }): Promise<{
     defaultBranch: string;
     visibility: 'public' | 'private' | 'internal';

@@ -112,6 +112,8 @@ export {
   parseLocks,
   resolveClaimRace,
 } from './transitions/claim-protocol.js';
+export type { Stage } from './transitions/backend-selection.js';
+export { deriveStage, selectBackend } from './transitions/backend-selection.js';
 export type { Decision, PreflightCheck, Verdict } from './transitions/decision.js';
 export { decideTransition, standardChecks } from './transitions/decision.js';
 export type { SupportedEventName } from './transitions/event-matrix.js';

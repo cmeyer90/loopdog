@@ -3,6 +3,7 @@ import {
   DEFAULT_TRANSITION_TABLE,
   extendTable,
   isSupportedEventAction,
+  selectBackend,
   validateLoopTransition,
 } from '@looper/core';
 import { loopConfigSchema, type LoopConfig } from '../schema/loop.js';
@@ -146,6 +147,19 @@ export function validateConfig(tree: DiscoveredTree): ValidationResult {
       });
     }
 
+    if (
+      root.backends.zdr &&
+      (cfg.backend === 'claude' || (!cfg.backend && root.backends.default === 'claude'))
+    ) {
+      errors.push({
+        file,
+        path: 'backend',
+        message:
+          'Zero-Data-Retention org: Claude cloud routines are excluded — select the ' +
+          'self-hosted backend for this loop (`looper connect default self-hosted`)',
+      });
+    }
+
     if (cfg.expects !== 'none' && !cfg.backend && !root.backends.default) {
       errors.push({
         file,
@@ -200,7 +214,13 @@ function resolveLoop(root: RootConfig, cfg: LoopConfig): LoopDefinition {
     name: cfg.name,
     trigger,
     transition: cfg.transition,
-    backend: cfg.backend ?? root.backends.default,
+    // Full 0023 precedence: loop per-stage -> loop default -> root per-stage
+    // -> root default -> 'claude' (stage derived from the transition).
+    backend: selectBackend(root.backends, {
+      backend: cfg.backend,
+      reviewBackend: cfg.review_backend,
+      transition: cfg.transition,
+    }),
     reviewBackend: cfg.review_backend,
     gates: {
       requireDor: cfg.gates.require_dor,
@@ -219,6 +239,9 @@ function resolveLoop(root: RootConfig, cfg: LoopConfig): LoopDefinition {
     mode: cfg.mode ?? root.defaults.mode,
     expects: cfg.expects === 'none' ? undefined : cfg.expects,
     serializeBy: cfg.serialize_by,
+    requires: cfg.requires
+      ? { liveSecrets: cfg.requires.live_secrets, network: cfg.requires.network }
+      : undefined,
   };
 }
 

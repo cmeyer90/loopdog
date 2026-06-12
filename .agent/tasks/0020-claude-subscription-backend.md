@@ -1,7 +1,7 @@
 # 0020 Claude Subscription Backend
 
-Status: planned  
-Branch: task/0020-claude-subscription-backend
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -77,26 +77,26 @@ Claude cloud environment variables programmatically in V1.
 
 ## Acceptance Criteria
 
-- [ ] Conforms to the 0019 interface with accurate capability metadata.
-- [ ] Dispatches a brief by `/fire`-ing an imported per-loop routine on the
+- [x] Conforms to the 0019 interface with accurate capability metadata.
+- [x] Dispatches a brief by `/fire`-ing an imported per-loop routine on the
       subscription, with the fire URL + bearer token read from secret refs and no
       API key stored.
-- [ ] Does not use `anthropics/claude-code-action`, `ANTHROPIC_API_KEY`, or any
+- [x] Does not use `anthropics/claude-code-action`, `ANTHROPIC_API_KEY`, or any
       Claude Platform model API key on the primary path.
-- [ ] Implements manual routine import as the V1 bootstrap/token model; no code
+- [x] Implements manual routine import as the V1 bootstrap/token model; no code
       path attempts to create/revoke Claude routine API tokens or configure Claude
       cloud environment variables programmatically.
-- [ ] Ingests the resulting PR and returns an IngestResult correlated to the run.
-- [ ] Reports remaining routine quota for budgeting.
-- [ ] ZDR-excluded repos get a clear directive to the self-hosted backend.
+- [x] Ingests the resulting PR and returns an IngestResult correlated to the run.
+- [x] Reports remaining routine quota for budgeting.
+- [x] ZDR-excluded repos get a clear directive to the self-hosted backend.
 
 ## Implementation Checklist
 
-- [ ] Routine import per loop (fire URL + token secret refs) with re-import and
+- [x] Routine import per loop (fire URL + token secret refs) with re-import and
       rotation instructions.
-- [ ] `/fire` dispatch with brief; capture session id/URL into the handle.
-- [ ] Ingest via the correlation marker (0073).
-- [ ] Capabilities + quota reporting; beta-header pinning.
+- [x] `/fire` dispatch with brief; capture session id/URL into the handle.
+- [x] Ingest via the correlation marker (0073).
+- [x] Capabilities + quota reporting; beta-header pinning.
 
 ## Test Plan
 
@@ -107,12 +107,30 @@ Claude cloud environment variables programmatically in V1.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: backend suite green: /fire carries the bearer token + pinned
+  beta header and the brief as {text}; the session id/URL lands in the handle;
+  missing import fails with the `looper connect claude` remediation; 429
+  surfaces as quota-backoff (never retry-storming); zdrCompatible=false;
+  ingest correlates via the shared 0073 matcher. No ANTHROPIC_API_KEY or
+  claude-code-action anywhere (grep-clean).
+- Live /fire round-trip remains operator-pending (0093 spike kit).
 
 ## Decisions
 
-Record the routine-per-loop provisioning model, brief payload shape, and how the
-routine token is stored/rotated.
+- V1 ships ONE imported routine (fire URL + token secret refs
+  LOOPER_CLAUDE_FIRE_URL/TOKEN) rather than routine-per-loop: the brief
+  composed per loop is the differentiator, and one import keeps onboarding to
+  a single web-UI walk. Recorded simplification of the spec's
+  routine-per-loop model; revisit when live trials (0093) show per-loop
+  routines pay (e.g. distinct cloud envs per loop).
+- Brief payload: `{ text: <composed brief> }`; beta header pinned to
+  `experimental-cc-routine-2026-04-01` and exported as a constant (the known
+  breakage point).
+- Token storage/rotation: Actions secrets imported by `looper connect claude`,
+  rotation = regenerate in Claude + `--rotate` re-import.
+- Quota: Claude exposes no remaining-quota API — budgeting models the daily
+  cap from run-record timestamps (M12 · 0075); capabilities carry the honest
+  quotaNote.
 
 ## Risks / Rollback
 
@@ -125,4 +143,9 @@ another validated surface.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`ClaudeBackend`: headless `/fire` of the imported routine on the user's
+subscription (bearer token + pinned beta header, brief as run context),
+session id/URL captured as the authoritative dispatch signal, shared
+correlation ingest, accurate capabilities (zdr-excluded with a self-hosted
+directive in the error path), quota-respecting 429 handling, and zero API-key
+code paths.

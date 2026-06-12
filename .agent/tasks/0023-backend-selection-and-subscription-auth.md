@@ -1,7 +1,7 @@
 # 0023 Backend Selection & Subscription Auth
 
-Status: planned  
-Branch: task/0023-backend-selection-and-subscription-auth
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -149,39 +149,39 @@ Auth resolution failure is a pre-flight failure → handed to backoff/escalation
 
 ## Acceptance Criteria
 
-- [ ] `selectBackend` returns the correct backend for implement vs. review under
+- [x] `selectBackend` returns the correct backend for implement vs. review under
       the full precedence chain (loop-stage → loop-default → root-stage →
       root-default → default), proven by a table test.
-- [ ] A loop can implement on one backend and be reviewed on another via
+- [x] A loop can implement on one backend and be reviewed on another via
       `backends.review`, with no code change.
-- [ ] `resolveAuth` returns a `BackendAuth` carrying only references (`SecretRef`) —
+- [x] `resolveAuth` returns a `BackendAuth` carrying only references (`SecretRef`) —
       no plaintext model API key on the Claude/Codex path; self-hosted is the only
       key-bearing variant.
-- [ ] Claude auth resolution rejects `ANTHROPIC_API_KEY`/Claude Code GitHub Action
+- [x] Claude auth resolution rejects `ANTHROPIC_API_KEY`/Claude Code GitHub Action
       configuration as satisfying subscription auth; it requires imported routine
       fire URL + bearer-token `SecretRef`s.
-- [ ] An unknown backend name and an unauthenticated selected backend each fail
+- [x] An unknown backend name and an unauthenticated selected backend each fail
       pre-flight with an actionable remediation message (not a stack trace).
-- [ ] `backend: claude` on a ZDR-flagged repo is rejected with a self-hosted
+- [x] `backend: claude` on a ZDR-flagged repo is rejected with a self-hosted
       directive.
-- [ ] The chosen backend name is recorded in the run record.
-- [ ] Relevant checks pass.
+- [x] The chosen backend name is recorded in the run record.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add `backends.default` + `backends.review` to the `looper.yml` and `loop.yml`
+- [x] Add `backends.default` + `backends.review` to the `looper.yml` and `loop.yml`
       zod schemas (`@looper/config`) with validation.
-- [ ] Implement the frozen backend registry + `UnknownBackendError`
+- [x] Implement the frozen backend registry + `UnknownBackendError`
       (`@looper/backends/src/registry`).
-- [ ] Implement the pure `selectBackend` precedence resolver + stage derivation
+- [x] Implement the pure `selectBackend` precedence resolver + stage derivation
       (`@looper/backends/src/selection`).
-- [ ] Implement `resolveAuth` per backend + `BackendAuth`/`SecretRef` types +
+- [x] Implement `resolveAuth` per backend + `BackendAuth`/`SecretRef` types +
       `BackendAuthError` (`@looper/backends/src/auth`), reading provider repo-auth
       state via `@looper/github`.
-- [ ] Add the ZDR + Claude conflict check and the capability-mismatch warning.
-- [ ] Wire selection + auth into the runner pre-flight (`@looper/runtime`) ahead of
+- [x] Add the ZDR + Claude conflict check and the capability-mismatch warning.
+- [x] Wire selection + auth into the runner pre-flight (`@looper/runtime`) ahead of
       dispatch; record the chosen backend in the run record.
-- [ ] Tests for selection, auth resolution, and error paths using the M18 fakes.
+- [x] Tests for selection, auth resolution, and error paths using the M18 fakes.
 
 ## Test Plan
 
@@ -198,13 +198,31 @@ quota, no real provider auth**.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: selection/auth suite green: the full precedence table
+  (loop-stage → loop-default → root-stage → root-default → claude) per stage;
+  implement-on-X / review-on-Y with no code change; resolveAuth returns refs
+  only (claude/codex keyless; self-hosted carries the key NAME); the
+  ANTHROPIC_API_KEY rejection; missing-import and unknown-backend errors are
+  actionable; ZDR+claude rejected with the self-hosted directive (config
+  validation AND auth resolution); the fixed three-backend registry.
 
 ## Decisions
 
-Record the selection precedence order, the stage-derivation rule (which transition
-edges count as `review`), the `BackendAuth`/`SecretRef` shapes, and how the Claude
-routine fire URL + bearer token are referenced (secret ids vs. env-var names).
+- Selection precedence as specced; the pure resolver lives in `@looper/core`
+  (config must apply it inside its dependency boundary) and is re-exported
+  from `@looper/backends` (its spec home). Stage rule: edges leaving
+  `in-review` are the review stage.
+- Config keys: root `backends.{default,review,zdr,self_hosted}`; per-loop
+  flat `backend:`/`review_backend:` (kept from 0006 instead of a nested
+  per-loop `backends:` block — fewer shapes for the same expressiveness;
+  recorded deviation).
+- `BackendAuth` shapes as specced; `SecretRef` = the env/Actions secret NAME
+  (LOOPER_CLAUDE_FIRE_URL/TOKEN; LOOPER_MODEL_API_KEY default) — plaintext
+  resolves only inside the consuming backend/worker.
+- Auth failures surface at dispatch through the runner's failure path
+  (release + attempts + escalation) with remediation text in the message;
+  registry construction is the controller's job (CLI stays inside its
+  boundary).
 
 ## Risks / Rollback
 
@@ -218,4 +236,9 @@ resolution are pre-dispatch).
 
 ## Final Summary
 
-Fill this in before marking verified.
+Selection + auth resolution: pure precedence selection (core) applied at
+config resolution so every LoopDefinition carries its final backend; the
+frozen three-backend registry built by the controller; per-backend
+`resolveAuth` returning credential REFERENCES only, with actionable errors
+(connect/rotate remediation, API-key rejection, ZDR directive); chosen backend
+recorded on every run record.

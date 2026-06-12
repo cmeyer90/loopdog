@@ -7,6 +7,7 @@ import { registerLogin } from './commands/login.js';
 import { registerConnect } from './commands/connect.js';
 import { registerPromote } from './commands/promote.js';
 import { registerConfig } from './commands/config.js';
+import { registerPrompts } from './commands/prompts.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json') as { version: string };
@@ -29,6 +30,7 @@ export function buildProgram(backends: ReadonlyMap<string, ExecutionBackend> = n
   registerInit(program);
   registerConnect(program);
   registerConfig(program);
+  registerPrompts(program);
   registerPromote(program);
   registerController(program, backends);
   return program;
