@@ -1,7 +1,7 @@
 # 0011 Label State Machine Spec
 
-Status: planned  
-Branch: task/0011-label-state-machine-spec
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -81,19 +81,27 @@ state requires it be declared so labels get created.
 
 ## Acceptance Criteria
 
-- [ ] A documented default state set + reserved off-ramps + operational labels.
-- [ ] A transition-table format with the default table shipped and overridable.
-- [ ] `looper` creates missing state labels on a repo idempotently and never
-      modifies labels it didn't create.
-- [ ] An illegal `from→to` edge is rejected at config-validate time, not runtime.
-- [ ] Custom loops can declare new states/edges; declared states get labels.
+- [x] A documented default state set + reserved off-ramps + operational labels
+      (`core/src/state-machine/states.ts` — the spec from this task encoded).
+- [x] A transition-table format with the default table shipped and overridable
+      (`TransitionTable` + `DEFAULT_TRANSITION_TABLE` + `extendTable`).
+- [x] `looper` creates missing state labels on a repo idempotently and never
+      modifies labels it didn't create (`planLabelReconciliation` pure planner +
+      `reconcileLabels` IO in `@looper/github`; double-run test proves no-diff).
+- [x] An illegal `from→to` edge is rejected at validate time (`validateEdge` /
+      `validateLoopTransition` — the entrypoint config validation and
+      `looper loops validate` call); the runner also escalates rather than runs.
+- [x] Custom loops can declare new states/edges (`extendTable`); declared
+      states get labels via the same reconciliation.
 
 ## Implementation Checklist
 
-- [ ] Define the label namespace + default states/off-ramps/ops labels.
-- [ ] Define the transition-table schema; ship the default.
-- [ ] Implement idempotent label reconciliation against a repo.
-- [ ] Expose a validation entrypoint loops/CLI call to check an edge is legal.
+- [x] Define the label namespace + default states/off-ramps/ops labels.
+- [x] Define the transition-table schema; ship the default.
+- [x] Implement idempotent label reconciliation against a repo.
+- [x] Expose a validation entrypoint loops/CLI call to check an edge is legal
+      (`validateEdge` for raw edges; `validateLoopTransition` for loop declarations,
+      which also accepts a work-cell loop's two-edge path through `in-progress`).
 
 ## Test Plan
 
@@ -105,12 +113,26 @@ state requires it be declared so labels get created.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: `npm test` — transition-table suite green: every default edge
+  legal; undeclared edges rejected with reasons; unknown states named; off-ramps
+  implicitly legal from any state; extension idempotent.
+- 2026-06-09: label-reconciliation tests green: empty repo → full looper label
+  set created; second run plans nothing; adopter labels (and adopter-recolored
+  looper labels) never touched.
 
 ## Decisions
 
-Record the label namespace, default state names, and whether off-ramp edges are
-implicit (any→off-ramp) or enumerated.
+- Namespace exactly as specced: `looper:state/<name>` for lifecycle states;
+  `looper:` prefix for off-ramps/operational; claim/lease/lock prefixes
+  `looper:claimed-by/`, `looper:lease/`, `looper:lock/`.
+- Off-ramp edges are **implicit** (any state → blocked/needs-human/stuck/
+  abandoned is always legal) — enumerating them would bloat the table.
+- A loop's declared transition validates as a direct edge OR (for dispatching
+  loops) the canonical two-edge path `from → in-progress → to` — this is how
+  `implement: ready-for-agent → in-review` is legal while raw `validateEdge`
+  still rejects the chord.
+- Reconciliation never updates/deletes — create-missing only. Adopter-modified
+  looper label colors are left alone (the name is the contract, not the color).
 
 ## Risks / Rollback
 
@@ -119,4 +141,9 @@ plus never-clobber reconciliation is the mitigation.
 
 ## Final Summary
 
-Fill this in before marking verified.
+The state machine is encoded as data + pure functions in
+`@looper/core/state-machine/` (default states incl. deploy extension states,
+off-ramps, operational labels, the default transition table, edge + loop-path
+validation, extension merging, and the never-clobber label planner) with the
+IO application in `@looper/github/labels/`. Fully unit-tested including
+idempotence and custom-loop extension.

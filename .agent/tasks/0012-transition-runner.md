@@ -1,7 +1,7 @@
 # 0012 Stateless Transition Runner
 
-Status: planned  
-Branch: task/0012-transition-runner
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -68,20 +68,31 @@ rather than retrying in-process.
 
 ## Acceptance Criteria
 
-- [ ] One invocation advances an eligible item by exactly one transition.
-- [ ] A run record (per the schema above) is emitted for every attempt.
-- [ ] Re-running the same transition on an already-advanced/in-flight item is a
-      no-op (idempotent), proven by a double-invocation test.
-- [ ] Safe under both event and cron-sweep invocation (no double work).
-- [ ] A failed step records the failure and hands off to backoff/escalation.
+- [x] One invocation advances an eligible item by exactly one transition
+      (deterministic loop: one step + no-op re-run test; work-cell loop:
+      dispatch-then-ingest across two invocations).
+- [x] A run record (per the schema) is emitted for every attempt and appended
+      to the store; eligible-but-skipped sweeps emit nothing (no record spam).
+- [x] Re-running on an already-advanced/in-flight item is a no-op — proven by
+      double-invocation tests (deterministic + work-cell + silent-work-cell).
+- [x] Safe under both event and cron-sweep invocation: the concurrent
+      event-vs-sweep race test proves exactly one dispatch.
+- [x] A failed step records the failure (class `transient`), releases the
+      claim, bumps `looper:attempts/N`, and escalates to `looper:needs-human`
+      at the attempt ceiling (class `poisoned`) — M12/M19 refine this policy.
 
 ## Implementation Checklist
 
-- [ ] Implement eligible-item selection (state + trigger filter).
-- [ ] Implement the gate/budget/claim/compose/dispatch/write pipeline.
-- [ ] Implement run-record emission to the `looper/telemetry` run-record store (0053).
-- [ ] Implement the idempotency key + in-flight short-circuit.
-- [ ] Wire failures to stuck-detection (M12 · 0051).
+- [x] Implement eligible-item selection (event item or from-state scan).
+- [x] Implement the gate/claim/compose/dispatch/write pipeline (extra checks —
+      budget/auth/resilience — compose in via `RunnerDeps.extraChecks`).
+- [x] Implement run-record emission (`TelemetryBranchStore` → day-bucketed
+      NDJSON on `looper/telemetry` with CAS-retry append; in-memory store for tests).
+- [x] Implement the idempotency key + in-flight short-circuit (pending dispatch
+      markers take precedence over re-dispatch; live claims skip; reached
+      target no-ops).
+- [x] Wire failures to attempts-label + needs-human escalation (the basic
+      0051 behavior; full policy lands with M12/M19).
 
 ## Test Plan
 
@@ -92,12 +103,33 @@ rather than retrying in-process.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: runner suite green (8 tests): dispatch→marker→in-progress;
+  later-invocation ingest→in-review + PR labeled + claim released; third
+  invocation no-op with zero re-dispatch; event/sweep race → one dispatch;
+  silent work cell stays pending without stranding; DoR routes to
+  needs-grooming with comment; dispatch failure → release + attempts +
+  escalate at ceiling; deterministic loop single-step + no-op re-run;
+  dry-run comment-only with sticky comment.
+- 2026-06-09: full `npm run lint` + `npm run build` green.
 
 ## Decisions
 
-Record the run-record schema, the idempotency-key derivation, and the
-sync-vs-async dispatch boundary.
+- Run-record schema as specced (type in core `run-record/`); records are
+  emitted for attempts and notable blocks (park/route/escalate), NOT for
+  routine skip/no-op sweep passes — sweeps would otherwise flood the store.
+- Idempotency: `idempotencyKey(loop, item, from)`; in practice the runner's
+  short-circuits are (a) pending dispatch marker → ingest instead of dispatch,
+  (b) live claim → skip, (c) target state reached → no-op.
+- **Sync-vs-async boundary:** `dispatch` persists a marker comment with the
+  full `DispatchHandle` (incl. the authoritative dispatch-time correlation
+  signal, 0093) and returns — the same or a later invocation ingests. A
+  dispatching loop marks the canonical intermediate `in-progress` state when
+  the table has that edge.
+- Failure handling: release claim BEFORE bumping attempts (item never stays
+  locked by a dead run); attempts ride a `looper:attempts/N` label so the
+  sweep sees them without a datastore.
+- The claim CAS uses an invocation-unique claimant nonce (see 0013 decisions)
+  — without it, the deterministic runId let event+sweep races double-dispatch.
 
 ## Risks / Rollback
 
@@ -107,4 +139,11 @@ together — all three must be in place before enabling `act` mode.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`runLoopOnce` in `@looper/runtime/pipeline/` is the stateless single-step
+worker: select (event item or state scan) → decide (standard checks + DoR gate
++ composable extra checks) → claim (nonce'd CAS) → compose brief (versioned
+`briefRef`) → dispatch + persist handle marker → and on a later invocation
+ingest → advance → release → record. Deterministic loops apply inline.
+Dry-run is comment-only with a sticky comment. Failures release, count
+attempts, and escalate at the ceiling. Proven idempotent and race-safe on the
+fake GitHub + scripted fake backend.

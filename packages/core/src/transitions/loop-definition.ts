@@ -1,0 +1,84 @@
+import type { BackendId } from '../ports/backend.js';
+
+/**
+ * The domain shape of a declared loop ("loops are data, not code"): the parsed
+ * form of `.looper/loops/<name>/loop.yml`. `@looper/config` owns parsing and
+ * validation into this type; the runtime executes any value of it generically.
+ */
+export interface LoopDefinition {
+  name: string;
+  trigger: LoopTrigger;
+  transition: { from: string; to: string };
+  backend: BackendId;
+  /** Reviewer backend when this loop reviews (cross-provider rule, M10/M13). */
+  reviewBackend?: BackendId | undefined;
+  gates: GateConfig;
+  blastRadius?: BlastRadiusConfig | undefined;
+  authorization?: AuthorizationConfig | undefined;
+  resilience?: ResilienceConfig | undefined;
+  /** Repo-relative path of the loop's prompt artifact. */
+  promptPath: string;
+  /** dry-run = comment-only, never relabel/dispatch side effects (M02 · 0009). */
+  mode: LoopMode;
+  /**
+   * What the dispatched work cell produces. Undefined = a deterministic
+   * transition with no work cell (e.g. merge), applied inline by the runner.
+   */
+  expects?: 'pull-request' | 'comment' | 'plan-update' | undefined;
+  /** Advisory same-area serialization key (task 0013 `serialize_by`). */
+  serializeBy?: string | undefined;
+}
+
+export type LoopMode = 'dry-run' | 'act';
+
+/** The only two trigger kinds: GitHub events or cron. */
+export type LoopTrigger =
+  | { kind: 'github_event'; events: string[] }
+  | { kind: 'cron'; schedule: string };
+
+export type RiskTier = 'safe' | 'default' | 'core';
+
+export interface GateConfig {
+  requireDor: boolean;
+  requireCi: boolean;
+  tier: RiskTier;
+  /** Required check contexts beyond the repo's protected ones (0041). */
+  requiredChecks?: string[] | undefined;
+}
+
+export interface BlastRadiusConfig {
+  maxFiles?: number | undefined;
+  maxDiffLines?: number | undefined;
+  /** Paths the loop must never touch (glob patterns). */
+  forbiddenPaths?: string[] | undefined;
+}
+
+/** WHO/WHAT/WHEN trigger control (M17). Strictest applicable rule wins. */
+export interface AuthorizationConfig {
+  actors: 'anyone' | 'org-members' | 'collaborators' | 'allowlist';
+  allow?: string[] | undefined;
+  deny?: string[] | undefined;
+  onUnauthorized: 'park' | 'ignore' | 'comment';
+  approvalLabel?: string | undefined;
+  allowedBots?: string[] | undefined;
+  rateLimit?:
+    | { perActorPerDay?: number | undefined; globalPerHour?: number | undefined }
+    | undefined;
+  scheduleWindow?:
+    | { days?: string[] | undefined; hours?: string | undefined; tz?: string | undefined }
+    | undefined;
+}
+
+/** Failure-policy knobs (M19). All optional — defaults ship in config. */
+export interface ResilienceConfig {
+  retries?:
+    | { max: number; backoff: 'exponential' | 'fixed'; baseSeconds: number; capSeconds: number }
+    | undefined;
+  dispatchTimeoutMinutes?: number | undefined;
+  maxAttemptsPerItem?: number | undefined;
+  maxFixAttempts?: number | undefined;
+  maxInFlight?: { global?: number | undefined; perLoop?: number | undefined } | undefined;
+  circuitBreaker?: { consecutiveFailures: number; cooldownMinutes: number } | undefined;
+  onFailure?: 'needs-human' | 'retry' | 'abandon' | undefined;
+  escalateTo?: string | undefined;
+}

@@ -1,7 +1,7 @@
 # 0094 Core Port Interfaces & Run-Record Store
 
-Status: planned  
-Branch: task/0094-core-port-interfaces-and-run-record-store
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -43,21 +43,24 @@ already exist. This task fills that crack. (The run-record **store** is owned by
 
 ## Acceptance Criteria
 
-- [ ] All five port interfaces exist as real TS in `@looper/core`, importable by
-      consumers; `GitHubPort`'s method surface is fully enumerated; `RepoFs` is
-      declared.
-- [ ] The run-record store is owned by 0053 (orphan `looper/telemetry` branch); this
-      task defers to it and references it rather than defining a store.
-- [ ] The run-record type is defined and matches 0012's schema.
-- [ ] `@looper/core` stays IO-free (interfaces only; no Octokit import).
+- [x] All five port interfaces exist as real TS in `@looper/core`, importable by
+      consumers; `GitHubPort`'s method surface is fully enumerated (six composed
+      capability interfaces: Issues/Labels/Pulls/Checks/RepoFiles/Identity);
+      `RepoFs` is declared in `ports/project-adapter.ts`.
+- [x] The run-record store is owned by 0053 (orphan `looper/telemetry` branch);
+      core only defines the type + `runRecordPath()`; the store impl lives in
+      `@looper/runtime` telemetry (`TelemetryBranchStore`).
+- [x] The run-record type is defined and matches 0012's schema.
+- [x] `@looper/core` stays IO-free (interfaces + pure functions; zero deps).
 
 ## Implementation Checklist
 
-- [ ] Write the five interfaces + the `RepoFs` type + the run-record type in
-      `@looper/core`.
-- [ ] Enumerate `GitHubPort` methods + event types.
-- [ ] Defer the run-record store to 0053 (orphan `looper/telemetry` branch).
-- [ ] Confirm consumers (0011/0013/0019) compile against the interfaces.
+- [x] Write the five interfaces + the `RepoFs` type + the run-record type in
+      `@looper/core` (`src/ports/`, `src/run-record/`).
+- [x] Enumerate `GitHubPort` methods + the normalized `TriggerEvent` type.
+- [x] Defer the run-record store to 0053 (orphan `looper/telemetry` branch).
+- [x] Confirm consumers compile against the interfaces (claims 0013, runner
+      0012, fake GitHub 0083, Octokit adapter, fake backend 0084 all do).
 
 ## Test Plan
 
@@ -67,13 +70,27 @@ already exist. This task fills that crack. (The run-record **store** is owned by
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: `npm run build` green with both implementations of `GitHubPort`
+  (OctokitGitHub + FakeGitHub) and one of `ExecutionBackend` (FakeBackend)
+  compiling against the ports — the interfaces are consumer-proven.
+- 2026-06-09: boundary check confirms `@looper/core` imports nothing.
 
 ## Decisions
 
-Record the `GitHubPort` method surface, the `RepoFs` type, and the run-record type.
-The run-record store is owned by 0053 (orphan `looper/telemetry` branch); this task
-defers to it.
+- `GitHubPort` = composition of six capability interfaces (IssuesPort,
+  LabelsPort, PullsPort, ChecksPort, RepoFilesPort, IdentityPort) so fakes and
+  partial consumers implement exactly what they use. Notable surface choices:
+  `listPullRequestsByHeadPrefix` (correlation 0073), `removeLabel` is
+  idempotent by contract, `writeFile` takes `expectedSha` (optimistic
+  concurrency for plan/telemetry writes), `ensureBranch` supports `orphan`.
+- `RepoFs` = `{readFile, exists, list}` read-only view for adapter `detect()`.
+- Run-record type per 0012's schema (`RunRecord` with steps/outcome/cost +
+  `FailureClass` from M19's taxonomy); ids via `deriveRunId` (FNV-1a, no
+  crypto dep) and `idempotencyKey` = `loop:owner/repo#n:from`.
+- `SecretBackend` = `{residency, available, resolve}` + the pure `scrubSecrets`
+  leak guard (0031) exported beside it.
+- Store deferred to 0053 as specced; `TelemetryBranchStore` (runtime) writes
+  day-bucketed NDJSON to `looper/telemetry` via `RepoFilesPort` with CAS retry.
 
 ## Risks / Rollback
 
@@ -83,4 +100,10 @@ claim/runner logic is testable.
 
 ## Final Summary
 
-Fill this in before marking verified.
+All five ports live in `@looper/core/src/ports/` as real, consumer-proven TS:
+`GitHubPort` (six composed capability interfaces, fully enumerated),
+`ExecutionBackend` (`capabilities/dispatch/ingest` with the 0093 dual-signal
+correlation types), `ProjectAdapter` (+`RepoFs`), `PlanStore` (typed plan
+shapes + statuses), `SecretBackend` (+`scrubSecrets`). Run-record type +
+id/key/path helpers in `src/run-record/`. Core remains dependency-free; two
+GitHubPort impls and one backend impl compile against the contracts.

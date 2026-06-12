@@ -14,7 +14,7 @@ North-star architecture for the V1 roadmap:
 | 00 | Validation | blocked | [Pre-Build Validation Spikes](milestones/milestone-00-pre-build-validation-spikes.md) |
 | 01 | Foundation | implemented | [Project Foundation & Open-Source Scaffolding](milestones/milestone-01-project-foundation-and-oss-scaffolding.md) |
 | 02 | Platform | planned | [Attachment & Configuration Model](milestones/milestone-02-attachment-and-configuration-model.md) |
-| 03 | Platform | planned | [GitHub State-Machine Core](milestones/milestone-03-github-state-machine-core.md) |
+| 03 | Platform | verified | [GitHub State-Machine Core](milestones/milestone-03-github-state-machine-core.md) |
 | 04 | Platform | planned | [Durable Planning Store](milestones/milestone-04-durable-planning-store.md) |
 | 05 | Platform | planned | [Provider & Execution Backend Abstraction (Claude + Codex subscriptions)](milestones/milestone-05-model-provider-abstraction.md) |
 | 06 | Platform | planned | [Project Adapter System](milestones/milestone-06-project-adapter-system.md) |
@@ -61,11 +61,11 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0009 | Milestone 02: Attachment & Configuration Model | planned | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults |
 | 0077 | Milestone 02: Attachment & Configuration Model | planned | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
 | 0010 | Milestone 02: Attachment & Configuration Model | planned | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select |
-| 0094 | Milestone 03: GitHub State-Machine Core | planned | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |
-| 0011 | Milestone 03: GitHub State-Machine Core | planned | task/0011-label-state-machine-spec | Label State Machine Spec |
-| 0012 | Milestone 03: GitHub State-Machine Core | planned | task/0012-transition-runner | Stateless Transition Runner |
-| 0013 | Milestone 03: GitHub State-Machine Core | planned | task/0013-atomic-claiming-and-serialization | Atomic Claiming & Serialization |
-| 0014 | Milestone 03: GitHub State-Machine Core | planned | task/0014-dor-dod-contract-gates | DoR / DoD Contract Gates |
+| 0094 | Milestone 03: GitHub State-Machine Core | verified | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |
+| 0011 | Milestone 03: GitHub State-Machine Core | verified | task/0011-label-state-machine-spec | Label State Machine Spec |
+| 0012 | Milestone 03: GitHub State-Machine Core | verified | task/0012-transition-runner | Stateless Transition Runner |
+| 0013 | Milestone 03: GitHub State-Machine Core | verified | task/0013-atomic-claiming-and-serialization | Atomic Claiming & Serialization |
+| 0014 | Milestone 03: GitHub State-Machine Core | verified | task/0014-dor-dod-contract-gates | DoR / DoD Contract Gates |
 | 0015 | Milestone 04: Durable Planning Store | planned | task/0015-portable-plan-format | Portable Plan Format |
 | 0016 | Milestone 04: Durable Planning Store | planned | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding |
 | 0017 | Milestone 04: Durable Planning Store | planned | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation |

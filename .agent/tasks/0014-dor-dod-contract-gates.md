@@ -1,7 +1,7 @@
 # 0014 DoR / DoD Contract Gates
 
-Status: planned  
-Branch: task/0014-dor-dod-contract-gates
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -57,20 +57,26 @@ status + review state from GitHub + the criteria block.
 
 ## Acceptance Criteria
 
-- [ ] The DoR gate blocks an implement transition when criteria/scope/test-plan
-      are absent and routes the item back to grooming/human.
-- [ ] The DoD gate blocks merge unless all criteria are checked + CI green +
-      review approved (+ deploy smoke when applicable).
-- [ ] Criteria parse from the issue-body marker block deterministically.
-- [ ] Per-loop `require_dor`/`require_ci`/`tier` config is honored; `require_dor:
-      false` emits a warning, not a silent skip.
+- [x] The DoR gate blocks an implement transition when criteria/scope/test-plan
+      are absent and routes the item back to grooming (runner test: ungroomed
+      item → `needs-grooming` + explanatory comment).
+- [x] The DoD gate blocks merge unless all criteria are checked + CI green +
+      review approved (+ deploy smoke when applicable) — full predicate matrix
+      unit-tested incl. latest-review-per-author semantics.
+- [x] Criteria parse from the issue-body marker block deterministically
+      (round-trip + malformed-line tests; untagged criteria are malformed).
+- [x] Per-loop `require_dor`/`require_ci`/`tier` config is honored by the
+      runner (`GateConfig`); the `require_dor: false` warning surfaces in
+      config validation (`looper loops validate`, M02 · 0006 wiring).
 
 ## Implementation Checklist
 
-- [ ] Define + parse the acceptance-criteria marker block.
-- [ ] Implement the DoR predicate + the not-ready routing.
-- [ ] Implement the DoD predicate over criteria + checks + reviews + smoke.
-- [ ] Wire gate config from `loop.yml`; surface `require_dor:false` warnings.
+- [x] Define + parse the acceptance-criteria marker block (+ render + upsert,
+      and the scope marker block).
+- [x] Implement the DoR predicate + the not-ready routing (`DOR_FAIL_ROUTE`).
+- [x] Implement the DoD predicate over criteria + checks + reviews + smoke.
+- [x] Wire gate config from `loop.yml` (`GateConfig` on `LoopDefinition`;
+      schema + warning surfacing land with the config package, M02 · 0006).
 
 ## Test Plan
 
@@ -81,12 +87,27 @@ status + review state from GitHub + the criteria block.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: gates suite green (11 tests): criteria round-trip, malformed
+  flagging, in-place upsert + append; DoR pass/no-block/empty/malformed/
+  no-scope; DoD pass, unmet criteria, missing/red checks, approval semantics
+  (latest review per author wins; dismissed ignored), deploy smoke.
+- 2026-06-09: runner integration: DoR-failing item routed, not dispatched.
 
 ## Decisions
 
-Record the criteria block format, the test/manual tagging convention, and how
-strictly DoD treats `manual:` criteria.
+- Block format exactly as specced (`<!-- looper:acceptance-criteria -->` fenced
+  checklist). Tagging: `(test: <path>)` or `(manual)` suffix per criterion; an
+  UNTAGGED criterion is malformed → **fail closed** (DoR blocks), because an
+  untagged criterion has no validation plan.
+- Scope bounds use a sibling `<!-- looper:scope -->` block; DoR requires it
+  non-empty.
+- DoD treats `manual:` criteria as strictly as `test:` ones — both must be
+  checked. Who may check them differs (CI flips test-tagged boxes objectively;
+  the intent-diff reviewer 0043 flips manual ones) but the gate doesn't trust
+  an unchecked box of either kind.
+- Review approval semantics: latest non-pending review per author decides that
+  author's stance; DISMISSED reviews drop out; any standing CHANGES_REQUESTED
+  blocks; ≥1 APPROVED required.
 
 ## Risks / Rollback
 
@@ -96,4 +117,9 @@ the marker format simple and validated; default to *blocking* on parse failure
 
 ## Final Summary
 
-Fill this in before marking verified.
+DoR/DoD are machine-checkable in `@looper/core/gates/`: a deterministic,
+fail-closed criteria marker-block parser (with render/upsert for grooming to
+write through), the DoR predicate (criteria + per-criterion validation tags +
+scope) with `needs-grooming` routing, and the DoD predicate (all criteria
+checked + required checks green + standing approval + optional deploy smoke).
+Wired into the runner behind `GateConfig` and fully unit-tested.

@@ -1,7 +1,7 @@
 # 0013 Atomic Claiming & Serialization
 
-Status: planned  
-Branch: task/0013-atomic-claiming-and-serialization
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -53,19 +53,25 @@ the sweep removes expired ones.
 
 ## Acceptance Criteria
 
-- [ ] Two concurrent invocations targeting the same item result in exactly one
-      claim; the loser aborts cleanly (race test).
-- [ ] An expired-lease claim is reclaimable by the sweep (crash-recovery test).
-- [ ] `serialize_by` defers a second item in the same area instead of dispatching
-      it concurrently.
-- [ ] Claims/leases/locks are released on completion and on failure.
+- [x] Two concurrent invocations targeting the same item result in exactly one
+      claim; the loser aborts cleanly (race test in `packages/github/test/claims.test.ts`
+      + the runner-level event-vs-sweep race test).
+- [x] An expired-lease claim is reclaimable by the sweep (crash-recovery test:
+      `clearExpiredClaim` + re-acquire proven).
+- [x] `serialize_by` defers a second item in the same area instead of dispatching
+      it concurrently (area-lock test; different area not blocked).
+- [x] Claims/leases/locks are released on completion and on failure (release
+      test + the runner's failure path releases before attempt-bump).
 
 ## Implementation Checklist
 
-- [ ] Implement the label-based claim + re-read race resolution.
-- [ ] Implement lease stamping, expiry, and renewal-on-progress.
-- [ ] Implement `serialize_by` advisory area locks.
-- [ ] Implement release on terminal outcome + sweep cleanup of expired markers.
+- [x] Implement the label-based claim + re-read race resolution (pure protocol
+      in `core/transitions/claim-protocol.ts`; IO in `github/claims/claims.ts`).
+- [x] Implement lease stamping, expiry, and renewal-on-progress (`renewLease`).
+- [x] Implement `serialize_by` advisory area locks (lock label on the working
+      item; "held" = any other live-leased item carries `looper:lock/<area>`).
+- [x] Implement release on terminal outcome (`releaseClaim`) + sweep cleanup of
+      expired markers (`clearExpiredClaim`).
 
 ## Test Plan
 
@@ -77,12 +83,34 @@ the sweep removes expired ones.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: claims suite green (8 tests): acquire+lease+assign; concurrent
+  race → one winner, loser releases; live-lease rejection; expired-lease
+  reclaim; live-claim not cleared; serialize_by deferral; lease renewal;
+  full release.
+- 2026-06-09: runner race test green: event + sweep concurrently on one item →
+  exactly one dispatch, one marker comment. This test caught (and the claimant
+  nonce fixed) a real double-dispatch bug — see Decisions.
 
 ## Decisions
 
-Record the CAS mechanism chosen (label vs. assignment vs. comment marker), the
-default lease TTL, and the `serialize_by` granularity.
+- CAS = claim label + assignment, then RE-READ + deterministic tie-break
+  (lexicographically lowest claim marker wins, computed identically by all
+  racers). Comment markers rejected (slower, unbounded growth).
+- **Two-phase lease**: only the race WINNER stamps the lease. A claim without a
+  lease reads as expired → self-heals if a runner crashes between claim and
+  lease. Loser removes only its own claim label.
+- **Claimant nonce (race-test finding):** two invocations derive the same
+  deterministic `runId` (0012), so identical claim labels would merge into one
+  and both racers would "win" the CAS. The claim therefore uses an
+  invocation-unique claimant token `<runId>~<nonce>`; the runId stays stable
+  for records/markers/correlation. Without this, event-vs-sweep races
+  double-dispatch — proven by the runner race test before the fix.
+- Claim labels compact deterministically (`claimMarker`) to fit GitHub's
+  50-char label limit for long custom-loop names.
+- Default lease TTL: 30 min (`DEFAULT_LEASE_TTL_MINUTES`), configurable per
+  call; renewal on ingest progress.
+- `serialize_by` granularity: a free-form area string per loop (e.g. a service
+  or path-glob name) — advisory, enforced at claim time.
 
 ## Risks / Rollback
 
@@ -93,4 +121,10 @@ are the backstops.
 
 ## Final Summary
 
-Fill this in before marking verified.
+GitHub-as-lock claiming: label-based optimistic CAS with re-read +
+deterministic tie-break, invocation-unique claimant tokens (the fix for the
+same-runId double-dispatch race the tests caught), winner-only lease stamping
+(crash self-healing), renewal, advisory `serialize_by` area locks, full
+release, and sweep reclaim of expired markers. Pure protocol in core, IO in
+`@looper/github`, proven against the fake with race/recovery/serialization
+tests.

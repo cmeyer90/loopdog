@@ -23,10 +23,10 @@ table and in `milestones.md`.
 | 0008 | planned | task/0008-event-driven-triggers | Event-Driven Triggers |
 | 0009 | planned | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults |
 | 0010 | planned | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select |
-| 0011 | planned | task/0011-label-state-machine-spec | Label State Machine Spec |
-| 0012 | planned | task/0012-transition-runner | Stateless Transition Runner |
-| 0013 | planned | task/0013-atomic-claiming-and-serialization | Atomic Claiming & Serialization |
-| 0014 | planned | task/0014-dor-dod-contract-gates | DoR / DoD Contract Gates |
+| 0011 | verified | task/0011-label-state-machine-spec | Label State Machine Spec |
+| 0012 | verified | task/0012-transition-runner | Stateless Transition Runner |
+| 0013 | verified | task/0013-atomic-claiming-and-serialization | Atomic Claiming & Serialization |
+| 0014 | verified | task/0014-dor-dod-contract-gates | DoR / DoD Contract Gates |
 | 0015 | planned | task/0015-portable-plan-format | Portable Plan Format |
 | 0016 | planned | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding |
 | 0017 | planned | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation |
@@ -106,4 +106,4 @@ table and in `milestones.md`.
 | 0091 | planned | task/0091-resilience-knobs-and-quarantine | Resilience Knobs, Quarantine & Escalation |
 | 0092 | verified | task/0092-tos-and-subscription-automation-spike | ToS & Subscription-Automation Validation |
 | 0093 | blocked | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike |
-| 0094 | planned | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |
+| 0094 | verified | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |
