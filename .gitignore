@@ -13,12 +13,26 @@
 *.token
 id_rsa
 id_rsa.*
-credentials
-credentials.*
-secrets.*
-tokens.*
-keys.*
+# Secret *data* files only — keep these specific. A bare `secrets.*` / `keys.*`
+# once matched packages/.../secrets.ts and silently dropped a source file from
+# the repo, breaking the build on a clean checkout.
+credentials.json
+credentials.yaml
+credentials.yml
+secrets.json
+secrets.yaml
+secrets.yml
+secrets.env
+tokens.json
+keys.json
 .secrets/
+# Never ignore tracked source/docs even if a filename matches a pattern above.
+!**/*.ts
+!**/*.tsx
+!**/*.js
+!**/*.mjs
+!**/*.cjs
+!**/*.md
 
 # Dependencies and build output
 node_modules/
