@@ -92,7 +92,6 @@ export function registerRun(program: Command): void {
       await poll();
       if (opts.once) return;
       const ms = Math.max(5, Number(opts.interval)) * 1000;
-      // eslint-disable-next-line no-constant-condition
       while (true) {
         await new Promise((resolve) => setTimeout(resolve, ms));
         await poll();
