@@ -12,7 +12,7 @@
 #   - `id-token: write` (below) so the job can mint an OIDC token,
 #   - npm >= 11.5.1 (Node 20 ships npm 10.x, so we upgrade npm before publish),
 #   - a Trusted Publisher entry on the @loopdog/cli package that names THIS repo
-#     (cmeyer90/looper) + this workflow file (release.yml); leave its Environment
+#     (cmeyer90/loopdog) + this workflow file (release.yml); leave its Environment
 #     field blank to match (no `environment:` is set here).
 # One-time bootstrap: OIDC cannot create a brand-new package name (npm/cli#8544),
 # so @loopdog/cli must be published manually once before the Trusted Publisher is
