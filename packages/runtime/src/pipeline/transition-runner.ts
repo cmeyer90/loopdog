@@ -242,6 +242,12 @@ async function processItem(
   switch (decision.verdict.kind) {
     case 'no-op':
     case 'skip':
+      // Sweeps stay silent (no record spam). But an explicit single-item
+      // `looper run` should tell the operator WHY nothing happened (e.g. the
+      // circuit breaker is open) instead of a generic "no eligible item".
+      if (trigger.kind === 'event' && trigger.name === 'manual.run') {
+        return record({ status: 'skipped', note: decision.verdict.reason });
+      }
       return null; // not an attempt — common on sweeps; no record spam
     case 'park': {
       const { reason, retryAfter, holdLabel } = decision.verdict;

@@ -45,6 +45,9 @@ export interface RunOutcome {
     | undefined;
   /** Failure classification (M19 taxonomy) when status is failed/escalated. */
   failure?: { class: FailureClass; reason: string } | undefined;
+  /** Human-readable reason for a non-acting outcome (e.g. why a run was skipped
+   * by a gate) — surfaced to the operator on an explicit `looper run`. */
+  note?: string | undefined;
 }
 
 export type FailureClass = 'transient' | 'terminal' | 'poisoned' | 'overload' | 'budget';

@@ -61,6 +61,8 @@ export function registerRun(program: Command): void {
           // Surface WHY a run failed instead of a bare "failed" (M19 taxonomy).
           if (r.outcome.failure) {
             console.log(`  ↳ ${r.outcome.failure.class}: ${r.outcome.failure.reason}`);
+          } else if (r.outcome.note) {
+            console.log(`  ↳ ${r.outcome.note}`); // e.g. a gate skip reason
           }
         }
       },
