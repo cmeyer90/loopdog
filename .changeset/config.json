@@ -2,7 +2,7 @@
   "$schema": "https://unpkg.com/@changesets/config@3.0.0/schema.json",
   "changelog": ["@changesets/changelog-github", { "repo": "cmeyer90/looper" }],
   "commit": false,
-  "fixed": [["@looper/*"]],
+  "fixed": [["@looper/*", "@loopdog/cli"]],
   "linked": [],
   "access": "public",
   "baseBranch": "main",
