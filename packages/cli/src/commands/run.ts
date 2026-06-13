@@ -58,6 +58,10 @@ export function registerRun(program: Command): void {
             `${r.loop} #${r.item.number}: ${r.outcome.status}` +
               (r.outcome.transition ? ` (${r.outcome.transition})` : ''),
           );
+          // Surface WHY a run failed instead of a bare "failed" (M19 taxonomy).
+          if (r.outcome.failure) {
+            console.log(`  ↳ ${r.outcome.failure.class}: ${r.outcome.failure.reason}`);
+          }
         }
       },
     );

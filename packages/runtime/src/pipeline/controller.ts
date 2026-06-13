@@ -163,15 +163,27 @@ export async function handleRun(
   const { config, deps } = await load(opts);
   const loop = config.loops.find((l) => l.name === loopName);
   if (!loop) return { loop: loopName, found: false, records: [] };
-  const trigger: TriggerEvent =
-    issue !== undefined
-      ? {
-          kind: 'event',
-          name: 'manual.run',
-          item: { ...opts.repo, number: issue },
-          deliveredAt: (opts.now?.() ?? new Date()).toISOString(),
-        }
-      : { kind: 'cron', deliveredAt: (opts.now?.() ?? new Date()).toISOString() };
+  const at = (opts.now?.() ?? new Date()).toISOString();
+  let trigger: TriggerEvent;
+  if (issue !== undefined) {
+    // A manual `looper run --issue` is invoked by a human holding a repo-scoped
+    // token — they could mutate the repo directly — so attribute the trigger to
+    // that authenticated actor instead of leaving it unknown/NONE, which the
+    // authorization gate (M17) would park as an "untrusted trigger". Mirrors
+    // `looper approve`, where the CLI operator releases holds as a trusted actor.
+    const actor = await opts.gh.getAuthenticatedActor();
+    trigger = {
+      kind: 'event',
+      name: 'manual.run',
+      item: { ...opts.repo, number: issue },
+      actor: { login: actor.login, type: 'User' },
+      authorAssociation: actor.login === opts.repo.owner ? 'OWNER' : 'COLLABORATOR',
+      deliveredAt: at,
+    };
+  } else {
+    // Whole-from-state run: a cron-kind trigger is trusted by construction.
+    trigger = { kind: 'cron', deliveredAt: at };
+  }
   const records = await runLoopOnce(deps, loop, opts.repo, trigger);
   return { loop: loopName, found: true, records };
 }
