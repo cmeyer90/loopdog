@@ -145,6 +145,7 @@ describe('claude backend (0020)', () => {
     expect(calls[0]!.url).toContain('/fire');
     const headers = calls[0]!.init.headers as Record<string, string>;
     expect(headers['authorization']).toBe('Bearer sk-ant-oat01-test');
+    expect(headers['anthropic-version']).toBe('2023-06-01'); // api.anthropic.com rejects requests without it
     expect(headers['anthropic-beta']).toBe('experimental-cc-routine-2026-04-01');
     expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ text: brief.instructions });
     expect(h.signal).toEqual({

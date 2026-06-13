@@ -19,6 +19,9 @@ import { ingestViaCorrelation } from '../correlation/correlate.js';
 /** The dated beta header — pinned, surfaced as a known breakage point. */
 export const CLAUDE_ROUTINE_BETA = 'experimental-cc-routine-2026-04-01';
 
+/** api.anthropic.com rejects any request without an explicit version header. */
+export const CLAUDE_API_VERSION = '2023-06-01';
+
 /** Secret-ref names (env vars injected from Actions secrets by the caller). */
 export const CLAUDE_FIRE_URL_REF = 'LOOPER_CLAUDE_FIRE_URL';
 export const CLAUDE_FIRE_TOKEN_REF = 'LOOPER_CLAUDE_FIRE_TOKEN';
@@ -72,6 +75,7 @@ export class ClaudeBackend implements ExecutionBackend {
       headers: {
         authorization: `Bearer ${token}`,
         'content-type': 'application/json',
+        'anthropic-version': CLAUDE_API_VERSION,
         'anthropic-beta': CLAUDE_ROUTINE_BETA,
       },
       body: JSON.stringify({ text: brief.instructions }),
