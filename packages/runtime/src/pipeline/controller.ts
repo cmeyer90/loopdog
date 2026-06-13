@@ -107,6 +107,38 @@ export async function handleSweep(opts: ControllerOptions): Promise<SweepSummary
   });
 }
 
+export interface RunResult {
+  loop: string;
+  found: boolean;
+  records: RunRecord[];
+}
+
+/**
+ * Manual targeted run (task 0070): drive one named loop now — over a single
+ * item (`--issue`) or its whole from-state — honoring the same gates as an
+ * automated run. `forceDryRun` (the CLI's `--dry-run`) can only tighten.
+ */
+export async function handleRun(
+  opts: ControllerOptions,
+  loopName: string,
+  issue?: number,
+): Promise<RunResult> {
+  const { config, deps } = await load(opts);
+  const loop = config.loops.find((l) => l.name === loopName);
+  if (!loop) return { loop: loopName, found: false, records: [] };
+  const trigger: TriggerEvent =
+    issue !== undefined
+      ? {
+          kind: 'event',
+          name: 'manual.run',
+          item: { ...opts.repo, number: issue },
+          deliveredAt: (opts.now?.() ?? new Date()).toISOString(),
+        }
+      : { kind: 'cron', deliveredAt: (opts.now?.() ?? new Date()).toISOString() };
+  const records = await runLoopOnce(deps, loop, opts.repo, trigger);
+  return { loop: loopName, found: true, records };
+}
+
 async function load(opts: ControllerOptions): Promise<{
   config: NonNullable<Awaited<ReturnType<typeof loadConfig>>['config']>;
   deps: RunnerDeps;

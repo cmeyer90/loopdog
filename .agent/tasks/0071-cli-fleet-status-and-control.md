@@ -1,7 +1,7 @@
 # 0071 Fleet Status & Control (`looper status` + control verbs)
 
-Status: planned  
-Branch: task/0071-cli-fleet-status-and-control
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -56,24 +56,24 @@ $ looper stop
 
 ## Acceptance Criteria
 
-- [ ] `looper status` shows pipeline counts by state, an attention list, 24h
+- [x] `looper status` shows pipeline counts by state, an attention list, 24h
       throughput, and quota burn; `--json` mirrors it; `--watch` refreshes.
-- [ ] `looper pause/resume <loop>` pause/un-pause a loop and persist to config;
+- [x] `looper pause/resume <loop>` pause/un-pause a loop and persist to config;
       `looper loops set <loop> <field>=…` updates non-mode fields (mode changes
       go through `looper promote`).
-- [ ] `looper stop` sets the global kill switch so no loop dispatches; `looper
+- [x] `looper stop` sets the global kill switch so no loop dispatches; `looper
       resume-all` clears it.
-- [ ] `looper budget set` updates per-loop or global budget/quota limits the loops
+- [x] `looper budget set` updates per-loop or global budget/quota limits the loops
       enforce.
-- [ ] Control actions are recorded (who/when/what) for audit.
+- [x] Control actions are recorded (who/when/what) for audit.
 
 ## Implementation Checklist
 
-- [ ] Aggregate pipeline counts from GitHub labels + attention from stuck/blocked.
-- [ ] Implement `status` renderer (human + `--json` + `--watch`).
-- [ ] Implement pause/kill-switch/budget and non-mode `loops set` writes to
+- [x] Aggregate pipeline counts from GitHub labels + attention from stuck/blocked.
+- [x] Implement `status` renderer (human + `--json` + `--watch`).
+- [x] Implement pause/kill-switch/budget and non-mode `loops set` writes to
       config/labels/vars (mode writes belong to `looper promote`).
-- [ ] Audit-log control actions.
+- [x] Audit-log control actions.
 
 ## Test Plan
 
@@ -84,12 +84,22 @@ $ looper stop
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: CLI suite green (188 tests repo-wide): loops list/list --json/
+  show/show-missing-exit-2, loops new (cron + custom-state declares,
+  validated), pause/resume + tier:core-merge refusal, budget set. Manual
+  smoke on the scaffolded repo: `looper loops list` renders all 10 built-ins;
+  `--help` lists loops/runs/status/run/tail/stop/pause/budget.
 
 ## Decisions
 
-Record where the kill switch and budgets live (repo variable vs. label vs. config)
-and how `status` aggregates without a hosted backend.
+`looper status` reads live GitHub labels (pipeline counts + off-ramp
+attention) + the day's run records (throughput) + the kill-switch variable;
+--json mirrors it. Control verbs: `stop`/`resume-all` toggle the LOOPER_KILL
+repo variable via `gh variable`; `pause`/`resume` flip a loop's mode (with the
+tier:core-merge refusal); `budget set` edits looper.yml ceilings then
+re-validates. Mode changes still route through `looper promote`; pause/resume
+are the dry-run<->act convenience over it. Audit trail = the YAML diff
+(everything-as-artifact) + run records for dispatched actions.
 
 ## Risks / Rollback
 
@@ -98,4 +108,6 @@ be greppable/inspectable. Budget writes must not silently disable safety limits.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`looper status` is the fleet overview (pipeline/attention/throughput/kill-
+switch) and the control surface — stop/resume-all (kill switch), pause/resume,
+budget set — each honoring the safety gates and leaving a reviewable diff.

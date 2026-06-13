@@ -2,11 +2,16 @@
 // transition pipeline, triggers + reconcile sweep, telemetry, built-in loops.
 export { runLoopOnItem, runLoopOnce } from './pipeline/transition-runner.js';
 export type { RunnerDeps } from './pipeline/transition-runner.js';
-export { createFsPromptSource, handleEvent, handleSweep } from './pipeline/controller.js';
+export {
+  createFsPromptSource,
+  handleEvent,
+  handleRun,
+  handleSweep,
+} from './pipeline/controller.js';
 // Re-exported for the CLI (which may not depend on @looper/backends directly).
 export { checkCompatibility, compose, lintPrompt, resolveArtifact } from '@looper/backends';
 export type { Brief, ComposeContext, PromptLintIssue, PromptSource } from '@looper/backends';
-export type { ControllerOptions, EventResult } from './pipeline/controller.js';
+export type { ControllerOptions, EventResult, RunResult } from './pipeline/controller.js';
 export { matchLoopsForEvent } from './triggers/match.js';
 export { runSweep } from './sweep/sweep.js';
 export type { SweepOptions, SweepSummary } from './sweep/sweep.js';

@@ -1,7 +1,7 @@
 # 0078 Custom Loop Authoring (`looper loops new` questionnaire)
 
-Status: planned  
-Branch: task/0078-custom-loop-authoring
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -80,30 +80,30 @@ $ looper loops new
 
 ## Acceptance Criteria
 
-- [ ] `looper loops new` runs a questionnaire whose trigger choice is exactly
+- [x] `looper loops new` runs a questionnaire whose trigger choice is exactly
       `cron` or `github_event`, with bounded follow-ups for each.
-- [ ] The `github_event` follow-up choices are generated from 0008's canonical
+- [x] The `github_event` follow-up choices are generated from 0008's canonical
       event/action matrix, including action/predicate selection and excluding
       unsupported events such as `push`.
-- [ ] It generates `.looper/loops/<name>/` containing `loop.yml` (from the answers)
+- [x] It generates `.looper/loops/<name>/` containing `loop.yml` (from the answers)
       + a `prompt.md` template, defaulting to `mode: dry-run`.
-- [ ] It **prints the generated folder path** and the edit → validate → dry-run
+- [x] It **prints the generated folder path** and the edit → validate → dry-run
       next steps.
-- [ ] `looper loops validate <name>` checks schema, transition legality, backend
+- [x] `looper loops validate <name>` checks schema, transition legality, backend
       connectivity, and brief presence/placeholders, with clear per-failure errors.
-- [ ] Each loop is its own folder; no loop config is written into a shared
+- [x] Each loop is its own folder; no loop config is written into a shared
       monolithic file.
-- [ ] `--from <existing>` clones a loop; `--yes` + answer flags run it
+- [x] `--from <existing>` clones a loop; `--yes` + answer flags run it
       non-interactively.
 
 ## Implementation Checklist
 
-- [ ] Implement the bounded questionnaire (prompts, validation of each answer).
-- [ ] Implement template generation into `.looper/loops/<name>/` (`loop.yml` +
+- [x] Implement the bounded questionnaire (prompts, validation of each answer).
+- [x] Implement template generation into `.looper/loops/<name>/` (`loop.yml` +
       `prompt.md`), default `mode: dry-run`.
-- [ ] Print the folder path + next-step hints.
-- [ ] Implement `loops validate` (schema + state machine + backend + brief).
-- [ ] Add the non-interactive `--from` / answer-flag path.
+- [x] Print the folder path + next-step hints.
+- [x] Implement `loops validate` (schema + state machine + backend + brief).
+- [x] Add the non-interactive `--from` / answer-flag path.
 
 ## Test Plan
 
@@ -117,13 +117,22 @@ $ looper loops new
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: CLI suite green (188 tests repo-wide): loops list/list --json/
+  show/show-missing-exit-2, loops new (cron + custom-state declares,
+  validated), pause/resume + tier:core-merge refusal, budget set. Manual
+  smoke on the scaffolded repo: `looper loops list` renders all 10 built-ins;
+  `--help` lists loops/runs/status/run/tail/stop/pause/budget.
 
 ## Decisions
 
-Record the questionnaire question set + bounded choices, how 0008's event/action
-matrix feeds `github_event` choices, the per-loop folder layout (`loop.yml` +
-`prompt.md`), the generated templates, and the validation rules.
+`looper loops new` is a short questionnaire (interactive via @clack, or
+flags for CI): name, trigger kind + event/schedule, from→to, backend,
+expects. It validates the transition against the state machine BEFORE writing
+and, when the edge isn't in the default table, emits a `declares:` block so
+the custom states/edges are first-class and validated. Scaffolds
+`.looper/loops/<name>/{loop.yml,prompt.md}`, mode inherits the dry-run
+default, re-validates the tree, and points at `looper run <name> --dry-run`.
+'Loops are data': a folder, no core change.
 
 ## Risks / Rollback
 
@@ -134,4 +143,7 @@ folder.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`looper loops new` turns the small trigger space into a questionnaire that
+scaffolds a validated per-loop folder (with auto-declared custom states when
+needed), dry-run by default, ready to dry-run — adding a loop touches no
+looper code.

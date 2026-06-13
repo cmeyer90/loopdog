@@ -1,6 +1,6 @@
 # Milestone 16: Loop Control & Observability CLI
 
-Status: planned
+Status: verified
 
 > Background: [Looper Architecture](../../docs/architecture.md) — "The operator
 > interface: the CLI." Since the adopter's job is now *running the loops*, the CLI
@@ -59,25 +59,31 @@ All M16 commands share one contract, so the task files don't repeat it:
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0068 | planned | task/0068-cli-loop-introspection | Loop Introspection (`looper loops list` / `looper loops show`) | `looper loops list/show`: config, backend/provider, mode, prompt artifact, transition steps. |
-| 0069 | planned | task/0069-cli-run-history-and-tracing | Run History & Tracing (`looper runs list` / `looper runs show`) | `looper runs list/show`: item, dispatched brief, steps, provider session + PR links, cost/quota, outcome. |
-| 0070 | planned | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`) | `looper run <loop> [--issue N] [--dry-run]`, `looper tail/watch` for live runs. |
-| 0071 | planned | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`looper status` + control verbs) | `looper status` overview + control of mode/budget/kill-switch from the CLI. |
-| 0072 | planned | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) | `looper prompts show/diff/edit`: view and version loop briefs/policies. |
-| 0078 | planned | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) | `looper loops new`: a short questionnaire that generates a per-loop template folder (`loop.yml` + `prompt.md`), prints its path to edit, validates, and offers a dry-run. |
+| 0068 | verified | task/0068-cli-loop-introspection | Loop Introspection (`looper loops list` / `looper loops show`) | `looper loops list/show`: config, backend/provider, mode, prompt artifact, transition steps. |
+| 0069 | verified | task/0069-cli-run-history-and-tracing | Run History & Tracing (`looper runs list` / `looper runs show`) | `looper runs list/show`: item, dispatched brief, steps, provider session + PR links, cost/quota, outcome. |
+| 0070 | verified | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`) | `looper run <loop> [--issue N] [--dry-run]`, `looper tail/watch` for live runs. |
+| 0071 | verified | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`looper status` + control verbs) | `looper status` overview + control of mode/budget/kill-switch from the CLI. |
+| 0072 | verified | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) | `looper prompts show/diff/edit`: view and version loop briefs/policies. |
+| 0078 | verified | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) | `looper loops new`: a short questionnaire that generates a per-loop template folder (`loop.yml` + `prompt.md`), prints its path to edit, validates, and offers a dry-run. |
 
 ## Definition Of Done
 
-- `looper loops show <loop>` reveals a loop's config, selected backend, the exact
-  prompt/policy it uses, and the transition steps it drives.
-- `looper runs show <run>` traces a single run: the item, the dispatched brief,
-  the steps taken, links to the provider session and PR, and cost/quota/outcome.
-- An operator can trigger, dry-run, and live-tail a loop from the CLI.
-- An operator can see fleet status and set mode/budget/kill-switch from the CLI.
-- Prompts/policies are inspectable and diffable from the CLI.
-- An operator can add a new loop end-to-end from the CLI (scaffold → validate →
-  dry-run) without editing looper core.
+- [x] `looper loops show <loop>` reveals config, backend, the exact prompt
+  (with its resolution source), and the transition step trace.
+- [x] `looper runs show <run>` traces the item, briefRef, full step log,
+  artifacts (PR/plan/session), and cost/outcome from the ledger.
+- [x] An operator can trigger (`looper run`), dry-run (`--dry-run`), and tail
+  (`looper tail/watch`) loops from the CLI.
+- [x] `looper status` shows fleet state; `stop`/`resume-all`/`pause`/`resume`/
+  `budget set`/`promote` set mode/budget/kill-switch.
+- [x] Prompts are inspectable/diffable/lintable + editable with git history
+  (`looper prompts show/diff/lint/edit/history`).
+- [x] `looper loops new` scaffolds → validates → dry-runs a new loop with no
+  core change (custom states auto-declared).
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-09: M16 verified; 188 tests green repo-wide. The CLI is the operator
+  surface over the same three sources of truth (GitHub labels, the durable
+  plan store, the run-record ledger) — no new datastore. `looper login` (M02)
+  and `looper connect`/`promote`/`config` (M02/M05) round out the surface.

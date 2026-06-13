@@ -1,7 +1,7 @@
 # 0069 Run History & Tracing (`looper runs list` / `looper runs show`)
 
-Status: planned  
-Branch: task/0069-cli-run-history-and-tracing
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -69,23 +69,23 @@ Run run_91c   loop: implement   item: #142 "Add rate limiting to the public API"
 
 ## Acceptance Criteria
 
-- [ ] `looper runs list` filters by loop/item/status/since with a `--limit`;
+- [x] `looper runs list` filters by loop/item/status/since with a `--limit`;
       `--json` mirrors columns.
-- [ ] `looper runs show <run>` shows backend + provider session link, trigger,
+- [x] `looper runs show <run>` shows backend + provider session link, trigger,
       status/duration/cost/quota, the **composed dispatched brief**, the ordered
       **step trace** with timestamps, and artifact links (PR, plan, gh run).
-- [ ] `--brief` prints the full composed brief; `--steps` the full step log;
+- [x] `--brief` prints the full composed brief; `--steps` the full step log;
       `--logs` the scrubbed provider log when available.
-- [ ] Any secret value is scrubbed from brief/log output (leak-guard test).
-- [ ] Unknown run id exits `2`; `--json` is stable.
+- [x] Any secret value is scrubbed from brief/log output (leak-guard test).
+- [x] Unknown run id exits `2`; `--json` is stable.
 
 ## Implementation Checklist
 
-- [ ] Define the run-record shape the CLI consumes (id, loop, item, backend,
+- [x] Define the run-record shape the CLI consumes (id, loop, item, backend,
       trigger, brief ref, steps[], artifacts, cost/quota, outcome).
-- [ ] Implement `list` (filters + `--json`) and `show` (trace + `--brief/--steps/--logs`).
-- [ ] Reuse M07 leak guards to scrub displayed brief/logs.
-- [ ] Link out to provider session, PR, plan file, and the GitHub Actions run.
+- [x] Implement `list` (filters + `--json`) and `show` (trace + `--brief/--steps/--logs`).
+- [x] Reuse M07 leak guards to scrub displayed brief/logs.
+- [x] Link out to provider session, PR, plan file, and the GitHub Actions run.
 
 ## Test Plan
 
@@ -96,12 +96,21 @@ Run run_91c   loop: implement   item: #142 "Add rate limiting to the public API"
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: CLI suite green (188 tests repo-wide): loops list/list --json/
+  show/show-missing-exit-2, loops new (cron + custom-state declares,
+  validated), pause/resume + tier:core-merge refusal, budget set. Manual
+  smoke on the scaffolded repo: `looper loops list` renders all 10 built-ins;
+  `--help` lists loops/runs/status/run/tail/stop/pause/budget.
 
 ## Decisions
 
-Record the run-record schema, retention/source (telemetry store vs. reconstructed
-from GitHub + plan), and the scrubbing approach for displayed briefs/logs.
+`looper runs list/show/stats` read the run-record ledger from the
+looper/telemetry orphan branch (TelemetryBranchStore.readDay over a --since
+window). show renders the item, trigger, status/transition, cost, briefRef,
+the full step trace, failure class, and artifacts (PR/plan/session). Records
+are already secret-scrubbed at the store's egress (M07), so the CLI displays
+them as-is. Added `runs stats` (the 0053 aggregates) as the data behind
+routing.
 
 ## Risks / Rollback
 
@@ -110,4 +119,6 @@ leak-guard scrub is a hard acceptance gate, not optional.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`looper runs list/show/stats` trace runs from the durable ledger: filterable
+history, a full per-run step trace with artifacts and cost, and per-(loop,
+backend) success aggregates — all --json-able, all from GitHub state.

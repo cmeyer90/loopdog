@@ -80,17 +80,17 @@ table and in `milestones.md`.
 | 0065 | planned | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks |
 | 0066 | planned | task/0066-release-1-0-0 | Release 1.0.0 |
 | 0067 | planned | task/0067-upgrade-and-migration-path | Upgrade & Migration Path |
-| 0068 | planned | task/0068-cli-loop-introspection | Loop Introspection (`looper loops list` / `looper loops show`) |
-| 0069 | planned | task/0069-cli-run-history-and-tracing | Run History & Tracing (`looper runs list` / `looper runs show`) |
-| 0070 | planned | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`) |
-| 0071 | planned | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`looper status` + control verbs) |
-| 0072 | planned | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) |
+| 0068 | verified | task/0068-cli-loop-introspection | Loop Introspection (`looper loops list` / `looper loops show`) |
+| 0069 | verified | task/0069-cli-run-history-and-tracing | Run History & Tracing (`looper runs list` / `looper runs show`) |
+| 0070 | verified | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`) |
+| 0071 | verified | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`looper status` + control verbs) |
+| 0072 | verified | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) |
 | 0073 | verified | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) |
 | 0074 | verified | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
 | 0075 | verified | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
 | 0076 | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
 | 0077 | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
-| 0078 | planned | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) |
+| 0078 | verified | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) |
 | 0079 | planned | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) |
 | 0080 | planned | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
 | 0081 | planned | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |

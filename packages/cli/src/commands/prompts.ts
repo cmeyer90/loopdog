@@ -99,6 +99,72 @@ export function registerPrompts(program: Command): void {
       if (failed) process.exitCode = 1;
       else console.log('prompts lint: OK');
     });
+
+  prompts
+    .command('edit')
+    .argument('<loop>', 'loop name')
+    .option('--path <dir>', 'repo root', '.')
+    .description('open the loop prompt in $EDITOR (git history is the version log)')
+    .action(async (loopName: string, opts: { path: string }) => {
+      const { join } = await import('node:path');
+      const { access } = await import('node:fs/promises');
+      const file = join(opts.path, '.looper', 'loops', loopName, 'prompt.md');
+      try {
+        await access(file);
+      } catch {
+        console.error(`no prompt at ${file} (run \`looper loops new ${loopName}\` first)`);
+        process.exitCode = 2;
+        return;
+      }
+      const editor = process.env['EDITOR'] ?? process.env['VISUAL'];
+      if (!editor || !process.stdin.isTTY) {
+        console.log(`edit this file: ${file}`);
+        console.log(
+          '(set $EDITOR to open it directly; commit the change — the diff is the audit trail)',
+        );
+        return;
+      }
+      const { spawn } = await import('node:child_process');
+      await new Promise<void>((resolve) => {
+        const child = spawn(editor, [file], { stdio: 'inherit' });
+        child.on('exit', () => resolve());
+      });
+      console.log(
+        `✓ edited ${file}; \`looper prompts lint\` then commit (the diff is the version log).`,
+      );
+    });
+
+  prompts
+    .command('history')
+    .argument('<loop>', 'loop name')
+    .option('--path <dir>', 'repo root', '.')
+    .option('--limit <n>', 'max commits', '10')
+    .description('git history of the loop prompt (prompts are versioned artifacts)')
+    .action(async (loopName: string, opts: { path: string; limit: string }) => {
+      const relPath = `.looper/loops/${loopName}/prompt.md`;
+      const { execFile } = await import('node:child_process');
+      const { promisify } = await import('node:util');
+      try {
+        const { stdout } = await promisify(execFile)('git', [
+          '-C',
+          opts.path,
+          'log',
+          `-n${opts.limit}`,
+          '--pretty=format:%h %ad %an  %s',
+          '--date=short',
+          '--',
+          relPath,
+        ]);
+        if (!stdout.trim()) {
+          console.log(`no committed history for ${relPath} yet`);
+          return;
+        }
+        console.log(stdout);
+      } catch {
+        console.error(`could not read git history for ${relPath} (is this a git repo?)`);
+        process.exitCode = 1;
+      }
+    });
 }
 
 async function load(loopName: string, path: string, opts: { requireLoop?: boolean } = {}) {

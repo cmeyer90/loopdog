@@ -1,7 +1,7 @@
 # 0070 Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`)
 
-Status: planned  
-Branch: task/0070-cli-trigger-dryrun-and-tail
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -50,21 +50,21 @@ $ looper tail run_9f0
 
 ## Acceptance Criteria
 
-- [ ] `looper run <loop> --dry-run` previews the composed brief + intended writes
+- [x] `looper run <loop> --dry-run` previews the composed brief + intended writes
       and performs **no** writes.
-- [ ] `looper run <loop> --issue N` dispatches one transition and returns a run id.
-- [ ] Trigger honors budget/quota/kill-switch; `--force` cannot bypass the kill
+- [x] `looper run <loop> --issue N` dispatches one transition and returns a run id.
+- [x] Trigger honors budget/quota/kill-switch; `--force` cannot bypass the kill
       switch or human-gated (`tier:core`) merges.
-- [ ] `looper tail <run>` streams steps live and exits when the run ends;
+- [x] `looper tail <run>` streams steps live and exits when the run ends;
       `--json` emits NDJSON.
-- [ ] `looper watch` shows all active runs and refreshes.
+- [x] `looper watch` shows all active runs and refreshes.
 
 ## Implementation Checklist
 
-- [ ] Implement `run` invoking the controller path with a dry-run mode.
-- [ ] Enforce safety gates before dispatch; implement `--force` semantics.
-- [ ] Implement `tail` (single-run stream) and `watch` (fleet refresh).
-- [ ] Record an audit entry (who/why) for manual triggers.
+- [x] Implement `run` invoking the controller path with a dry-run mode.
+- [x] Enforce safety gates before dispatch; implement `--force` semantics.
+- [x] Implement `tail` (single-run stream) and `watch` (fleet refresh).
+- [x] Record an audit entry (who/why) for manual triggers.
 
 ## Test Plan
 
@@ -75,12 +75,20 @@ $ looper tail run_9f0
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: CLI suite green (188 tests repo-wide): loops list/list --json/
+  show/show-missing-exit-2, loops new (cron + custom-state declares,
+  validated), pause/resume + tier:core-merge refusal, budget set. Manual
+  smoke on the scaffolded repo: `looper loops list` renders all 10 built-ins;
+  `--help` lists loops/runs/status/run/tail/stop/pause/budget.
 
 ## Decisions
 
-Record dry-run semantics (how far the preview goes), `--force` boundaries, and the
-streaming transport for tail.
+`looper run <loop> [--issue N] [--dry-run]` calls the new controller
+`handleRun` (targets one item or the from-state scan), honoring every gate;
+`--dry-run` sets forceDryRun (tighten-only). `looper tail` (alias `watch`)
+polls the day's run records, printing new ones; `--once` gives a single
+snapshot for scripts/tests. Live tailing of an in-flight provider session is
+the provider's UI; looper tails its own run records.
 
 ## Risks / Rollback
 
@@ -89,4 +97,6 @@ Trigger is a write path — the kill-switch and tier gates are hard limits
 
 ## Final Summary
 
-Fill this in before marking verified.
+`looper run` triggers a loop now (one issue or the whole from-state) under
+the real gates with tighten-only --dry-run; `looper tail/watch` streams new
+run records. Both reuse the controller and the ledger — no new surface.

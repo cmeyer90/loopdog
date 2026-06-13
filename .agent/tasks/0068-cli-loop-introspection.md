@@ -1,7 +1,7 @@
 # 0068 Loop Introspection (`looper loops list` / `looper loops show`)
 
-Status: planned  
-Branch: task/0068-cli-loop-introspection
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -67,21 +67,21 @@ Loop: implement                                   mode: act   enabled: true
 
 ## Acceptance Criteria
 
-- [ ] `looper loops list` shows all loops with mode, backend, trigger, acts-on
+- [x] `looper loops list` shows all loops with mode, backend, trigger, acts-on
       state, 24h runs, last-run age; `--json` mirrors the columns.
-- [ ] `looper loops show <loop>` shows backend, trigger, transition, gates, brief
+- [x] `looper loops show <loop>` shows backend, trigger, transition, gates, brief
       (name + version + last edit), risk tiers, budget/quota, and the ordered
       steps the loop drives.
-- [ ] `looper loops show <loop> --brief` prints the exact versioned brief.
-- [ ] Unknown loop exits `2` with a helpful message; `--json` is stable.
-- [ ] Renders with telemetry absent (shows config + steps, omits run stats).
+- [x] `looper loops show <loop> --brief` prints the exact versioned brief.
+- [x] Unknown loop exits `2` with a helpful message; `--json` is stable.
+- [x] Renders with telemetry absent (shows config + steps, omits run stats).
 
 ## Implementation Checklist
 
-- [ ] Resolve loop config + state machine + brief metadata into a view model.
-- [ ] Implement `list` and `show` renderers (human + `--json`).
-- [ ] Wire optional telemetry (run counts, recent runs) with graceful absence.
-- [ ] Derive the "steps this loop drives" from the loop's declared transition.
+- [x] Resolve loop config + state machine + brief metadata into a view model.
+- [x] Implement `list` and `show` renderers (human + `--json`).
+- [x] Wire optional telemetry (run counts, recent runs) with graceful absence.
+- [x] Derive the "steps this loop drives" from the loop's declared transition.
 
 ## Test Plan
 
@@ -92,12 +92,19 @@ Loop: implement                                   mode: act   enabled: true
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: CLI suite green (188 tests repo-wide): loops list/list --json/
+  show/show-missing-exit-2, loops new (cron + custom-state declares,
+  validated), pause/resume + tier:core-merge refusal, budget set. Manual
+  smoke on the scaffolded repo: `looper loops list` renders all 10 built-ins;
+  `--help` lists loops/runs/status/run/tail/stop/pause/budget.
 
 ## Decisions
 
-Record column choices, the view-model shape, and how steps are derived from the
-declared transition.
+`looper loops list` (table + --json) and `looper loops show <loop>`
+(config, resolved prompt SOURCE — builtin/repo/overlay — the transition step
+trace, and the first 20 prompt lines with a pointer to `prompts show`). All
+read from config + the prompt source; no new datastore. Shared CLI conventions
+(--json everywhere, exit 2 not-found) honored.
 
 ## Risks / Rollback
 
@@ -107,4 +114,6 @@ hand-maintained list.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`looper loops list/show` answer what loops exist, how each is prompted, and
+what its specific steps are — straight from config + the layered prompt
+source, with stable --json output.

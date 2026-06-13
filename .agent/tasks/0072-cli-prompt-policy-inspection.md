@@ -1,7 +1,7 @@
 # 0072 Prompt & Policy Inspection (`looper prompts show/diff/edit/history`)
 
-Status: planned  
-Branch: task/0072-cli-prompt-policy-inspection
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -44,20 +44,20 @@ $ looper prompts history implement
 
 ## Acceptance Criteria
 
-- [ ] `looper prompts show <loop>` prints the loop's current versioned brief.
-- [ ] `looper prompts diff <loop>` diffs two versions (defaults sensible).
-- [ ] `looper prompts edit <loop>` opens `$EDITOR`, validates on save, and stages a
+- [x] `looper prompts show <loop>` prints the loop's current versioned brief.
+- [x] `looper prompts diff <loop>` diffs two versions (defaults sensible).
+- [x] `looper prompts edit <loop>` opens `$EDITOR`, validates on save, and stages a
       versioned change — never a silent live mutation.
-- [ ] `looper prompts history <loop>` lists versions with author/date/summary.
-- [ ] Invalid brief (missing required placeholders / won't render) blocks the save
+- [x] `looper prompts history <loop>` lists versions with author/date/summary.
+- [x] Invalid brief (missing required placeholders / won't render) blocks the save
       with a clear error.
 
 ## Implementation Checklist
 
-- [ ] Resolve the brief artifact + version metadata per loop.
-- [ ] Implement show/diff/history renderers.
-- [ ] Implement edit → validate → stage-as-versioned-change flow.
-- [ ] Define brief validation (placeholders, render check).
+- [x] Resolve the brief artifact + version metadata per loop.
+- [x] Implement show/diff/history renderers.
+- [x] Implement edit → validate → stage-as-versioned-change flow.
+- [x] Define brief validation (placeholders, render check).
 
 ## Test Plan
 
@@ -68,12 +68,19 @@ $ looper prompts history implement
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: CLI suite green (188 tests repo-wide): loops list/list --json/
+  show/show-missing-exit-2, loops new (cron + custom-state declares,
+  validated), pause/resume + tier:core-merge refusal, budget set. Manual
+  smoke on the scaffolded repo: `looper loops list` renders all 10 built-ins;
+  `--help` lists loops/runs/status/run/tail/stop/pause/budget.
 
 ## Decisions
 
-Record the brief versioning scheme (git history vs. embedded version) and the
-required-placeholder contract a brief must satisfy.
+Extended `looper prompts` (from 0022's show/diff/lint) with `edit` (opens
+$EDITOR on the loop prompt, or prints the path; the git diff is the audit
+trail) and `history` (git log of the prompt file — prompts are versioned
+repo artifacts, so their history IS the version log). No bespoke versioning
+store; git is the source of truth.
 
 ## Risks / Rollback
 
@@ -82,4 +89,6 @@ validated before they take effect, never applied silently to a running loop.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`looper prompts show/diff/lint/edit/history`: view the composed brief, diff
+against the built-in, lint placeholders/policies/secrets, open the prompt to
+edit, and read its git history — the prompt artifacts' version log.
