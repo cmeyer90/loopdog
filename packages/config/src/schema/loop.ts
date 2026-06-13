@@ -71,6 +71,13 @@ export const loopConfigSchema = z.object({
       network: z.boolean().optional(),
     })
     .optional(),
+  /** Dual-attempt + judge (M13 - 0055). Expensive; tier:core only. */
+  ensemble: z
+    .object({
+      enabled: z.boolean().default(false),
+      judge: z.enum(['claude', 'codex', 'self-hosted']).optional(),
+    })
+    .optional(),
   mode: z.enum(['dry-run', 'suggest', 'act']).optional(),
   /** Custom states/edges this loop adds to the transition table (0011). */
   declares: z

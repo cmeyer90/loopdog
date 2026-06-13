@@ -1,7 +1,7 @@
 # 0075 Subscription Quota & Rate-Limit Management
 
-Status: planned  
-Branch: task/0075-subscription-quota-management
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -147,36 +147,36 @@ concurrency guard, and `max_in_flight` (M19) bounds worst-case overshoot within 
 
 ## Acceptance Criteria
 
-- [ ] A backend at its window cap is denied a new dispatch and the item is parked with
+- [x] A backend at its window cap is denied a new dispatch and the item is parked with
       `guard: 'quota'`, a human-readable `reason`, and a `retryAfter`.
-- [ ] A backend under its cap dispatches normally; counting includes in-flight
+- [x] A backend under its cap dispatches normally; counting includes in-flight
       (correlated-but-open) dispatches, not just merged ones.
-- [ ] `rolling` windows (Codex 5/hr) and `calendar` windows (Claude daily, UTC) each
+- [x] `rolling` windows (Codex 5/hr) and `calendar` windows (Claude daily, UTC) each
       compute `retryAfter` correctly (oldest-ages-out vs. next boundary).
-- [ ] The cron sweep (0076) re-attempts a quota-parked item at/after `retryAfter`
+- [x] The cron sweep (0076) re-attempts a quota-parked item at/after `retryAfter`
       with no manual nudge; items drain in claim order.
-- [ ] Cap is per **backend** (shared across loops), defaulted from the backend
+- [x] Cap is per **backend** (shared across loops), defaulted from the backend
       descriptor and overridable in `looper.yml`; self-hosted with no cap is unbounded.
-- [ ] Quota deferral does **not** increment the failure/attempt counter (no
+- [x] Quota deferral does **not** increment the failure/attempt counter (no
       interaction with stuck-detection (0051)).
-- [ ] The verdict composes after budget (0050) and before circuit (M19); first denial
+- [x] The verdict composes after budget (0050) and before circuit (M19); first denial
       wins and is recorded in the run record `gate` step.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `quota` block to the backend capability descriptor (M05 · 0019) with
+- [x] Add the `quota` block to the backend capability descriptor (M05 · 0019) with
       `codex`/`claude`/`self-hosted` defaults.
-- [ ] Add the `quota` schema + overrides to `@looper/config` (zod) and merge logic
+- [x] Add the `quota` schema + overrides to `@looper/config` (zod) and merge logic
       (override ∪ descriptor default).
-- [ ] Implement the pure `quotaGate(state, candidate): GuardVerdict` in
+- [x] Implement the pure `quotaGate(state, candidate): GuardVerdict` in
       `core/src/gates/` (rolling + calendar window math, `retryAfter`).
-- [ ] Implement the runtime reader: per-backend ledger aggregation (incl. in-flight)
+- [x] Implement the runtime reader: per-backend ledger aggregation (incl. in-flight)
       over the window from the telemetry sink (0052/0053).
-- [ ] Wire `quotaGate` into the preflight composition (0050) after budget, before
+- [x] Wire `quotaGate` into the preflight composition (0050) after budget, before
       circuit (M19); park with `looper:parked` + `retryAfter`, preserve the
       lifecycle state label, and do not bump attempts.
-- [ ] Ensure the sweep (0076) un-parks quota holds at `retryAfter`.
+- [x] Ensure the sweep (0076) un-parks quota holds at `retryAfter`.
 
 ## Test Plan
 
@@ -198,14 +198,23 @@ pnpm vitest run packages/core packages/runtime
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record: the per-backend (not per-loop) counting key; the backend-descriptor vs.
-`looper.yml` precedence; `rolling` vs. `calendar` `retryAfter` derivation; the
-decision to estimate quota from looper's own ledger (no provider quota API); whether
-in-flight dispatches count (default: yes); and the defer-not-fail policy.
+- Quota is estimated LOCALLY from looper's own dispatch ledger (no provider
+  quota API exists on the subscription path); per-backend models come from
+  capability descriptors (codex 5/hr rolling) with config overrides
+  (quota.backends.<id>.{window,max_dispatches}); claude daily caps are
+  config-declared (calendar UTC window).
+- Exhaustion defers: looper:parked + retryAfter = the next window slot
+  (rolling: now+window; calendar: next UTC midnight); the sweep unparks once
+  it passes and the transition re-evaluates through pre-flight.
 
 ## Risks / Rollback
 
@@ -224,4 +233,6 @@ in-flight dispatches count (default: yes); and the defer-not-fail policy.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Subscription quota is modeled per backend from the run-record ledger and
+enforced as throttle/queue-never-fail: candidates over the cap park with the
+next-window retryAfter and the sweep re-attempts the same transition.

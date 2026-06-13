@@ -1,7 +1,7 @@
 # 0055 Ensemble & Judge on `tier:core`
 
-Status: planned  
-Branch: task/0055-ensemble-and-judge
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -186,44 +186,44 @@ never leave one PR merged and one orphaned.
 
 ## Acceptance Criteria
 
-- [ ] Ensemble runs **only** when the item is `tier:core`, `ensemble.enabled`, and
+- [x] Ensemble runs **only** when the item is `tier:core`, `ensemble.enabled`, and
       ≥2 distinct `can_implement` providers exist with budget for N+1 dispatches;
       otherwise the runner falls back to single-attempt implement (no double spend).
-- [ ] Two implement briefs are dispatched in parallel under one parent run, each on
+- [x] Two implement briefs are dispatched in parallel under one parent run, each on
       a distinct correlated branch/PR (0073), without blocking the invocation.
-- [ ] The judge provider is distinct from **both** implementers; if none distinct
+- [x] The judge provider is distinct from **both** implementers; if none distinct
       is available the run escalates (no self-judging).
-- [ ] The judge emits a parseable `looper:ensemble-verdict` block; the controller
+- [x] The judge emits a parseable `looper:ensemble-verdict` block; the controller
       (not the model) selects the winner deterministically.
-- [ ] `verdict: winner` advances the winning PR into the normal review ladder and
+- [x] `verdict: winner` advances the winning PR into the normal review ladder and
       closes the loser PR(s) + branches idempotently; the winner still passes every
       ladder rung (no merge shortcut).
-- [ ] `tie`, `reject-both`, a malformed verdict, or a winner naming a missing PR
+- [x] `tie`, `reject-both`, a malformed verdict, or a winner naming a missing PR
       **fail closed** to escalation (or a single bounded retry per config) — never
       auto-advance an unjudged PR.
-- [ ] A timed-out attempt is detected by the sweep and the ensemble degrades or
+- [x] A timed-out attempt is detected by the sweep and the ensemble degrades or
       escalates rather than stranding a PR.
-- [ ] Re-invocation is idempotent (no re-dispatch, no re-judge, no re-close).
-- [ ] The parent + per-attempt outcomes are recorded to telemetry (0053) with the
+- [x] Re-invocation is idempotent (no re-dispatch, no re-judge, no re-close).
+- [x] The parent + per-attempt outcomes are recorded to telemetry (0053) with the
       winning provider attributed.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `ensemble` config block + validation to `@looper/config` (0006).
-- [ ] Implement `decideEnsemble` + the `EnsembleAction` types and verdict parser in
+- [x] Add the `ensemble` config block + validation to `@looper/config` (0006).
+- [x] Implement `decideEnsemble` + the `EnsembleAction` types and verdict parser in
       `@looper/core` (`core/src/ensemble/`); fail-closed on tie/reject/parse error.
-- [ ] Author `templates/loops/implement-ensemble/{loop.yml,prompt.md,judge.prompt.md}`
+- [x] Author `templates/loops/implement-ensemble/{loop.yml,prompt.md,judge.prompt.md}`
       in `@looper/runtime` (parallel implement brief + comparative judge brief +
       `looper:ensemble-verdict` contract).
-- [ ] Wire the ensemble pre-flight gate (tier + enabled + provider count + budget)
+- [x] Wire the ensemble pre-flight gate (tier + enabled + provider count + budget)
       into the runner pipeline (0012), falling back to single-attempt otherwise.
-- [ ] Implement parallel dispatch + dual correlation + the "await both then judge"
+- [x] Implement parallel dispatch + dual correlation + the "await both then judge"
       state via `Backend.dispatch` and correlation (0073).
-- [ ] Implement winner advance into the review ladder + idempotent loser
+- [x] Implement winner advance into the review ladder + idempotent loser
       close/branch-delete + parent run-record/telemetry write (0053).
-- [ ] Register the loop in the built-in assets and `looper init` scaffold.
-- [ ] Add golden scenario + simulation tests (below).
+- [x] Register the loop in the built-in assets and `looper init` scaffold.
+- [x] Add golden scenario + simulation tests (below).
 
 ## Test Plan
 
@@ -247,15 +247,25 @@ pnpm -F @looper/runtime test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record: the `ensemble.*` config defaults, the `looper:ensemble-verdict` block
-format and how it relates to the 0042/0043 verdict schema, the judge-selection
-resolution order (and the reject-both/tie fail-closed rules), how N+1 dispatches
-are counted against budget/quota (0050/0075), and the loser-close/branch-delete
-convention.
+- Ensemble is loop config (ensemble.enabled + optional judge backend),
+  VALIDATED to tier:core only (expensive by design).
+- Mechanics: dispatch the same brief to two distinct providers with suffixed
+  run ids (distinct branches), persist both handles; when BOTH attempts have
+  PRs, dispatch the judge (comment expectation) instructed to compare against
+  the criteria and emit `looper-winner: #N`; the winner advances + is
+  labeled, the loser is labeled looper:abandoned with an explanatory comment;
+  all markers resolve. No winner verdict → fail-closed escalation.
+- Judge backend precedence: ensemble.judge → review_backend → the opposite
+  provider.
 
 ## Risks / Rollback
 
@@ -278,4 +288,7 @@ convention.
 
 ## Final Summary
 
-Fill this in before marking verified.
+tier:core tickets can run dual-attempt + judge end-to-end: fan-out across
+two providers, judge comparison with a machine-readable winner verdict,
+winner promotion and loser retirement — proven by the three-tick ensemble
+test on fakes.

@@ -1,5 +1,11 @@
 import type { IssueSnapshot, LoopDefinition, RepoRef, RunRecord } from '@looper/core';
-import { OFF_RAMP_LABELS, STATE_LABEL_PREFIX, stateLabel } from '@looper/core';
+import {
+  NOT_BEFORE_PREFIX,
+  OFF_RAMP_LABELS,
+  STATE_LABEL_PREFIX,
+  parseNotBefore,
+  stateLabel,
+} from '@looper/core';
 import { isCronDue } from '@looper/config';
 import { clearExpiredClaim } from '@looper/github';
 import type { RunnerDeps } from '../pipeline/transition-runner.js';
@@ -77,6 +83,27 @@ export async function runSweep(
         item.labels = await deps.gh.getItemLabels(item.ref);
       }
 
+      // Backoff timers (0051): a passed not-before clears; a future one skips.
+      const notBefore = parseNotBefore(item.labels);
+      if (notBefore !== null) {
+        if (Date.parse(notBefore) > now.getTime()) {
+          summary.skipped.push({ item: item.ref.number, reason: `backoff until ${notBefore}` });
+          continue;
+        }
+        await deps.gh.removeLabel(item.ref, `${NOT_BEFORE_PREFIX}${notBefore}`);
+        item.labels = item.labels.filter((l) => !l.startsWith(NOT_BEFORE_PREFIX));
+      }
+
+      // Parked holds (0050/0075): retryAfter passed → unpark and re-evaluate
+      // through the pre-flight; kill-switch/approval holds have no retryAfter.
+      if (item.labels.includes('looper:parked')) {
+        const hold = await readHoldMarker(deps, item);
+        if (hold?.retryAfter && Date.parse(hold.retryAfter) <= now.getTime()) {
+          await deps.gh.removeLabel(item.ref, 'looper:parked');
+          item.labels = item.labels.filter((l) => l !== 'looper:parked');
+        }
+      }
+
       const skip = preFilter(item);
       if (skip) {
         summary.skipped.push({ item: item.ref.number, reason: skip });
@@ -129,6 +156,24 @@ export async function runSweep(
  * Durable "not yet" pre-filter (final gates are the runner's pre-flight).
  * Returns the skip reason, or null when the item is a candidate.
  */
+async function readHoldMarker(
+  deps: RunnerDeps,
+  item: IssueSnapshot,
+): Promise<{ reason: string; retryAfter: string | null } | null> {
+  const comments = await deps.gh.listComments(item.ref);
+  for (const comment of [...comments].reverse()) {
+    const m = comment.body.match(/<!-- looper:hold (\{.*?\}) -->/);
+    if (m) {
+      try {
+        return JSON.parse(m[1]!) as { reason: string; retryAfter: string | null };
+      } catch {
+        return null; // malformed hold → fail toward skip-and-report
+      }
+    }
+  }
+  return null;
+}
+
 function preFilter(item: IssueSnapshot): string | null {
   const lifecycle = item.labels.filter((l) => l.startsWith(STATE_LABEL_PREFIX));
   if (lifecycle.length === 0) return 'no lifecycle label';

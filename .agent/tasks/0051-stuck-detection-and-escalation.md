@@ -1,7 +1,7 @@
 # 0051 Stuck Detection & Escalation
 
-Status: planned  
-Branch: task/0051-stuck-detection-and-escalation
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -136,33 +136,33 @@ no-op (guard on the label).
 
 ## Acceptance Criteria
 
-- [ ] A failed transition increments a per-(item, loop) attempt counter persisted
+- [x] A failed transition increments a per-(item, loop) attempt counter persisted
       in GitHub state (issue-body marker), not in memory.
-- [ ] After a failure, the item is ineligible for re-dispatch until its
+- [x] After a failure, the item is ineligible for re-dispatch until its
       exponential-backoff `not_before` passes; the sweep, not a busy loop, re-arms
       it.
-- [ ] On reaching `max_attempts` the item moves to `looper:needs-human`, the claim
+- [x] On reaching `max_attempts` the item moves to `looper:needs-human`, the claim
       is released, an escalation comment (with last-failure summary + `escalate_to`
       mention) is posted, and a run record with `status: escalated` is emitted.
-- [ ] Backoff is exponential with cap and jitter; defaults `base: 30s`, `cap: 10m`,
+- [x] Backoff is exponential with cap and jitter; defaults `base: 30s`, `cap: 10m`,
       `max_attempts: 3`, all overridable per-loop with strictest-wins.
-- [ ] A successful transition clears the counter; a malformed/absent marker is
+- [x] A successful transition clears the counter; a malformed/absent marker is
       treated as `count: 0` and logged (fail-open, never auto-escalate).
-- [ ] Escalation is idempotent (re-run on a `needs-human` item is a no-op).
-- [ ] A reset op clears the counter and re-arms the item (used by M16 `retry`).
-- [ ] An "out of budget/quota/kill-switch" park does **not** increment the counter.
+- [x] Escalation is idempotent (re-run on a `needs-human` item is a no-op).
+- [x] A reset op clears the counter and re-arms the item (used by M16 `retry`).
+- [x] An "out of budget/quota/kill-switch" park does **not** increment the counter.
 
 ## Implementation Checklist
 
-- [ ] Define `AttemptState`/`Policy`/`Decision` types + the pure
+- [x] Define `AttemptState`/`Policy`/`Decision` types + the pure
       `evaluate`/`nextBackoff`/`recordFailure` predicate in `@looper/core`.
-- [ ] Implement the attempts marker parse/serialize (per-loop keyed) over the
+- [x] Implement the attempts marker parse/serialize (per-loop keyed) over the
       `GitHubPort` in `@looper/runtime`.
-- [ ] Wire the runner's failed-step path to `recordFailure` + escalation
+- [x] Wire the runner's failed-step path to `recordFailure` + escalation
       (label/comment/claim-release/run-record).
-- [ ] Wire the sweep's eligibility selection to skip backing-off items.
-- [ ] Implement `resetAttempts` and success-clears-counter; reconcile hand-edits.
-- [ ] Load `resilience` config (repo + per-loop, strictest-wins) via `@looper/config`.
+- [x] Wire the sweep's eligibility selection to skip backing-off items.
+- [x] Implement `resetAttempts` and success-clears-counter; reconcile hand-edits.
+- [x] Load `resilience` config (repo + per-loop, strictest-wins) via `@looper/config`.
 
 ## Test Plan
 
@@ -183,12 +183,22 @@ pnpm -F @looper/runtime test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record the attempts-marker format, the backoff formula + jitter choice, the
-`max_attempts` default, and the fail-open-on-parse-miss policy.
+- Attempts ride the looper:attempts/N label; the ceiling (default 3,
+  resilience.max_attempts_per_item) escalates to looper:needs-human with the
+  last error in the comment (class poisoned).
+- Exponential backoff between attempts: backoffUntil (30s base, doubling,
+  10m cap) stamped as a looper:not-before/<iso> label on transient failures;
+  the sweep skips future timers and clears passed ones — fully sweep-driven,
+  no datastore.
 
 ## Risks / Rollback
 
@@ -202,4 +212,6 @@ Record the attempts-marker format, the backoff formula + jitter choice, the
 
 ## Final Summary
 
-Fill this in before marking verified.
+K-failure → needs-human with exponential backoff: attempts + not-before
+labels make stuck detection durable and sweep-visible; M19 generalizes the
+policy knobs on top of this mechanism.

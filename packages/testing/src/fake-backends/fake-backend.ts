@@ -99,14 +99,15 @@ export class FakeBackend implements ExecutionBackend {
         ? `Implements #${handle.item.number}.\n\n${handle.expectedTrailer}`
         : 'Implements the brief. (no trailer)';
       // Find or create the provider's PR on the fake GitHub.
-      const existing = await this.gh.listPullRequestsByHeadPrefix(
-        { owner: handle.item.owner, repo: handle.item.repo },
-        headRef,
-      );
+      const repoRef = { owner: handle.item.owner, repo: handle.item.repo };
+      const existing = await this.gh.listPullRequestsByHeadPrefix(repoRef, headRef);
+      // PR numbers derive from the fake's total PR count so two backend
+      // instances never collide on the same number.
+      const allPrs = await this.gh.listPullRequestsByHeadPrefix(repoRef, '', { state: 'all' });
       const pr =
         existing[0] ??
         this.gh.seedPull({
-          ref: { owner: handle.item.owner, repo: handle.item.repo, number: 9000 + this.sessions },
+          ref: { ...repoRef, number: 9001 + allPrs.length },
           headRef,
           title: `looper run ${handle.runId}`,
           body,

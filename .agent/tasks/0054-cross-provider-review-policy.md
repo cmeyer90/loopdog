@@ -1,7 +1,7 @@
 # 0054 Cross-Provider Review Policy
 
-Status: planned  
-Branch: task/0054-cross-provider-review-policy
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -124,33 +124,33 @@ backward-compatible.
 
 ## Acceptance Criteria
 
-- [ ] `looper.yml` accepts a `review.policy` block (per-tier rules + `default`),
+- [x] `looper.yml` accepts a `review.policy` block (per-tier rules + `default`),
       validated by `@looper/config`; an invalid pairing (self-review, unknown
       provider) is rejected with a clear error.
-- [ ] `selectReviewer` is pure, deterministic, and exported from `@looper/core`.
-- [ ] On `tier:core` with `pairings: {claude: codex}`, a Claude-implemented PR
+- [x] `selectReviewer` is pure, deterministic, and exported from `@looper/core`.
+- [x] On `tier:core` with `pairings: {claude: codex}`, a Claude-implemented PR
       resolves to a Codex reviewer; a Codex-implemented PR resolves to Claude.
-- [ ] `any-distinct` (e.g. `tier:safe`) picks any distinct `can_review` provider
+- [x] `any-distinct` (e.g. `tier:safe`) picks any distinct `can_review` provider
       deterministically; the implementer is never chosen.
-- [ ] No eligible distinct reviewer (single provider, or `pairings` miss with
+- [x] No eligible distinct reviewer (single provider, or `pairings` miss with
       `on_no_pairing: escalate`) → `decision: 'escalate'`, and 0042 routes it to
       `needs-human` rather than self-reviewing.
-- [ ] Policy omitted → identical behavior to 0042 today (backward-compatible).
-- [ ] 0042's `cross-model` helper calls `selectReviewer`; the existing review
+- [x] Policy omitted → identical behavior to 0042 today (backward-compatible).
+- [x] 0042's `cross-model` helper calls `selectReviewer`; the existing review
       scenario test still passes, plus a new per-tier-pairing scenario.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `review.policy` schema + validation to `@looper/config` (reject
+- [x] Add the `review.policy` schema + validation to `@looper/config` (reject
       self-pairings and unknown providers at load time).
-- [ ] Implement `selectReviewer` in `@looper/core/transitions/review-policy.ts` and
+- [x] Implement `selectReviewer` in `@looper/core/transitions/review-policy.ts` and
       export it; unit-test the resolution table and the self-review guard.
-- [ ] Refactor 0042's `cross-model` reviewer-selection helper in `@looper/runtime`
+- [x] Refactor 0042's `cross-model` reviewer-selection helper in `@looper/runtime`
       to delegate to `selectReviewer`, passing the resolved tier and provider registry.
-- [ ] Thread per-loop `gates.review` override into the policy (strictest wins).
-- [ ] Document the `review.policy` block in the config reference + an example loop.
-- [ ] Add/extend scenario tests for per-tier pairings and the escalate path.
+- [x] Thread per-loop `gates.review` override into the policy (strictest wins).
+- [x] Document the `review.policy` block in the config reference + an example loop.
+- [x] Add/extend scenario tests for per-tier pairings and the escalate path.
 
 ## Test Plan
 
@@ -170,15 +170,20 @@ pnpm -F @looper/runtime test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record: the `review.policy` config key shape and precedence (per-loop override vs.
-per-tier vs. default), the `ReviewerRule` variants (`any-distinct` vs. `pairings` +
-`on_no_pairing`), the deterministic tie-break for `any-distinct` (stable registry
-order), and that the never-self-review invariant is enforced in the resolver
-independent of config validity.
+Config: root review_policy {never_same_as_implementer (default true),
+by_tier.{safe,default,core}} + the existing backends.review default.
+reviewerFor resolves per-tier and FLIPS when the choice equals the
+implementer — the never-rubber-stamps rule is enforced in code, not just
+convention.
 
 ## Risks / Rollback
 
@@ -193,4 +198,6 @@ independent of config validity.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Cross-provider review pairing is per-tier config resolved by reviewerFor
+with implementer-exclusion enforced — a Claude implementation reviewed by
+Codex (or vice versa) with zero engine changes.

@@ -14,9 +14,11 @@ import type {
 } from '@looper/core';
 import {
   DOR_FAIL_ROUTE,
+  backoffUntil,
   decideTransition,
   deriveRunId,
   evaluateDor,
+  notBeforeLabel,
   parseCriteriaBlock,
   standardChecks,
   stateLabel,
@@ -33,6 +35,7 @@ import {
   renderDispatchMarker,
 } from './dispatch-marker.js';
 import { EffectGate } from './effect-gate.js';
+import { ensembleDispatch, ensembleIngest, isEnsembleLoop } from './ensemble.js';
 import {
   checkBlastRadius,
   decideMerge,
@@ -191,6 +194,9 @@ async function processItem(
   const pending = findPendingDispatches(await deps.gh.listComments(item.ref));
   const ours = pending.filter((p) => p.handle.runId.startsWith(`run-${loop.name}-`));
   if (ours.length > 0) {
+    if (isEnsembleLoop(loop)) {
+      return ensembleIngest(deps, loop, item, ours, gate, step, record);
+    }
     return ingestPhase(deps, loop, item, ours[0]!, gate, steps, step, record);
   }
 
@@ -223,12 +229,18 @@ async function processItem(
     case 'skip':
       return null; // not an attempt — common on sweeps; no record spam
     case 'park': {
-      const reason = decision.verdict.reason;
+      const { reason, retryAfter } = decision.verdict;
       await gate.mutate('label', `add looper:parked (${reason})`, () =>
         deps.gh.addLabels(item.ref, ['looper:parked']),
       );
       await gate.comment(`park notice`, () =>
-        deps.gh.createComment(item.ref, `⏸️ looper parked this item: ${reason}`),
+        upsertMarkedComment(
+          deps.gh,
+          item.ref,
+          `looper:hold ${JSON.stringify({ reason, retryAfter: retryAfter ?? null })}`,
+          `⏸️ looper parked this item: ${reason}` +
+            (retryAfter ? `\n\nWill retry after ${retryAfter}.` : '\n\nHeld until released.'),
+        ).then(() => {}),
       );
       return record({ status: 'parked' });
     }
@@ -386,6 +398,22 @@ async function processItem(
       return done;
     }
 
+    // Ensemble (M13 · 0055): dual-attempt fan-out, judged on a later tick.
+    if (isEnsembleLoop(loop) && loop.gates.tier === 'core') {
+      const fanned = await ensembleDispatch(deps, loop, item, runId, gate, step);
+      if (fanned) {
+        if (
+          loop.transition.to !== 'in-progress' &&
+          deps.table.edges.some((e) => e.from === loop.transition.from && e.to === 'in-progress')
+        ) {
+          await gate.mutate('label', 'state -> in-progress (ensemble dispatched)', () =>
+            applyStateChange(deps, item, 'in-progress'),
+          );
+        }
+        return record({ status: 'pending' });
+      }
+    }
+
     // Work-cell transition: compose → dispatch → persist handle → (maybe) mark
     // the intermediate state. Ingest happens on a later invocation.
     const source = deps.promptSource ?? promptSourceFromReader(deps.readPrompt, loop);
@@ -474,6 +502,11 @@ async function processItem(
       );
       return record({ status: 'escalated', failure: { class: 'poisoned', reason } });
     }
+    // Exponential backoff (0051): the sweep skips this item until the timer.
+    const until = backoffUntil(attempts, now);
+    await gate.mutate('label', `backoff until ${until}`, () =>
+      deps.gh.addLabels(item.ref, [notBeforeLabel(until)]),
+    );
     return record({ status: 'failed', failure: { class: 'transient', reason } });
   }
 }

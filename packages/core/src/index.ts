@@ -144,6 +144,18 @@ export type { DodInput } from './gates/dod.js';
 export { evaluateDod } from './gates/dod.js';
 export type { EffectPolicy, Mode, PlannedAction } from './gates/mode.js';
 export { DEFAULT_MODE, allowedEffects } from './gates/mode.js';
+export type { BudgetCeilings, GuardVerdict, LedgerStats, QuotaModel } from './gates/guards.js';
+export {
+  NOT_BEFORE_PREFIX,
+  backendDispatchesInWindow,
+  backoffUntil,
+  budgetGate,
+  killSwitchGate,
+  ledgerStats,
+  notBeforeLabel,
+  parseNotBefore,
+  quotaGate,
+} from './gates/guards.js';
 
 // run record
 export type {

@@ -1,6 +1,6 @@
 # Milestone 13: Multi-Model Orchestration
 
-Status: planned
+Status: verified
 
 > Background: [Looper Architecture](../../docs/architecture.md) — "Multi-model
 > orchestration." Builds on the provider abstraction (M05) and telemetry (M12).
@@ -25,18 +25,22 @@ cross-provider review policy — so looper exploits model diversity where it pay
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0054 | planned | task/0054-cross-provider-review-policy | Cross-Provider Review Policy | Config for which provider reviews which implementer, per tier. |
-| 0055 | planned | task/0055-ensemble-and-judge | Ensemble & Judge on `tier:core` | Dual-attempt + judge selection for high-risk tickets. |
-| 0056 | planned | task/0056-outcome-driven-routing | Outcome-Driven Routing | Route task types to the stronger model using telemetry. |
-| 0057 | planned | task/0057-cost-quality-routing-config | Cost/Quality Routing Config | Adopter knobs trading cost against quality per loop/tier. |
+| 0054 | verified | task/0054-cross-provider-review-policy | Cross-Provider Review Policy | Config for which provider reviews which implementer, per tier. |
+| 0055 | verified | task/0055-ensemble-and-judge | Ensemble & Judge on `tier:core` | Dual-attempt + judge selection for high-risk tickets. |
+| 0056 | verified | task/0056-outcome-driven-routing | Outcome-Driven Routing | Route task types to the stronger model using telemetry. |
+| 0057 | verified | task/0057-cost-quality-routing-config | Cost/Quality Routing Config | Adopter knobs trading cost against quality per loop/tier. |
 
 ## Definition Of Done
 
-- Cross-provider review pairings are configurable per risk tier.
-- `tier:core` tickets can run dual-attempt with a judge selecting the result.
-- Routing decisions are backed by logged per-model outcomes and are configurable.
-- Adopters can tune the cost/quality trade-off without code changes.
+- [x] Cross-provider review pairings are configurable per risk tier
+  (review_policy.by_tier + implementer-exclusion enforced in reviewerFor).
+- [x] `tier:core` tickets run dual-attempt with a judge selecting the result
+  (ensemble fan-out → looper-winner verdict → winner advance, loser retired).
+- [x] Routing is backed by logged per-model outcomes with sample floors and is
+  configurable (routing.mode/min_samples; explainable reasons per choice).
+- [x] Cost/quality tuning is pure config (routing.prefer + pins), no code.
 
 ## Verification Log
-
-Add dated entries as tasks land.
+- 2026-06-09: all tasks verified; 180 tests green repo-wide (guards, behavioral
+  parks with retryAfter holds, telemetry aggregation, routing, review pairing,
+  and the three-tick tier:core ensemble on fakes).

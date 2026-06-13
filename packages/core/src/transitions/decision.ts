@@ -16,7 +16,7 @@ export type Verdict =
   | { kind: 'proceed' }
   | { kind: 'no-op'; reason: string }
   | { kind: 'skip'; reason: string }
-  | { kind: 'park'; reason: string }
+  | { kind: 'park'; reason: string; retryAfter?: string | undefined }
   | { kind: 'route'; to: string; reason: string }
   | { kind: 'escalate'; reason: string };
 

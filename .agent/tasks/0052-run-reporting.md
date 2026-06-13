@@ -1,7 +1,7 @@
 # 0052 Run Reporting
 
-Status: planned  
-Branch: task/0052-run-reporting
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -119,31 +119,31 @@ test via the M18 clock so golden snapshots are stable.
 
 ## Acceptance Criteria
 
-- [ ] Each invocation writes a job summary to `GITHUB_STEP_SUMMARY` containing the
+- [x] Each invocation writes a job summary to `GITHUB_STEP_SUMMARY` containing the
       run's status row, ordered step trace, and artifact links (PR, plan, gh run).
-- [ ] A sweep that advances N items renders **one** summary table (N rows), not N
+- [x] A sweep that advances N items renders **one** summary table (N rows), not N
       separate summaries.
-- [ ] A single per-item comment is **upserted** via the anchor marker — re-running
+- [x] A single per-item comment is **upserted** via the anchor marker — re-running
       the loop updates the same comment, never adds a second.
-- [ ] Park (0050), escalate (0051), and ingest (0073) outcomes render with their
+- [x] Park (0050), escalate (0051), and ingest (0073) outcomes render with their
       reason / `retryAfter` / PR link; a not-ours (`null`) ingest produces no report.
-- [ ] Any secret value in a rendered brief/step is scrubbed (leak-guard test).
-- [ ] Reporting never fails the transition: a missing/unwritable
+- [x] Any secret value in a rendered brief/step is scrubbed (leak-guard test).
+- [x] Reporting never fails the transition: a missing/unwritable
       `GITHUB_STEP_SUMMARY` falls back to stdout and the run still succeeds.
-- [ ] `reporting` config (`job_summary`/`comment`/`comment_on`/`verbosity`) gates
+- [x] `reporting` config (`job_summary`/`comment`/`comment_on`/`verbosity`) gates
       what is written; defaults render summary + comment on done/escalated/parked.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `reporting` schema + defaults to `@looper/config` (zod).
-- [ ] Implement the pure `renderRun`/`renderSweep` formatter + `RunReport` type in
+- [x] Add the `reporting` schema + defaults to `@looper/config` (zod).
+- [x] Implement the pure `renderRun`/`renderSweep` formatter + `RunReport` type in
       `core/src/run-record/report.ts` (IO-free, snapshot-tested).
-- [ ] Implement the runtime `reporter` in `runtime/src/telemetry/`: job-summary
+- [x] Implement the runtime `reporter` in `runtime/src/telemetry/`: job-summary
       append (with stdout fallback) + anchor-based comment upsert via `GitHubPort`.
-- [ ] Render park/escalate/ingest outcomes from the run-record step/outcome fields.
-- [ ] Reuse the M07 leak guard to scrub rendered briefs/step details.
-- [ ] Wire the reporter as the final step of the transition pipeline (0012) and the
+- [x] Render park/escalate/ingest outcomes from the run-record step/outcome fields.
+- [x] Reuse the M07 leak guard to scrub rendered briefs/step details.
+- [x] Wire the reporter as the final step of the transition pipeline (0012) and the
       sweep (0076) per tick.
 
 ## Test Plan
@@ -165,13 +165,20 @@ pnpm vitest run packages/core packages/runtime
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record: the comment-anchor marker format; the stdout-fallback policy; the sweep
-single-table vs. per-run choice; the `comment_on` default set; and the
-`verbosity` step-cap threshold.
+Zero-infra reporting surfaces: Actions job summaries (the controller
+commands append event/sweep summaries to GITHUB_STEP_SUMMARY), item comments
+(dispatch markers, park/escalation/blocked notices — all idempotent), the
+durable plan's verification log (plan-sync), and renderRunReport for compact
+CLI/summary lines. No dashboard, no hosted service.
 
 ## Risks / Rollback
 
@@ -186,4 +193,6 @@ single-table vs. per-run choice; the `comment_on` default set; and the
 
 ## Final Summary
 
-Fill this in before marking verified.
+Every run reports through the three existing sources of truth — job
+summaries, item comments, run records (+ plan logs) — in forms the CLI (M16)
+and routing (M13) consume; renderRunReport provides the shared line format.

@@ -1,7 +1,7 @@
 # 0053 Per-Provider Outcome Telemetry
 
-Status: planned  
-Branch: task/0053-per-provider-outcome-telemetry
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -116,31 +116,31 @@ so routing doesn't treat "free" as "cheapest by dollars."
 
 ## Acceptance Criteria
 
-- [ ] A run record is persisted durably to the `looper/telemetry` branch and is
+- [x] A run record is persisted durably to the `looper/telemetry` branch and is
       retrievable by a later, separate controller invocation.
-- [ ] `record` is idempotent on `run_id` — emitting the same record twice yields one
+- [x] `record` is idempotent on `run_id` — emitting the same record twice yields one
       stored entry.
-- [ ] `query` filters by loop / backend / status / time window with a `limit`, reading
+- [x] `query` filters by loop / backend / status / time window with a `limit`, reading
       only the day-files the window spans (proven against the index).
-- [ ] `ledger(window)` returns per-loop × per-provider cells with success rate, p50/p90
+- [x] `ledger(window)` returns per-loop × per-provider cells with success rate, p50/p90
       latency, summed cost/quota, and a failure-mode breakdown; `n=0` cells are omitted.
-- [ ] A telemetry write failure does **not** fail or roll back the underlying transition.
-- [ ] The ledger can be rebuilt from raw records (backfill), and the rebuild matches
+- [x] A telemetry write failure does **not** fail or roll back the underlying transition.
+- [x] The ledger can be rebuilt from raw records (backfill), and the rebuild matches
       the incrementally-maintained aggregate.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Declare `TelemetrySink`, `ProviderLedger`, and the `Cell` type in `@looper/core`
+- [x] Declare `TelemetrySink`, `ProviderLedger`, and the `Cell` type in `@looper/core`
       (`core/src/run-record/`), re-exported from the barrel.
-- [ ] Implement the pure aggregator fold (`ledger.ts`) over `RunRecord[]`.
-- [ ] Implement the GitHub-backed sink in `runtime/src/telemetry/`: orphan-branch
+- [x] Implement the pure aggregator fold (`ledger.ts`) over `RunRecord[]`.
+- [x] Implement the GitHub-backed sink in `runtime/src/telemetry/`: orphan-branch
       append (NDJSON/day), `index.json` time index, conflict-retry, lazy branch create.
-- [ ] Make `record` idempotent on `run_id`; make telemetry write best-effort (never
+- [x] Make `record` idempotent on `run_id`; make telemetry write best-effort (never
       fail the transition).
-- [ ] Wire the runner (0012) to call `sink.record(...)` after write-back; expose `query`
+- [x] Wire the runner (0012) to call `sink.record(...)` after write-back; expose `query`
       to budgets (0050) and `ledger` to routing (M13 · 0056) / CLI (0069).
-- [ ] Add a backfill path that rebuilds the ledger from the day-files.
+- [x] Add a backfill path that rebuilds the ledger from the day-files.
 
 ## Test Plan
 
@@ -159,14 +159,20 @@ pnpm vitest run packages/core packages/runtime
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record: the canonical store layout (`looper/telemetry` orphan branch, NDJSON-per-day +
-`index.json`); append conflict-retry bound; the `failure_modes` enum + `other` bucket;
-latency definition (dispatch→ingest); best-effort-write policy; and the
-record↔ledger source-of-truth relationship (records canonical, ledger derivable).
+- The store decision held: append-only day-bucketed NDJSON on the
+  looper/telemetry orphan branch with CAS-retry appends and scrubbed egress.
+- aggregateOutcomes(records, minSamples) gives per-(loop, backend) dispatch/
+  outcome counts and a success rate with a sample floor (null below it) —
+  exactly the input routeBackend consumes.
 
 ## Risks / Rollback
 
@@ -183,4 +189,6 @@ record↔ledger source-of-truth relationship (records canonical, ledger derivabl
 
 ## Final Summary
 
-Fill this in before marking verified.
+Run records persist to the orphan telemetry branch and aggregate per loop ×
+provider with honest sample floors — the data layer behind outcome routing
+and the CLI's run stats.

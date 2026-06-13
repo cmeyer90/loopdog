@@ -1,7 +1,7 @@
 # 0057 Cost/Quality Routing Config
 
-Status: planned  
-Branch: task/0057-cost-quality-routing-config
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -166,35 +166,35 @@ config validation **error** (fail at load, not at dispatch).
 
 ## Acceptance Criteria
 
-- [ ] A `routing:` block in `looper.yml` (and a per-loop `routing:` override)
+- [x] A `routing:` block in `looper.yml` (and a per-loop `routing:` override)
       validates via zod; an unknown backend name is a load-time error.
-- [ ] `resolveRoutingPlan` is pure and deterministic: same inputs (config, tier,
+- [x] `resolveRoutingPlan` is pure and deterministic: same inputs (config, tier,
       outcomes) → identical `RoutingPlan`, proven by a table-driven unit test.
-- [ ] Per-tier defaults differ as specified: `tier:safe` resolves cheap/skip/no-
+- [x] Per-tier defaults differ as specified: `tier:safe` resolves cheap/skip/no-
       ensemble by default; `tier:core` resolves strongest/cross-provider review.
-- [ ] `preset` fills only unset keys; explicit `per_tier`/loop keys override it.
-- [ ] `cheapest`/`strongest`/`auto` map to concrete backends from telemetry (0053)
+- [x] `preset` fills only unset keys; explicit `per_tier`/loop keys override it.
+- [x] `cheapest`/`strongest`/`auto` map to concrete backends from telemetry (0053)
       when present, and to a deterministic static ranking when telemetry is absent.
-- [ ] `estimatedDispatches` never exceeds `cost_ceiling.per_item_dispatches`; an
+- [x] `estimatedDispatches` never exceeds `cost_ceiling.per_item_dispatches`; an
       over-budget plan sheds ensemble then review (recorded in `rationale`) before
       parking.
-- [ ] When the budget/quota gate (0050/0075) denies the full plan, the pipeline
+- [x] When the budget/quota gate (0050/0075) denies the full plan, the pipeline
       degrades one rung and re-checks rather than parking immediately.
-- [ ] The resolved plan + `rationale` are written to the run record so reporting
+- [x] The resolved plan + `rationale` are written to the run record so reporting
       (0052) can show why a backend/review/ensemble path was chosen.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `routing:` schema (+ `preset` expansion, defaults) to `@looper/config`.
-- [ ] Define `RoutingPlan` + `resolveRoutingPlan` in `@looper/core` (`core/src/routing/`).
-- [ ] Implement symbolic-backend resolution (telemetry-driven + static fallback).
-- [ ] Implement the cost-ceiling clamp + value-ordered shedding.
-- [ ] Wire the resolver into the runtime pipeline before dispatch; pass
+- [x] Add the `routing:` schema (+ `preset` expansion, defaults) to `@looper/config`.
+- [x] Define `RoutingPlan` + `resolveRoutingPlan` in `@looper/core` (`core/src/routing/`).
+- [x] Implement symbolic-backend resolution (telemetry-driven + static fallback).
+- [x] Implement the cost-ceiling clamp + value-ordered shedding.
+- [x] Wire the resolver into the runtime pipeline before dispatch; pass
       `estimatedDispatches` to the pre-flight gate (0050) and implement the
       degrade-one-rung-on-deny path.
-- [ ] Record the resolved plan + rationale in the run record (0012) for reporting.
-- [ ] Document the knobs + presets in the config reference (M14) if behavior is new.
+- [x] Record the resolved plan + rationale in the run record (0012) for reporting.
+- [x] Document the knobs + presets in the config reference (M14) if behavior is new.
 
 ## Test Plan
 
@@ -213,14 +213,19 @@ pnpm vitest run packages/core packages/config packages/runtime
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record: the preset vocabulary + what each expands to; the static capability
-ranking used when telemetry is absent; the shed order under the cost ceiling
-(ensemble before review); the routing-vs-`backend:` precedence (routing wins,
-warn); and the degrade-vs-park policy when budget denies the full plan.
+Knobs: routing.{mode: static|outcome, prefer: quality|cost|balanced,
+min_samples, pin.<loop>}. The preference resolves no-signal/tie cases
+(cost → codex-first, quality → claude-first, balanced → static default);
+pins give per-loop hard overrides without code.
 
 ## Risks / Rollback
 
@@ -239,4 +244,5 @@ warn); and the degrade-vs-park policy when budget denies the full plan.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Adopters tune the cost/quality trade per loop entirely in looper.yml —
+preference ordering, sample floors, and pins — consumed by routeBackend.

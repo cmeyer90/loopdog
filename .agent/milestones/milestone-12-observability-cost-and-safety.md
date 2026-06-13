@@ -1,6 +1,6 @@
 # Milestone 12: Observability, Cost & Safety
 
-Status: planned
+Status: verified
 
 > Background: [Looper Architecture](../../docs/architecture.md) —
 > "Observability, cost & safety" and the subscription rate-limit constraints.
@@ -31,20 +31,25 @@ hosted UI, and per-provider outcome telemetry that feeds routing.
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0050 | planned | task/0050-budgets-and-kill-switch | Budgets & Kill Switch | Pre-flight budget/kill-switch check every loop honors. |
-| 0075 | planned | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management | Model provider rate caps; throttle/queue dispatch to stay within quota. |
-| 0051 | planned | task/0051-stuck-detection-and-escalation | Stuck Detection & Escalation | K-failure → `needs-human` with exponential backoff. |
-| 0052 | planned | task/0052-run-reporting | Run Reporting | Job-summary + comment reporting of runs, transitions, and cost/quota. |
-| 0053 | planned | task/0053-per-provider-outcome-telemetry | Per-Provider Outcome Telemetry | Logged outcomes per loop and per provider for routing + the CLI. |
+| 0050 | verified | task/0050-budgets-and-kill-switch | Budgets & Kill Switch | Pre-flight budget/kill-switch check every loop honors. |
+| 0075 | verified | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management | Model provider rate caps; throttle/queue dispatch to stay within quota. |
+| 0051 | verified | task/0051-stuck-detection-and-escalation | Stuck Detection & Escalation | K-failure → `needs-human` with exponential backoff. |
+| 0052 | verified | task/0052-run-reporting | Run Reporting | Job-summary + comment reporting of runs, transitions, and cost/quota. |
+| 0053 | verified | task/0053-per-provider-outcome-telemetry | Per-Provider Outcome Telemetry | Logged outcomes per loop and per provider for routing + the CLI. |
 
 ## Definition Of Done
 
-- No loop dispatches when over budget, over quota, or when the kill switch is set.
-- Provider rate limits are respected; dispatch is throttled/queued, not failed.
-- Repeatedly failing items are escalated with backoff, not retried forever.
-- Each run reports its transitions, cost, and quota use without hosted infra, in a
-  form the CLI (M16) and routing (M13) can consume.
+- [x] No loop dispatches when over budget, over quota, or when the kill switch
+  is set (preflight composed into the runner; zero-dispatch assertions).
+- [x] Provider rate limits are respected; dispatch is throttled/queued (parked
+  with next-window retryAfter the sweep honors), never failed.
+- [x] Repeatedly failing items escalate with exponential backoff (not-before
+  timers) at the attempt ceiling, never retried forever.
+- [x] Each run reports transitions/cost/quota with zero hosted infra (job
+  summaries, idempotent comments, the NDJSON ledger + aggregates the CLI and
+  routing consume).
 
 ## Verification Log
-
-Add dated entries as tasks land.
+- 2026-06-09: all tasks verified; 180 tests green repo-wide (guards, behavioral
+  parks with retryAfter holds, telemetry aggregation, routing, review pairing,
+  and the three-tick tier:core ensemble on fakes).

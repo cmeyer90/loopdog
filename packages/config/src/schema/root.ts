@@ -114,6 +114,38 @@ export const rootConfigSchema = z.object({
     .object({
       window: z.enum(['daily', 'weekly', 'monthly']).default('monthly'),
       on_exceeded: z.enum(['defer', 'park']).default('defer'),
+      /** Per-backend cap overrides (0075): higher tiers raise the defaults. */
+      backends: z
+        .record(
+          z.string(),
+          z.object({
+            window: z.string().optional(),
+            max_dispatches: z.number().int().min(0).optional(),
+          }),
+        )
+        .optional(),
+    })
+    .default({}),
+  /** Cost/quality routing knobs (M13 - 0056/0057). */
+  routing: z
+    .object({
+      mode: z.enum(['static', 'outcome']).default('static'),
+      prefer: z.enum(['quality', 'cost', 'balanced']).default('balanced'),
+      min_samples: z.number().int().min(1).default(5),
+      pin: z.record(z.string(), z.enum(['claude', 'codex', 'self-hosted'])).optional(),
+    })
+    .default({}),
+  /** Cross-provider review pairings per risk tier (M13 - 0054). */
+  review_policy: z
+    .object({
+      never_same_as_implementer: z.boolean().default(true),
+      by_tier: z
+        .object({
+          safe: z.enum(['claude', 'codex', 'self-hosted']).optional(),
+          default: z.enum(['claude', 'codex', 'self-hosted']).optional(),
+          core: z.enum(['claude', 'codex', 'self-hosted']).optional(),
+        })
+        .default({}),
     })
     .default({}),
   authorization: authorizationSchema.default({}),

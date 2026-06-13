@@ -62,14 +62,14 @@ table and in `milestones.md`.
 | 0047 | verified | task/0047-smoke-canary-health-gate | Smoke/Canary & Health Gate |
 | 0048 | verified | task/0048-auto-rollback-loop | Auto-Rollback Loop |
 | 0049 | verified | task/0049-deploy-result-reporting | Deploy Result Reporting |
-| 0050 | planned | task/0050-budgets-and-kill-switch | Budgets & Kill Switch |
-| 0051 | planned | task/0051-stuck-detection-and-escalation | Stuck Detection & Escalation |
-| 0052 | planned | task/0052-run-reporting | Run Reporting |
-| 0053 | planned | task/0053-per-provider-outcome-telemetry | Per-Provider Outcome Telemetry |
-| 0054 | planned | task/0054-cross-provider-review-policy | Cross-Provider Review Policy |
-| 0055 | planned | task/0055-ensemble-and-judge | Ensemble & Judge on `tier:core` |
-| 0056 | planned | task/0056-outcome-driven-routing | Outcome-Driven Routing |
-| 0057 | planned | task/0057-cost-quality-routing-config | Cost/Quality Routing Config |
+| 0050 | verified | task/0050-budgets-and-kill-switch | Budgets & Kill Switch |
+| 0051 | verified | task/0051-stuck-detection-and-escalation | Stuck Detection & Escalation |
+| 0052 | verified | task/0052-run-reporting | Run Reporting |
+| 0053 | verified | task/0053-per-provider-outcome-telemetry | Per-Provider Outcome Telemetry |
+| 0054 | verified | task/0054-cross-provider-review-policy | Cross-Provider Review Policy |
+| 0055 | verified | task/0055-ensemble-and-judge | Ensemble & Judge on `tier:core` |
+| 0056 | verified | task/0056-outcome-driven-routing | Outcome-Driven Routing |
+| 0057 | verified | task/0057-cost-quality-routing-config | Cost/Quality Routing Config |
 | 0058 | planned | task/0058-docs-site-and-quickstart | Docs Site & Quickstart |
 | 0059 | planned | task/0059-config-reference | Config Reference |
 | 0060 | planned | task/0060-authoring-guides | Adapter & Provider Authoring Guides |
@@ -87,7 +87,7 @@ table and in `milestones.md`.
 | 0072 | planned | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) |
 | 0073 | verified | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) |
 | 0074 | verified | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
-| 0075 | planned | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
+| 0075 | verified | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
 | 0076 | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
 | 0077 | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
 | 0078 | planned | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) |

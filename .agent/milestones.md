@@ -23,8 +23,8 @@ North-star architecture for the V1 roadmap:
 | 09 | Loops | verified | [Implementation Loop](milestones/milestone-09-implementation-loop.md) |
 | 10 | Loops | verified | [Review, Verification Ladder & Merge Loop](milestones/milestone-10-review-verification-ladder-and-merge-loop.md) |
 | 11 | Loops | verified | [Deploy & Operational Verification](milestones/milestone-11-deploy-and-operational-verification.md) |
-| 12 | Cross-cutting | planned | [Observability, Cost & Safety](milestones/milestone-12-observability-cost-and-safety.md) |
-| 13 | Cross-cutting | planned | [Multi-Model Orchestration](milestones/milestone-13-multi-model-orchestration.md) |
+| 12 | Cross-cutting | verified | [Observability, Cost & Safety](milestones/milestone-12-observability-cost-and-safety.md) |
+| 13 | Cross-cutting | verified | [Multi-Model Orchestration](milestones/milestone-13-multi-model-orchestration.md) |
 | 14 | Release | planned | [Documentation, Examples & Trust](milestones/milestone-14-documentation-examples-and-trust.md) |
 | 15 | Release | planned | [V1 Hardening & Release](milestones/milestone-15-v1-hardening-and-release.md) |
 | 16 | Operator | planned | [Loop Control & Observability CLI](milestones/milestone-16-loop-control-and-observability-cli.md) |
@@ -103,15 +103,15 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0047 | Milestone 11: Deploy & Operational Verification | verified | task/0047-smoke-canary-health-gate | Smoke/Canary & Health Gate |
 | 0048 | Milestone 11: Deploy & Operational Verification | verified | task/0048-auto-rollback-loop | Auto-Rollback Loop |
 | 0049 | Milestone 11: Deploy & Operational Verification | verified | task/0049-deploy-result-reporting | Deploy Result Reporting |
-| 0050 | Milestone 12: Observability, Cost & Safety | planned | task/0050-budgets-and-kill-switch | Budgets & Kill Switch |
-| 0075 | Milestone 12: Observability, Cost & Safety | planned | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
-| 0051 | Milestone 12: Observability, Cost & Safety | planned | task/0051-stuck-detection-and-escalation | Stuck Detection & Escalation |
-| 0052 | Milestone 12: Observability, Cost & Safety | planned | task/0052-run-reporting | Run Reporting |
-| 0053 | Milestone 12: Observability, Cost & Safety | planned | task/0053-per-provider-outcome-telemetry | Per-Provider Outcome Telemetry |
-| 0054 | Milestone 13: Multi-Model Orchestration | planned | task/0054-cross-provider-review-policy | Cross-Provider Review Policy |
-| 0055 | Milestone 13: Multi-Model Orchestration | planned | task/0055-ensemble-and-judge | Ensemble & Judge on `tier:core` |
-| 0056 | Milestone 13: Multi-Model Orchestration | planned | task/0056-outcome-driven-routing | Outcome-Driven Routing |
-| 0057 | Milestone 13: Multi-Model Orchestration | planned | task/0057-cost-quality-routing-config | Cost/Quality Routing Config |
+| 0050 | Milestone 12: Observability, Cost & Safety | verified | task/0050-budgets-and-kill-switch | Budgets & Kill Switch |
+| 0075 | Milestone 12: Observability, Cost & Safety | verified | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
+| 0051 | Milestone 12: Observability, Cost & Safety | verified | task/0051-stuck-detection-and-escalation | Stuck Detection & Escalation |
+| 0052 | Milestone 12: Observability, Cost & Safety | verified | task/0052-run-reporting | Run Reporting |
+| 0053 | Milestone 12: Observability, Cost & Safety | verified | task/0053-per-provider-outcome-telemetry | Per-Provider Outcome Telemetry |
+| 0054 | Milestone 13: Multi-Model Orchestration | verified | task/0054-cross-provider-review-policy | Cross-Provider Review Policy |
+| 0055 | Milestone 13: Multi-Model Orchestration | verified | task/0055-ensemble-and-judge | Ensemble & Judge on `tier:core` |
+| 0056 | Milestone 13: Multi-Model Orchestration | verified | task/0056-outcome-driven-routing | Outcome-Driven Routing |
+| 0057 | Milestone 13: Multi-Model Orchestration | verified | task/0057-cost-quality-routing-config | Cost/Quality Routing Config |
 | 0058 | Milestone 14: Documentation, Examples & Trust | planned | task/0058-docs-site-and-quickstart | Docs Site & Quickstart |
 | 0059 | Milestone 14: Documentation, Examples & Trust | planned | task/0059-config-reference | Config Reference |
 | 0060 | Milestone 14: Documentation, Examples & Trust | planned | task/0060-authoring-guides | Adapter & Provider Authoring Guides |

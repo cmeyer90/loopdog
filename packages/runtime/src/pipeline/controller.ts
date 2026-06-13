@@ -16,6 +16,7 @@ import { createBackendRegistry } from '@looper/backends';
 import type { PromptSource } from '@looper/backends';
 import type { RunnerDeps } from './transition-runner.js';
 import { runLoopOnce } from './transition-runner.js';
+import { createPreflight } from './preflight.js';
 import { matchLoopsForEvent } from '../triggers/match.js';
 import { runSweep } from '../sweep/sweep.js';
 import type { SweepSummary } from '../sweep/sweep.js';
@@ -142,6 +143,18 @@ async function load(opts: ControllerOptions): Promise<{
     promptSource: createFsPromptSource(opts.repoDir, opts.templatesDir),
     planFiles,
     defaultBranch: meta.defaultBranch,
+    extraChecks: createPreflight({
+      gh: opts.gh,
+      records: opts.records,
+      backends,
+      repo: opts.repo,
+      config: {
+        budgets: result.config.root.budgets,
+        kill_switch: result.config.root.kill_switch,
+        quota: result.config.root.quota,
+      },
+      ...(opts.now ? { now: opts.now } : {}),
+    }),
     ...(opts.botLogin ? { botLogin: opts.botLogin } : {}),
     ...(opts.now ? { now: opts.now } : {}),
     ...(opts.forceDryRun ? { forceDryRun: true } : {}),

@@ -182,6 +182,14 @@ export function validateConfig(tree: DiscoveredTree): ValidationResult {
       });
     }
 
+    if (cfg.ensemble?.enabled && cfg.gates.tier !== 'core') {
+      errors.push({
+        file,
+        path: 'ensemble',
+        message: 'ensemble (dual-attempt + judge) is expensive and reserved for tier: core',
+      });
+    }
+
     if (!cfg.gates.require_dor && cfg.expects === 'pull-request') {
       warnings.push({
         file,
@@ -253,6 +261,9 @@ function resolveLoop(root: RootConfig, cfg: LoopConfig): LoopDefinition {
     mode: cfg.mode ?? root.defaults.mode,
     expects: cfg.expects === 'none' ? undefined : cfg.expects,
     serializeBy: cfg.serialize_by,
+    ensemble: cfg.ensemble
+      ? { enabled: cfg.ensemble.enabled, judge: cfg.ensemble.judge }
+      : undefined,
     requires: cfg.requires
       ? { liveSecrets: cfg.requires.live_secrets, network: cfg.requires.network }
       : undefined,

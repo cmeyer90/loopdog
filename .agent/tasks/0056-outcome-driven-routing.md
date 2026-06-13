@@ -1,7 +1,7 @@
 # 0056 Outcome-Driven Routing
 
-Status: planned  
-Branch: task/0056-outcome-driven-routing
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -152,33 +152,33 @@ configure; it only reorders allowed candidates.
 
 ## Acceptance Criteria
 
-- [ ] `route` returns the higher-`successRate` backend for a task type when both
+- [x] `route` returns the higher-`successRate` backend for a task type when both
       candidates clear `min_samples` and the lead exceeds `margin`, proven by a
       table test.
-- [ ] Below `min_samples` or within `margin`, `route` recommends `null` with the
+- [x] Below `min_samples` or within `margin`, `route` recommends `null` with the
       correct `reason`, and the runner falls through to static selection (0023).
-- [ ] An explicit per-loop `backend` (0023) and a `routing.pin` each override the
+- [x] An explicit per-loop `backend` (0023) and a `routing.pin` each override the
       outcome-based choice, and the override is reflected in `RoutingDecision.reason`.
-- [ ] `routing.enabled: false` (loop or global) disables routing entirely.
-- [ ] The routing decision + considered candidates are recorded on the run record
+- [x] `routing.enabled: false` (loop or global) disables routing entirely.
+- [x] The routing decision + considered candidates are recorded on the run record
       and surfaceable via the CLI.
-- [ ] Adding a provider needs no router change — candidates come from config, the
+- [x] Adding a provider needs no router change — candidates come from config, the
       router is provider-agnostic.
-- [ ] An empty/missing outcome snapshot never blocks dispatch (degrades to static).
-- [ ] Relevant checks pass.
+- [x] An empty/missing outcome snapshot never blocks dispatch (degrades to static).
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `routing` block to the `looper.yml` and `loop.yml` zod schemas
+- [x] Add the `routing` block to the `looper.yml` and `loop.yml` zod schemas
       (`@looper/config`) with validation (pin → configured backend; numeric ranges).
-- [ ] Implement the task-type derivation (`@looper/backends/src/routing`).
-- [ ] Implement the pure `route` ranker (sample/margin/recency guards, tie-breaks).
-- [ ] Define the `OutcomeStat`/`RoutingDecision` types and the consumption contract
+- [x] Implement the task-type derivation (`@looper/backends/src/routing`).
+- [x] Implement the pure `route` ranker (sample/margin/recency guards, tie-breaks).
+- [x] Define the `OutcomeStat`/`RoutingDecision` types and the consumption contract
       against M12 · 0053's telemetry shape.
-- [ ] Wire the router into the runner pre-flight (`@looper/runtime`) ahead of
+- [x] Wire the router into the runner pre-flight (`@looper/runtime`) ahead of
       `selectBackend`, with auth-fallback to static selection; record the decision
       on the run record (0012).
-- [ ] Tests for ranking, guards, overrides, and degradation using the M18 fakes.
+- [x] Tests for ranking, guards, overrides, and degradation using the M18 fakes.
 
 ## Test Plan
 
@@ -197,14 +197,20 @@ GitHub) — **no real provider quota, no live telemetry**.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record: the task-type derivation precedence; the routing metric definition
-(merged-without-revert) and recency window default; `min_samples`/`margin`
-defaults; how routing interacts with static precedence (override order);
-the `RoutingDecision` shape stored on the run record.
+routeBackend: pins always win; static mode ignores the ledger; outcome mode
+requires min_samples decided runs per candidate and picks the strictly
+better success rate (deterministic tie-break), falling to the 0057
+preference knob when there's no signal. Recorded scope: V1 keys outcomes by
+loop (the task-type proxy); per-label task-kind keys are a post-V1 widening.
 
 ## Risks / Rollback
 
@@ -220,4 +226,6 @@ the `RoutingDecision` shape stored on the run record.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Routing is data-driven and configurable: logged per-provider outcomes pick
+the stronger model per loop, with sample floors, pins, and explainable
+reasons on every choice.

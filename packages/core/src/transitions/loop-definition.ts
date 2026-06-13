@@ -35,6 +35,8 @@ export interface LoopDefinition {
   serializeBy?: string | undefined;
   /** Work-cell needs, checked against backend capabilities (0021 mismatch). */
   requires?: { liveSecrets?: boolean | undefined; network?: boolean | undefined } | undefined;
+  /** Dual-attempt + judge for high-risk work (M13 - 0055; tier:core only). */
+  ensemble?: { enabled: boolean; judge?: string | undefined } | undefined;
 }
 
 export type LoopMode = Mode;

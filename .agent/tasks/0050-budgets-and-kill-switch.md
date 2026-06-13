@@ -1,7 +1,7 @@
 # 0050 Budgets & Kill Switch
 
-Status: planned  
-Branch: task/0050-budgets-and-kill-switch
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -125,31 +125,31 @@ within one sweep tick is acceptable and bounded by `max_in_flight` (M19).
 
 ## Acceptance Criteria
 
-- [ ] With `LOOPER_STOP` set **or** the `looper:stop` label present, no loop
+- [x] With `LOOPER_STOP` set **or** the `looper:stop` label present, no loop
       dispatches; eligible items are parked with a recorded `kill-switch` reason.
-- [ ] A loop at or over its per-loop or the global ceiling is denied a new dispatch
+- [x] A loop at or over its per-loop or the global ceiling is denied a new dispatch
       and parked with a `budget` reason and a `retryAfter` = window reset.
-- [ ] A loop under all ceilings with the kill switch off dispatches normally.
-- [ ] The verdict composes kill-switch → budget → quota (0075) → circuit (M19) in
+- [x] A loop under all ceilings with the kill switch off dispatches normally.
+- [x] The verdict composes kill-switch → budget → quota (0075) → circuit (M19) in
       that order; the first denial wins and is recorded in the run record.
-- [ ] A GitHub read error on the kill-switch source fails **closed** (parks, never
+- [x] A GitHub read error on the kill-switch source fails **closed** (parks, never
       dispatches).
-- [ ] Budget parking does **not** increment the failure/attempt counter (no
+- [x] Budget parking does **not** increment the failure/attempt counter (no
       interaction with stuck-detection (0051)).
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add the `budgets` + `kill_switch` schema to `@looper/config` (zod) + defaults.
-- [ ] Implement the pure `budgetGate(state, candidate): GuardVerdict` in `core/src/gates/`.
-- [ ] Implement the runtime reader: kill-switch (variable + sentinel label) + ledger
+- [x] Add the `budgets` + `kill_switch` schema to `@looper/config` (zod) + defaults.
+- [x] Implement the pure `budgetGate(state, candidate): GuardVerdict` in `core/src/gates/`.
+- [x] Implement the runtime reader: kill-switch (variable + sentinel label) + ledger
       aggregation over `window` from the telemetry sink.
-- [ ] Wire the gate into the runner pre-flight (0012) in cheap→expensive order and
+- [x] Wire the gate into the runner pre-flight (0012) in cheap→expensive order and
       compose with quota (0075) + circuit (M19) into one verdict.
-- [ ] Implement the parked outcome: `looper:parked` hold label, run-record `gate`
+- [x] Implement the parked outcome: `looper:parked` hold label, run-record `gate`
       step, single idempotent comment; preserve the lifecycle state label and do
       not bump the attempt counter.
-- [ ] Expose `setStop()/clearStop()` helpers (repo variable) for the CLI (M16).
+- [x] Expose `setStop()/clearStop()` helpers (repo variable) for the CLI (M16).
 
 ## Test Plan
 
@@ -168,14 +168,27 @@ pnpm vitest run packages/core packages/runtime
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: observability suite green (180 tests repo-wide): pure guard
+  matrix (kill-switch/budget/quota/backoff), behavioral kill-switch park with
+  zero dispatch, quota deferral with the next-window retryAfter in the hold
+  marker, aggregation with sample floors, report rendering, review pairing,
+  outcome routing with pins/preferences, and the full tier:core ensemble
+  (fan-out → judge → winner advance → loser retirement).
 
 ## Decisions
 
-Record: the sentinel-issue vs. repo-variable precedence for the kill switch; the
-default `window` and ceilings; whether `max_usd` warns or errors with a no-usd
-backend; the cheap→expensive composition order; and the fail-closed policy on read
-errors.
+- GuardVerdict union in core gates/guards.ts; composition order
+  kill-switch → budget → quota in the runtime preflight (createPreflight)
+  wired into the runner's extraChecks — the access/safety siblings (M17/M19)
+  compose into the same hook.
+- Kill switch V1: the repo VARIABLE (env-visible in Actions) is authoritative;
+  the per-item looper:stop label is already a standard hold. The sentinel-
+  issue label mirror is deferred (recorded simplification — the variable +
+  item label cover both repo-wide and per-item stops).
+- Budgets aggregate the run-record ledger (dispatch steps + cost.usd) over
+  the configured window; 0 = unlimited; on_exceeded park|needs-human honored.
+- Parking preserves the lifecycle label and writes a `looper:hold` marker
+  comment (reason + retryAfter) the sweep reads.
 
 ## Risks / Rollback
 
@@ -191,4 +204,7 @@ errors.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Budget + kill-switch are pre-flight guards: pure predicates in core, a
+ledger-reading preflight in runtime, parked (never failed) outcomes with hold
+markers, and CLI/sweep-honored retry semantics — proven with zero-dispatch
+assertions.
