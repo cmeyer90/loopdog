@@ -28,3 +28,28 @@ export async function clearAttempts(gh: GitHubPort, item: ItemRef): Promise<void
     if (label.startsWith(PREFIX)) await gh.removeLabel(item, label);
   }
 }
+
+/**
+ * Dispatch deadline (M19 · 0089): a runtime-stamped `not correlated by` instant,
+ * label-encoded so the sweep can detect a work cell that never produced a PR
+ * (0073) and escalate it as a timed-out (transient) attempt rather than leave it
+ * stranded. Stamped by the RUNTIME at dispatch (`deps.now` + dispatch_timeout) —
+ * independent of the backend's own `dispatchedAt`.
+ */
+const DEADLINE_PREFIX = 'looper:dispatch-deadline/';
+
+export function dispatchDeadlineLabel(until: string): string {
+  return `${DEADLINE_PREFIX}${until}`;
+}
+
+export function parseDispatchDeadline(labels: readonly string[]): string | null {
+  const label = labels.find((l) => l.startsWith(DEADLINE_PREFIX));
+  return label ? label.slice(DEADLINE_PREFIX.length) : null;
+}
+
+export async function clearDispatchDeadline(gh: GitHubPort, item: ItemRef): Promise<void> {
+  const labels = await gh.getItemLabels(item);
+  for (const label of labels) {
+    if (label.startsWith(DEADLINE_PREFIX)) await gh.removeLabel(item, label);
+  }
+}

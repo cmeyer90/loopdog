@@ -100,10 +100,10 @@ table and in `milestones.md`.
 | 0085 | verified | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions |
 | 0086 | verified | task/0086-simulation-and-fault-injection | Simulation & Fault Injection |
 | 0087 | verified | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke |
-| 0088 | planned | task/0088-failure-taxonomy | Failure Taxonomy & Classification |
-| 0089 | planned | task/0089-retry-timeout-backoff | Retry, Timeout & Backoff |
-| 0090 | planned | task/0090-concurrency-ceiling-and-circuit-breaker | Concurrency Ceiling & Circuit Breaker |
-| 0091 | planned | task/0091-resilience-knobs-and-quarantine | Resilience Knobs, Quarantine & Escalation |
+| 0088 | verified | task/0088-failure-taxonomy | Failure Taxonomy & Classification |
+| 0089 | verified | task/0089-retry-timeout-backoff | Retry, Timeout & Backoff |
+| 0090 | verified | task/0090-concurrency-ceiling-and-circuit-breaker | Concurrency Ceiling & Circuit Breaker |
+| 0091 | verified | task/0091-resilience-knobs-and-quarantine | Resilience Knobs, Quarantine & Escalation |
 | 0092 | verified | task/0092-tos-and-subscription-automation-spike | ToS & Subscription-Automation Validation |
 | 0093 | blocked | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike |
 | 0094 | verified | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |

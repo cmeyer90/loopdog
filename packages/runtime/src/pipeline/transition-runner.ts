@@ -14,21 +14,36 @@ import type {
 } from '@looper/core';
 import {
   DOR_FAIL_ROUTE,
-  backoffUntil,
+  QUARANTINE_LABEL,
+  classify,
   decideTransition,
   deriveRunId,
+  dispatchTimeoutMs,
+  escalateTo,
   evaluateDor,
+  maxAttemptsPerItem,
+  nextRetryAt,
   notBeforeLabel,
+  onFailureMode,
   parseCriteriaBlock,
+  responseFor,
   standardChecks,
   stateLabel,
   stateOfLabels,
+  toRetryPolicy,
   upsertCriteriaBlock,
 } from '@looper/core';
 import { acquireClaim, releaseClaim, upsertMarkedComment } from '@looper/github';
 import type { PromptSource } from '@looper/backends';
 import { composeWorkBrief, promptSourceFromReader } from './brief.js';
-import { bumpAttempts, clearAttempts, parseAttempts } from './attempts.js';
+import {
+  bumpAttempts,
+  clearAttempts,
+  clearDispatchDeadline,
+  dispatchDeadlineLabel,
+  parseAttempts,
+  parseDispatchDeadline,
+} from './attempts.js';
 import {
   findPendingDispatches,
   markDispatchResolved,
@@ -448,6 +463,15 @@ async function processItem(
       await gate.mutate('comment', 'persist dispatch handle', () =>
         deps.gh.createComment(item.ref, renderDispatchMarker(handle)).then(() => {}),
       );
+      // Stamp the dispatch deadline (0089): now + dispatch_timeout, clamped to
+      // the claim lease so it never outlives the claim. The sweep escalates a
+      // dispatch with no correlated PR by then (no-result path, 0073/0076).
+      const rawDeadline = now.getTime() + dispatchTimeoutMs(loop.resilience);
+      const leaseMs = claim?.leaseUntil ? Date.parse(claim.leaseUntil) : rawDeadline;
+      const deadline = new Date(Math.min(rawDeadline, leaseMs)).toISOString();
+      await gate.mutate('label', `dispatch deadline ${deadline}`, () =>
+        deps.gh.addLabels(item.ref, [dispatchDeadlineLabel(deadline)]),
+      );
       if (
         loop.transition.to !== 'in-progress' &&
         deps.table.edges.some((e) => e.from === loop.transition.from && e.to === 'in-progress')
@@ -495,20 +519,57 @@ async function processItem(
     const attempts =
       (await gate.mutate('label', 'bump attempts', () => bumpAttempts(deps.gh, item.ref))) ??
       attempt;
-    if (attempts >= (deps.maxAttempts ?? 3)) {
-      await gate.mutate('label', 'add looper:needs-human', () =>
-        deps.gh.addLabels(item.ref, ['looper:needs-human']),
+    // Failure taxonomy (M19 · 0088): a dispatch failure is a recoverable
+    // provider error → transient while attempts remain, poisoned once the
+    // per-item ceiling (resilience.max_attempts_per_item) is reached.
+    const rc = loop.resilience;
+    // Per-loop resilience config wins; else the runner's injected ceiling (0051);
+    // else the resilience default (3).
+    const maxItem = rc?.maxAttemptsPerItem ?? deps.maxAttempts ?? maxAttemptsPerItem(rc);
+    const cls = classify({
+      attempts,
+      maxAttempts: maxItem,
+      backendError: { recoverable: true },
+    });
+    if (responseFor(cls).kind === 'quarantine') {
+      // Poisoned: route per `on_failure` — never silently dropped.
+      const mode = onFailureMode(rc);
+      const ping = escalateTo(rc) ? ` ${escalateTo(rc)}` : '';
+      if (mode === 'abandon') {
+        await gate.mutate('label', 'abandon (on_failure)', () =>
+          deps.gh.addLabels(item.ref, ['looper:abandoned']),
+        );
+        await gate.comment('abandon notice', () =>
+          deps.gh.createComment(
+            item.ref,
+            `🛑 looper abandoned this item after ${attempts} failed attempts (on_failure: abandon).${ping} Last error: ${reason}`,
+          ),
+        );
+        return record({ status: 'failed', failure: { class: 'poisoned', reason } });
+      }
+      if (mode === 'retry') {
+        // The maintainer opted to keep retrying — back off, do not quarantine.
+        const until = nextRetryAt(toRetryPolicy(rc), attempts, now);
+        await gate.mutate('label', `backoff until ${until}`, () =>
+          deps.gh.addLabels(item.ref, [notBeforeLabel(until)]),
+        );
+        return record({ status: 'failed', failure: { class: 'transient', reason } });
+      }
+      // default (needs-human): quarantine the poisoned item + escalate.
+      await gate.mutate('label', 'quarantine + needs-human', () =>
+        deps.gh.addLabels(item.ref, [QUARANTINE_LABEL, 'looper:needs-human']),
       );
-      await gate.comment('escalation notice', () =>
+      await gate.comment('quarantine notice', () =>
         deps.gh.createComment(
           item.ref,
-          `🚨 looper: ${attempts} failed attempts — needs a human. Last error: ${reason}`,
+          `🚨 looper quarantined this item after ${attempts} failed attempts — needs a human.${ping} ` +
+            `Last error: ${reason}\n\nRelease it with \`looper retry\` once the cause is fixed.`,
         ),
       );
       return record({ status: 'escalated', failure: { class: 'poisoned', reason } });
     }
-    // Exponential backoff (0051): the sweep skips this item until the timer.
-    const until = backoffUntil(attempts, now);
+    // Transient: config-driven backoff (0089); the sweep re-arms after the timer.
+    const until = nextRetryAt(toRetryPolicy(rc), attempts, now);
     await gate.mutate('label', `backoff until ${until}`, () =>
       deps.gh.addLabels(item.ref, [notBeforeLabel(until)]),
     );
@@ -527,12 +588,65 @@ async function ingestPhase(
   record: (outcome: RunRecord['outcome'], briefRef?: string) => RunRecord,
 ): Promise<RunRecord | null> {
   void steps;
+  const now = deps.now?.() ?? new Date();
   const backend = deps.backends.get(pending.handle.backend);
   if (!backend) return null;
   const result = await backend.ingest(pending.handle);
   step('ingest', result.status);
 
-  if (result.status === 'pending') return null; // check again next invocation
+  if (result.status === 'pending') {
+    // Dispatch-timeout (0089): no correlated PR by the stamped deadline → treat
+    // as a timed-out (transient) attempt — release the claim + back off, rather
+    // than wait forever. Ingest WINS over timeout (checked only when pending).
+    const deadline = parseDispatchDeadline(item.labels);
+    if (deadline && now.getTime() > Date.parse(deadline)) {
+      step('ingest', `dispatch timeout (no PR by ${deadline})`);
+      const marker = (await deps.gh.listComments(item.ref)).find((c) => c.id === pending.commentId);
+      if (marker) {
+        await gate.mutate('comment', 'mark dispatch timed out', () =>
+          deps.gh.updateComment(
+            item.ref,
+            pending.commentId,
+            markDispatchResolved(marker.body, 'timed out (no correlated PR by the deadline)'),
+          ),
+        );
+      }
+      await gate.mutate('label', 'clear dispatch deadline', () =>
+        clearDispatchDeadline(deps.gh, item.ref),
+      );
+      await gate.mutate('claim', 'release after timeout', () =>
+        releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
+      );
+      const attempts =
+        (await gate.mutate('label', 'bump attempts', () => bumpAttempts(deps.gh, item.ref))) ?? 1;
+      const rc = loop.resilience;
+      const reason = `dispatch timeout: no correlated PR within the deadline`;
+      const cls = classify({
+        attempts,
+        maxAttempts: rc?.maxAttemptsPerItem ?? deps.maxAttempts ?? maxAttemptsPerItem(rc),
+        backendError: { recoverable: true },
+      });
+      if (responseFor(cls).kind === 'quarantine' && onFailureMode(rc) !== 'retry') {
+        const ping = escalateTo(rc) ? ` ${escalateTo(rc)}` : '';
+        await gate.mutate('label', 'quarantine + needs-human', () =>
+          deps.gh.addLabels(item.ref, [QUARANTINE_LABEL, 'looper:needs-human']),
+        );
+        await gate.comment('timeout quarantine notice', () =>
+          deps.gh.createComment(
+            item.ref,
+            `🚨 looper: the work cell produced no PR within \`dispatch_timeout\` after ${attempts} attempts — quarantined.${ping} Release with \`looper retry\`.`,
+          ),
+        );
+        return record({ status: 'escalated', failure: { class: 'poisoned', reason } });
+      }
+      const until = nextRetryAt(toRetryPolicy(rc), attempts, now);
+      await gate.mutate('label', `backoff until ${until}`, () =>
+        deps.gh.addLabels(item.ref, [notBeforeLabel(until)]),
+      );
+      return record({ status: 'failed', failure: { class: 'transient', reason } });
+    }
+    return null; // check again next invocation
+  }
 
   const comments = await deps.gh.listComments(item.ref);
   const marker = comments.find((c) => c.id === pending.commentId);
@@ -649,6 +763,7 @@ async function ingestPhase(
   await gate.mutate('claim', 'release', async () => {
     await releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {});
     await clearAttempts(deps.gh, item.ref);
+    await clearDispatchDeadline(deps.gh, item.ref); // ingest won — clear the timeout
   });
   const done = record({
     status: 'done',

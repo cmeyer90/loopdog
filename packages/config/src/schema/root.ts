@@ -39,7 +39,7 @@ export const resilienceSchema = z.object({
   retries: z
     .object({
       max: z.number().int().min(0).default(2),
-      backoff: z.enum(['exponential', 'fixed']).default('exponential'),
+      backoff: z.enum(['exponential', 'linear', 'constant']).default('exponential'),
       base: z.string().default('30s'),
       cap: z.string().default('10m'),
     })

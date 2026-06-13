@@ -11,7 +11,9 @@ import type {
 import {
   NEEDS_APPROVAL_LABEL,
   backendDispatchesInWindow,
+  breakerStatus,
   budgetGate,
+  checkCeiling,
   killSwitchGate,
   ledgerStats,
   quotaGate,
@@ -19,8 +21,11 @@ import {
   resolveActorTrust,
   resolveAuthorizationPolicy,
   scheduleWindowGate,
+  toBreakerPolicy,
+  toCeiling,
   triggerSourceAllowed,
 } from '@looper/core';
+import { breakerStateFromLedger, inFlightFor } from './resilience.js';
 import type { AuthorizationConfig, QuotaModel, TriggerActor } from '@looper/core';
 import type { RunRecordStore } from '../telemetry/record-store.js';
 
@@ -144,6 +149,35 @@ export function createPreflight(deps: PreflightDeps) {
       checks.push({ name: 'guard:authorization', verdict: { kind: 'proceed' } });
     }
 
+    // The run-record ledger (GitHub state) backs the resilience gates + budget.
+    const records = await recentRecords(deps.records, now, 31);
+
+    // Resilience (M19 · 0090): circuit breaker first (a provider outage pauses
+    // the whole loop — skip, no spend), then the concurrency ceiling (too much
+    // in flight → defer this candidate). Both `skip` (no attempt increment); the
+    // sweep retries once the cooldown elapses / headroom frees.
+    const breakerPolicy = toBreakerPolicy(ctx.loop.resilience);
+    const breaker = breakerStatus(
+      breakerStateFromLedger(records, ctx.loop.name, ctx.loop.backend, breakerPolicy),
+      breakerPolicy,
+      now,
+    );
+    if (!breaker.admit) {
+      checks.push({
+        name: 'guard:circuit-breaker',
+        verdict: { kind: 'skip', reason: breaker.reason },
+      });
+      return checks;
+    }
+    const ceiling = checkCeiling(
+      inFlightFor(records, ctx.loop.name),
+      toCeiling(ctx.loop.resilience),
+    );
+    if (!ceiling.admit) {
+      checks.push({ name: 'guard:concurrency', verdict: { kind: 'skip', reason: ceiling.reason } });
+      return checks;
+    }
+
     // 1. kill switch (cheapest): repo variable (authoritative) — the
     //    looper:stop label on the ITEM is already a standard hold.
     const env = deps.env ?? process.env;
@@ -155,7 +189,6 @@ export function createPreflight(deps: PreflightDeps) {
     if (!kill.allowed) return checks;
 
     // 2 + 3. budget then quota, over the run-record ledger.
-    const records = await recentRecords(deps.records, now, 31);
     const windowMs = WINDOW_MS[deps.config.budgets.window] ?? WINDOW_MS['monthly']!;
     const stats = ledgerStats(records, ctx.loop.name, new Date(now.getTime() - windowMs));
     const budget = budgetGate(stats, {

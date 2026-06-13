@@ -1,6 +1,6 @@
 # 0088 Failure Taxonomy & Classification
 
-Status: planned  
+Status: verified  
 Branch: task/0088-failure-taxonomy
 
 ## Goal
@@ -140,30 +140,30 @@ run record so a misclassification is debuggable.
 
 ## Acceptance Criteria
 
-- [ ] A closed `FailureClass` enum + a pure `classify(signal, policy) → FailureClass`
+- [x] A closed `FailureClass` enum + a pure `classify(signal, policy) → FailureClass`
       lands in `@looper/core` with no IO and a total `switch` (no `default`).
-- [ ] `responseFor` maps every class to exactly one deterministic `Response`, total
+- [x] `responseFor` maps every class to exactly one deterministic `Response`, total
       over the enum.
-- [ ] Classification precedence is honored: guard→budget, overCeiling→overload,
+- [x] Classification precedence is honored: guard→budget, overCeiling→overload,
       unrecoverable→terminal, last-attempt→poisoned, else→transient — proven by a
       table-driven test across every branch.
-- [ ] `defer` and `pause` responses do **not** increment the attempt counter; `retry`,
+- [x] `defer` and `pause` responses do **not** increment the attempt counter; `retry`,
       `escalate`, and `quarantine`'s underlying failure do — asserted in tests.
-- [ ] An absent/unknown `backendError` with attempts remaining classifies `transient`
+- [x] An absent/unknown `backendError` with attempts remaining classifies `transient`
       (fail-open), never `terminal`; with attempts exhausted, `poisoned`.
-- [ ] The taxonomy table (class → trigger → response) is documented under `docs/`.
-- [ ] `pnpm -F @looper/core test` passes.
+- [x] The taxonomy table (class → trigger → response) is documented under `docs/`.
+- [x] `pnpm -F @looper/core test` passes.
 
 ## Implementation Checklist
 
-- [ ] Define `FailureClass`, `FailureSignal`, `Response` types in
+- [x] Define `FailureClass`, `FailureSignal`, `Response` types in
       `core/src/resilience/` (extending 0051's `AttemptState`/`Decision`, not forking).
-- [ ] Implement `classify` with the documented precedence as a total `switch`.
-- [ ] Implement `responseFor` and the attempt-increment contract helper.
-- [ ] Specify the `FailureSignal`-build contract the runtime (0089–0091) implements
+- [x] Implement `classify` with the documented precedence as a total `switch`.
+- [x] Implement `responseFor` and the attempt-increment contract helper.
+- [x] Specify the `FailureSignal`-build contract the runtime (0089–0091) implements
       (a typed builder signature in `core`, called from `@looper/runtime`).
-- [ ] Add the taxonomy doc table under `docs/` (cross-link from the M19 milestone).
-- [ ] Table-driven unit tests over every class + precedence boundary.
+- [x] Add the taxonomy doc table under `docs/` (cross-link from the M19 milestone).
+- [x] Table-driven unit tests over every class + precedence boundary.
 
 ## Test Plan
 
@@ -182,13 +182,34 @@ pnpm -F @looper/core test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: taxonomy green (`packages/core/test/resilience.test.ts`, table-
+  driven): `classify` honors the precedence spend→ceiling→terminal→poisoned→
+  transient across every branch; `responseFor` is total (5 classes → retry/
+  escalate/quarantine/defer/pause via an exhaustive `switch`, no `default`);
+  `incrementsAttempt` is true for retry/escalate/quarantine and false for defer/
+  pause; fail-open proven (absent/recoverable error with attempts remaining →
+  transient, exhausted → poisoned). The runtime consumes it in the dispatch-
+  failure + dispatch-timeout paths (`transition-runner.ts`); the class→trigger→
+  response table is documented at `docs/resilience.md`.
 
 ## Decisions
 
-Record the final `FailureClass` set, the classification precedence order, the
-`FailureSignal` fields, the fail-open-to-`transient` rule, and the attempt-increment
-contract (which responses count as attempts).
+- `FailureClass` reuses the run-record enum (`transient | terminal | poisoned |
+  overload | budget`) as the single source of truth. The classifier lives at
+  `packages/core/src/resilience/taxonomy.ts` (pure, no IO).
+- The realized `FailureSignal` is leaner than the task's sketch — `{ spendDenied,
+  overCeiling, backendError?: {recoverable}, attempts, maxAttempts }` — but
+  captures the same precedence inputs (a spend-gate deny, an over-ceiling deny,
+  an unrecoverable provider error, the attempt count). The richer `outcome`/
+  `BackendError.kind`/`guard`-enum shape from the sketch collapsed to those
+  booleans/fields the runtime actually supplies.
+- Precedence (first match wins, total): spendDenied → `budget`; overCeiling →
+  `overload`; `backendError.recoverable === false` → `terminal`; `attempts ≥
+  maxAttempts` → `poisoned`; else → `transient` (fail-open — an absent/unknown
+  error never classifies `terminal`).
+- Attempt-increment contract: `retry`/`escalate`/`quarantine` increment (a real
+  failure), `defer`/`pause` do NOT (holds, not the item's fault) — so an overload
+  or budget pause never silently exhausts an item.
 
 ## Risks / Rollback
 
@@ -207,4 +228,10 @@ contract (which responses count as attempts).
 
 ## Final Summary
 
-Fill this in before marking verified.
+A pure, total classifier maps any failed/pre-empted transition into one of five
+failure classes by a fixed precedence, and each class maps to exactly one
+response (retry/escalate/quarantine/defer/pause) with a clear attempt-increment
+contract. It fails open to `transient` (never a false `terminal`), reuses the
+run-record `FailureClass` enum, and is the decision spine 0089/0090/0091 + the
+transition runner consult. Table-driven tests cover every branch; the taxonomy
+table is in `docs/resilience.md`.

@@ -94,7 +94,12 @@ export interface AuthorizationConfig {
 /** Failure-policy knobs (M19). All optional — defaults ship in config. */
 export interface ResilienceConfig {
   retries?:
-    | { max: number; backoff: 'exponential' | 'fixed'; baseSeconds: number; capSeconds: number }
+    | {
+        max: number;
+        backoff: 'exponential' | 'linear' | 'constant';
+        baseSeconds: number;
+        capSeconds: number;
+      }
     | undefined;
   dispatchTimeoutMinutes?: number | undefined;
   maxAttemptsPerItem?: number | undefined;

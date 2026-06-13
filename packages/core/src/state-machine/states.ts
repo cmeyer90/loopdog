@@ -51,6 +51,16 @@ export const CLAIM_LABEL_PREFIX = 'looper:claimed-by/';
 export const LEASE_LABEL_PREFIX = 'looper:lease/';
 export const LOCK_LABEL_PREFIX = 'looper:lock/';
 
+/** Quarantine hold for a poisoned item (M19 · 0091). */
+export const QUARANTINE_LABEL = 'looper:quarantine';
+
+/** Circuit-breaker pause, per loop (M19 · 0090): `looper:paused/<loop>`. */
+export const PAUSED_LABEL_PREFIX = 'looper:paused/';
+
+export function pausedLabel(loop: string): string {
+  return `${PAUSED_LABEL_PREFIX}${loop}`;
+}
+
 export function stateLabel(state: string): string {
   return `${STATE_LABEL_PREFIX}${state}`;
 }

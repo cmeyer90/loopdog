@@ -73,8 +73,11 @@ export {
   OFF_RAMP_LABELS,
   OFF_RAMP_STATES,
   OPERATIONAL_LABELS,
+  PAUSED_LABEL_PREFIX,
+  QUARANTINE_LABEL,
   STATE_LABEL_PREFIX,
   isOffRamp,
+  pausedLabel,
   stateLabel,
   stateOfLabels,
 } from './state-machine/states.js';
@@ -184,3 +187,45 @@ export type {
   RunStep,
 } from './run-record/run-record.js';
 export { deriveRunId, idempotencyKey, runRecordPath } from './run-record/run-record.js';
+
+// resilience & failure policy (M19)
+export type {
+  Response,
+  ResponseKind,
+  FailureSignal,
+  BackoffShape,
+  RetryPolicy,
+  Ceiling,
+  InFlight,
+  CeilingDecision,
+  BreakerPolicy,
+  BreakerStatus,
+  BreakerState,
+  BreakerDecision,
+} from './resilience/index.js';
+export {
+  classify,
+  responseFor,
+  incrementsAttempt,
+  classifyResponse,
+  DEFAULT_RETRY,
+  backoffCeilingMs,
+  backoffDelayMs,
+  nextRetryAt,
+  hasRetryBudget,
+  DEFAULT_CEILING,
+  DEFAULT_BREAKER,
+  CLOSED,
+  checkCeiling,
+  breakerStatus,
+  onFailure,
+  onSuccess,
+  toRetryPolicy,
+  toCeiling,
+  toBreakerPolicy,
+  dispatchTimeoutMs,
+  maxAttemptsPerItem,
+  maxFixAttempts,
+  onFailureMode,
+  escalateTo,
+} from './resilience/index.js';

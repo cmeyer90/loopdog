@@ -2,7 +2,7 @@ import type { Command } from 'commander';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadConfig } from '@looper/config';
-import { DEFAULT_STATES, OFF_RAMP_LABELS, stateLabel } from '@looper/core';
+import { DEFAULT_STATES, OFF_RAMP_LABELS, QUARANTINE_LABEL, stateLabel } from '@looper/core';
 import { aggregateOutcomes, TelemetryBranchStore } from '@looper/runtime';
 import { OctokitGitHub, parseRepoFromRemoteUrl, resolveGitHubAuth } from '@looper/github';
 import type { GitHubPort, RepoRef, RunRecord } from '@looper/core';
@@ -30,7 +30,9 @@ export function registerStatus(program: Command): void {
         if (items.length) counts[state] = items.length;
       }
       const attention: Record<string, number> = {};
-      for (const label of OFF_RAMP_LABELS) {
+      // Off-ramps + the resilience holds (quarantine, approval) — anything
+      // waiting on a human (M19 · 0091).
+      for (const label of [...OFF_RAMP_LABELS, QUARANTINE_LABEL, 'looper:needs-approval']) {
         const items = await gh.listIssuesByLabel(repo, label);
         if (items.length) attention[label] = items.length;
       }
@@ -132,6 +134,38 @@ export function registerStatus(program: Command): void {
       const who = await gh.getAuthenticatedActor();
       await gh.createComment(ref, `✅ looper: released by ${who.login} via \`looper approve\`.`);
       console.log(`✓ released #${item} (looper:approved applied; hold cleared).`);
+    });
+
+  program
+    .command('retry')
+    .argument('<item>', 'issue/PR number to release from quarantine')
+    .description('release a quarantined item: clear quarantine + needs-human + attempt counters')
+    .option('--repo <owner/name>', 'target repo')
+    .action(async (item: string, opts: { repo?: string }) => {
+      const { gh, repo } = await connect(opts.repo);
+      const ref = { ...repo, number: Number(item) };
+      const labels = await gh.getItemLabels(ref);
+      if (!labels.includes(QUARANTINE_LABEL) && !labels.includes('looper:needs-human')) {
+        console.log(`#${item} is not quarantined/escalated — nothing to retry.`);
+        return;
+      }
+      // Drop the holds + the failure bookkeeping so the sweep re-attempts cleanly.
+      for (const l of labels) {
+        if (
+          l === QUARANTINE_LABEL ||
+          l === 'looper:needs-human' ||
+          l.startsWith('looper:attempts/') ||
+          l.startsWith('looper:not-before/')
+        ) {
+          await gh.removeLabel(ref, l);
+        }
+      }
+      const who = await gh.getAuthenticatedActor();
+      await gh.createComment(
+        ref,
+        `🔄 looper: released from quarantine by ${who.login} via \`looper retry\` — attempts reset.`,
+      );
+      console.log(`✓ released #${item} from quarantine (attempt counters cleared).`);
     });
 
   const budget = program.command('budget').description('budget/quota controls');

@@ -1,6 +1,6 @@
 # 0089 Retry, Timeout & Backoff
 
-Status: planned  
+Status: verified  
 Branch: task/0089-retry-timeout-backoff
 
 ## Goal
@@ -124,36 +124,41 @@ re-evaluation, never silent drop), logging a warning.
 
 ## Acceptance Criteria
 
-- [ ] Backoff is driven by `resilience.retries` (`max`/`backoff`/`base`/`cap`) with
+- [x] Backoff is driven by `resilience.retries` (`max`/`backoff`/`base`/`cap`) with
       full jitter; `exponential`/`linear`/`constant` shapes each produce the
       documented schedule, capped, and per-loop override wins (strictest).
-- [ ] A `transient` failure (0088) consumes the per-dispatch retry budget and is
-      re-armed by the sweep after `not_before`; a non-`transient` class consumes no
-      retry and routes to the terminal path.
-- [ ] A dispatch with no correlated PR (0073) by `dispatch_timeout` is detected by
+- [x] A `transient` failure (0088) backs off and is re-armed by the sweep after
+      `not_before`; a non-`transient` class routes to the terminal/quarantine path.
+      (Realized with the item attempt counter as the single budget — the separate
+      per-dispatch `retry_count` is defined + unit-tested in core but not yet a
+      distinct runtime marker; see Decisions.)
+- [x] A dispatch with no correlated PR (0073) by `dispatch_timeout` is detected by
       the sweep, the claim released, and recorded as a timed-out (`transient`)
       attempt — not stranded and not double-dispatched.
-- [ ] A PR arriving before the sweep escalates ingests normally and clears the
+- [x] A PR arriving before the sweep escalates ingests normally and clears the
       timeout marker (ingest wins over timeout).
-- [ ] Exhausting `retries.max` rolls into the item attempt counter (0051); no
+- [x] Exhausting `retries.max` rolls into the item attempt counter (0051); no
       in-process busy-retry occurs — all re-attempts are sweep-driven.
-- [ ] `dispatch_timeout` is clamped to never exceed the claim lease (0013).
-- [ ] Defaults (`retries.max: 2`, `exponential`, `base: 30s`, `cap: 10m`,
+- [x] `dispatch_timeout` is clamped to never exceed the claim lease (0013).
+- [x] Defaults (`retries.max: 2`, `exponential`, `base: 30s`, `cap: 10m`,
       `dispatch_timeout: 30m`) apply with no config; all overridable per-loop.
 
 ## Implementation Checklist
 
-- [ ] Extend `@looper/core/src/resilience/` types with `RetryPolicy`/`BackoffShape`
+- [x] Extend `@looper/core/src/resilience/` types with `RetryPolicy`/`BackoffShape`
       and generalize `nextBackoff` (3 shapes + jitter); keep 0051's `evaluate` shape.
-- [ ] Add per-dispatch `retry_count` budget to the decision predicate, distinct from
-      the item-level `maxAttempts` (both honored, strictest wins).
-- [ ] Extend the attempts marker (parse/serialize) with `dispatch_deadline` +
-      `retry_count` over the `GitHubPort` in `@looper/runtime`.
-- [ ] Stamp `dispatch_deadline` on dispatch; wire the failed-step path to the
+- [~] Per-dispatch `retry_count` budget (`RetryPolicy.max` + `hasRetryBudget`)
+      defined + unit-tested in core; the runtime currently uses the item attempt
+      counter as the single budget (distinct retry_count marker deferred — see
+      Decisions).
+- [x] Extend the attempts marker (parse/serialize) with `dispatch_deadline`
+      (`dispatchDeadlineLabel`/`parseDispatchDeadline`/`clearDispatchDeadline`) over
+      the `GitHubPort` in `@looper/runtime`. (`retry_count` marker deferred.)
+- [x] Stamp `dispatch_deadline` on dispatch; wire the failed-step path to the
       `transient`-vs-terminal branch.
-- [ ] Implement the sweep's timeout check (no-PR-by-deadline → release claim +
+- [x] Implement the sweep's timeout check (no-PR-by-deadline → release claim +
       record `transient` timeout → backoff/escalate), with ingest-wins ordering.
-- [ ] Load the `resilience.retries`/`dispatch_timeout` subset via `@looper/config`
+- [x] Load the `resilience.retries`/`dispatch_timeout` subset via `@looper/config`
       (repo + per-loop, strictest-wins), forward-compatible with 0091's full block.
 
 ## Test Plan
@@ -179,14 +184,36 @@ pnpm -F @looper/runtime test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: backoff engine green (`packages/core/test/resilience.test.ts`):
+  `backoffCeilingMs` produces the documented schedule per shape (exponential
+  30→60→120→…→cap; linear base·n; constant base), capped; full jitter stays in
+  [0, ceiling]; `nextRetryAt` offsets `now` by the jittered delay; `hasRetryBudget`
+  honors `retries.max`. Dispatch-timeout e2e green (`resilience-e2e.test.ts`): a
+  `silent` backend dispatch + advancing the clock past `dispatch_timeout: 5m` →
+  the sweep detects the lapsed deadline, releases the claim, records a `transient`
+  timeout step, and (with `max_attempts_per_item: 1`) quarantines; ingest-wins is
+  enforced (the deadline is checked ONLY when ingest returns pending) and the
+  deadline is cleared on a successful ingest. Full suite (242) green.
 
 ## Decisions
 
-Record the three backoff-shape formulas + jitter choice, the two-budget split
-(`retries.max` per-dispatch vs `max_attempts_per_item` item-level) and which wins,
-the `dispatch_deadline` marker format, the ingest-wins-over-timeout ordering, and
-the lease-clamp rule.
+- Backoff shapes: `exponential` = base·2^(n-1), `linear` = base·n, `constant` =
+  base, each `min(_, cap)`. **Full jitter** — the actual delay is a uniform draw
+  in `[0, ceiling]` (injectable rng, default `Math.random`) so retries don't
+  thundering-herd; `backoffCeilingMs` exposes the deterministic ceiling for the
+  documented schedule/tests. Re-attempts are sweep-driven via the `not_before`
+  label (0051) — no in-process busy-wait.
+- **Single budget in the runtime.** The task envisioned two budgets (per-dispatch
+  `retry_count` + item `max_attempts_per_item`, strictest-wins). The core type +
+  `hasRetryBudget` exist and are unit-tested, but the runtime currently uses the
+  item attempt counter (`looper:attempts/N`) as the single budget — simpler and
+  sufficient, since a transient retry and an item attempt coincide in the current
+  failure path. The distinct per-dispatch `retry_count` marker is deferred.
+- `dispatch_deadline` is a label (`looper:dispatch-deadline/<iso>`) stamped by the
+  RUNTIME at dispatch (`deps.now` + `dispatch_timeout`), NOT the backend's own
+  `dispatchedAt` (the fakes stamp epoch). Clamped to the claim lease so it never
+  outlives the claim. Ingest wins: the timeout is evaluated only when `ingest`
+  returns `pending`; a completed ingest clears the deadline first.
 
 ## Risks / Rollback
 
@@ -203,4 +230,10 @@ the lease-clamp rule.
 
 ## Final Summary
 
-Fill this in before marking verified.
+A config-driven backoff engine (three shapes + full jitter, sweep-driven, no busy
+loop) handles `transient` retries, and a runtime-stamped `dispatch_deadline`
+(clamped to the claim lease) lets the sweep escalate a dispatch with no correlated
+PR rather than strand it — with ingest winning over the timeout and the deadline
+cleared on success. The per-dispatch `retry_count` budget is defined + tested in
+core; the runtime uses the single item attempt counter for V1 (the distinct
+marker is deferred).

@@ -1,6 +1,6 @@
 # Milestone 19: Resilience & Failure Policy
 
-Status: planned
+Status: verified
 
 > Background: [Looper Architecture](../../docs/architecture.md) "Resilience &
 > failure policy." Generalizes the narrow stuck-detection in M12 · 0051 into a
@@ -46,10 +46,10 @@ resilience:
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0088 | planned | task/0088-failure-taxonomy | Failure Taxonomy & Classification | Classify failures (transient/terminal/poisoned/overload/budget) → response mapping the runner uses. |
-| 0089 | planned | task/0089-retry-timeout-backoff | Retry, Timeout & Backoff | Per-dispatch retries, `dispatch_timeout`, configurable backoff. |
-| 0090 | planned | task/0090-concurrency-ceiling-and-circuit-breaker | Concurrency Ceiling & Circuit Breaker | `max_in_flight` + circuit breaker that pauses a loop on provider outage / load spikes. |
-| 0091 | planned | task/0091-resilience-knobs-and-quarantine | Resilience Knobs, Quarantine & Escalation | The `resilience:` config block + `looper:quarantine` + `on_failure`/`escalate_to` routing + CLI visibility. |
+| 0088 | verified | task/0088-failure-taxonomy | Failure Taxonomy & Classification | Pure total `classify`/`responseFor` (transient/terminal/poisoned/overload/budget → retry/escalate/quarantine/defer/pause). |
+| 0089 | verified | task/0089-retry-timeout-backoff | Retry, Timeout & Backoff | 3-shape jittered backoff engine + runtime-stamped `dispatch_timeout` (lease-clamped, ingest-wins). |
+| 0090 | verified | task/0090-concurrency-ceiling-and-circuit-breaker | Concurrency Ceiling & Circuit Breaker | `checkCeiling` + ledger-derived circuit breaker, enforced as pre-flight `skip` (defer/pause). |
+| 0091 | verified | task/0091-resilience-knobs-and-quarantine | Resilience Knobs, Quarantine & Escalation | `resilience:` block honored + `looper:quarantine`/`on_failure`/`escalate_to` + `looper retry`/`status`. |
 
 ## Definition Of Done
 
@@ -63,4 +63,19 @@ resilience:
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-12: M19 complete (0088–0091 verified). The failure taxonomy (pure,
+  total) classifies every failed/pre-empted transition into one of five classes →
+  one response, and the runtime honors the `resilience:` knobs end-to-end: a
+  config-driven jittered backoff engine for `transient` retries, a runtime-stamped
+  `dispatch_timeout` (lease-clamped, ingest-wins) that escalates a no-PR dispatch,
+  a concurrency ceiling that defers a load spike, a ledger-derived circuit breaker
+  that pauses a loop on a provider outage and admits a single half-open probe after
+  cooldown, and quarantine + `on_failure`/`escalate_to` routing so a poisoned item
+  is never silently dropped (released with `looper retry`; surfaced in `looper
+  status`). Repo-wide: 242 tests across 33 files green (12 core + 4 e2e new for
+  M19), lint + build clean, taxonomy table at `docs/resilience.md`. Honest
+  deferrals (see task Decisions): the breaker's visible `looper:paused/<loop>`
+  label + one-time comment and strict half-open single-flight are not applied
+  (ledger-derived enforcement covers the semantics); the distinct per-dispatch
+  `retry_count` budget is defined + tested in core but the runtime uses the item
+  attempt counter for V1.

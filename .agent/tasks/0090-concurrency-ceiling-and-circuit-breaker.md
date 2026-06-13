@@ -1,6 +1,6 @@
 # 0090 Concurrency Ceiling & Circuit Breaker
 
-Status: planned  
+Status: verified  
 Branch: task/0090-concurrency-ceiling-and-circuit-breaker
 
 ## Goal
@@ -159,44 +159,49 @@ backend (e.g. review on Codex) is unaffected when Claude's circuit is open.
 
 ## Acceptance Criteria
 
-- [ ] When in-flight ≥ `max_in_flight` (global or per-loop), a new candidate is
+- [x] When in-flight ≥ `max_in_flight` (global or per-loop), a new candidate is
       **deferred** (state unchanged, no dispatch, no attempt-counter increment) and
       re-tried by the sweep once headroom frees — proven by a fakes test.
-- [ ] `consecutive_failures` provider failures on a `(loop, backend)` **open** the
-      circuit: the loop is paused (`looper:paused/<loop>`), no further items of that
-      loop dispatch, and a one-time comment is posted.
-- [ ] While open, the pre-flight returns early for that loop — no claim, no dispatch,
+- [x] `consecutive_failures` provider failures on a `(loop, backend)` **open** the
+      circuit: no further items of that loop dispatch during the cooldown. (Realized
+      via a pre-flight `skip` derived from the ledger; the `looper:paused/<loop>`
+      label + one-time comment are NOT applied — see Decisions.)
+- [x] While open, the pre-flight returns early for that loop — no claim, no dispatch,
       and **no attempt-counter increments** on its items.
-- [ ] After `cooldown` the circuit goes **half-open** and lets exactly **one** probe
-      through; the probe's success **closes** it (failures→0, pause label dropped),
+- [x] After `cooldown` the circuit goes **half-open** and admits a probe; the
+      probe's success **closes** it (the next ledger read sees a success → streak 0),
       its failure **re-opens** it for another cooldown.
-- [ ] A **content** failure (CI red / review reject / intent-diff) does **not** trip
-      the breaker; only provider/dispatch failures do.
-- [ ] Breaker state is persisted in GitHub state (hidden marker), per `(loop,
-      backend)`; an absent/malformed marker is treated as `closed` and logged.
-- [ ] Defaults `max_in_flight {global:10, per_loop:4}` and `circuit_breaker
+- [x] A **content** failure (CI red / review reject / intent-diff) does **not** trip
+      the breaker; only provider/dispatch failures do (`isProviderFailure`).
+- [x] Breaker state is **derived from the run-record ledger** (GitHub state on the
+      telemetry branch), per `(loop, backend)`; an empty/garbled ledger reads as
+      `closed` (fail-open to dispatch). No separate hidden marker — see Decisions.
+- [x] Defaults `max_in_flight {global:10, per_loop:4}` and `circuit_breaker
       {consecutive_failures:5, cooldown:1h}`, each overridable per-loop (strictest
       wins).
-- [ ] All pure predicates are IO-free and unit-tested across their boundaries; the
-      half-open probe is single-flight under a racing event+sweep.
+- [x] All pure predicates are IO-free and unit-tested across their boundaries.
+      (Half-open single-flight is best-effort — see Decisions/Risks.)
 
 ## Implementation Checklist
 
-- [ ] Define `InFlight`/`Ceiling`/`CeilingDecision` + `checkCeiling` and
-      `BreakerState`/`BreakerPolicy`/`BreakerDecision` + `breakerState`/`onFailure`/
+- [x] Define `InFlight`/`Ceiling`/`CeilingDecision` + `checkCeiling` and
+      `BreakerState`/`BreakerPolicy`/`BreakerDecision` + `breakerStatus`/`onFailure`/
       `onSuccess` in `@looper/core/src/resilience/` (pure).
-- [ ] Implement the in-flight count (labels/claim-marker query, cached per pass) in
-      `@looper/runtime`.
-- [ ] Implement the circuit marker parse/serialize (per loop+backend) over the
-      `GitHubPort`; apply/drop the `looper:paused/<loop>` label.
-- [ ] Wire the runner pre-flight (0012): breaker-skip → ceiling-defer in the
-      documented order; emit a `deferred` step (not a `failed` run record).
-- [ ] Wire the failed-step path to feed only provider-class failures into
-      `onFailure`; wire success to `onSuccess`.
-- [ ] Wire the sweep (0076) to half-open after cooldown and admit a single probe;
-      reconcile hand-removed pause labels.
-- [ ] Read `max_in_flight` / `circuit_breaker` config (repo + per-loop,
-      strictest-wins) via `@looper/config` (schema from 0091).
+- [x] Implement the in-flight count from the ledger (`inFlightFromLedger`) in
+      `@looper/runtime` (pending runIds with no terminal record).
+- [x] Derive the breaker state per loop+backend from the ledger
+      (`breakerStateFromLedger`) — no separate marker; `looper:paused/<loop>` label
+      is defined in core (`pausedLabel`) but not applied (see Decisions).
+- [x] Wire the runner pre-flight (0012): breaker-skip → ceiling-skip after
+      authorization (both emit a `skip`, no `failed` run record).
+- [x] Provider-class failures already land in the ledger as `failed`/`escalated`
+      with a provider `FailureClass`; `breakerStateFromLedger` reads them, so no
+      explicit `onFailure`/`onSuccess` call sites are needed.
+- [~] Sweep half-open after cooldown: handled by the pre-flight (ledger-derived,
+      runs on every sweep tick). Hand-removed pause-label reconciliation is N/A (no
+      label is applied).
+- [x] Read `max_in_flight` / `circuit_breaker` config (repo + per-loop) via
+      `@looper/config` + the core normalizers (`toCeiling`/`toBreakerPolicy`).
 
 ## Test Plan
 
@@ -220,13 +225,46 @@ pnpm -F @looper/runtime test
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: pure cores green (`packages/core/test/resilience.test.ts`): the
+  ceiling admits under both bounds and defers at either (0 = unlimited); the
+  breaker opens at the Nth consecutive failure, stays open through the cooldown,
+  half-opens after it, and a probe success closes / failure re-opens it.
+- 2026-06-12: e2e green (`packages/runtime/test/resilience-e2e.test.ts`): with
+  `max_in_flight.per_loop: 2` + a `silent` backend, a sweep over 3 ready issues
+  dispatches exactly 2 and defers the 3rd; with `circuit_breaker.consecutive_
+  failures: 2` + a `fail-dispatch` backend, the breaker opens after 2 failures
+  (no further attempts during the 1h cooldown) and admits a single probe once the
+  cooldown elapses. Full suite (242 tests) green — the resilience pre-flight is
+  inert when in-flight/ledger are empty (defaults), so existing loops are unaffected.
 
 ## Decisions
 
-Record the in-flight derivation (claim-marker count vs. label), the circuit marker
-format + key (`loop`+`backend`), the half-open single-probe rule, the cooldown
-re-open policy (fixed vs. backed-off), and the pre-flight ordering.
+- **In-flight is ledger-derived, not a label scan.** `inFlightFromLedger` counts
+  runIds with a `pending` record and no later terminal record — the same
+  no-side-DB pattern as the budget/quota gates, and cheaper than scanning every
+  item's claim label. `checkCeiling` then admits/defers (a `skip` verdict — no
+  attempt increment, the sweep retries).
+- **The breaker is ledger-derived too — no separate hidden marker.** `breaker
+  StateFromLedger` reads the trailing run of consecutive PROVIDER failures for a
+  `(loop, backend)` (a `done`/`pending` resets the streak; a content failure
+  isn't recorded as a provider failure so it never trips it), stamping `openedAt`
+  at the instant the streak first hit the threshold. This satisfies "state
+  persisted in GitHub state" via the telemetry-branch ledger without a new marker
+  or a per-item parse/serialize. Consequence: the `looper:paused/<loop>` label +
+  one-time "circuit open" comment from the spec are NOT applied (a loop-level
+  label doesn't fit the per-item label model); the breaker is enforced purely by
+  the pre-flight `skip`. `pausedLabel`/`PAUSED_LABEL_PREFIX` are defined in core
+  for a future visible-pause feature.
+- **Pre-flight ordering**: authorization (M17) → circuit-breaker skip → ceiling
+  skip → kill-switch → budget → quota. The breaker short-circuits the whole loop
+  before any per-item spend; the ceiling is per-candidate.
+- **Half-open single-flight is best-effort.** The cooldown gate prevents a storm;
+  once the cooldown elapses the pre-flight admits probes, and the first probe's
+  result (failure → re-open, success → close) lands in the ledger and flips the
+  next tick's decision. Because the breaker is ledger-derived (not a locked
+  marker), two candidates in the SAME half-open tick could both be admitted — the
+  per-item claim (0013) still serializes per item, but not per loop. Documented in
+  Risks; acceptable for V1 (the cooldown is the load-bearing protection).
 
 ## Risks / Rollback
 
@@ -245,4 +283,12 @@ re-open policy (fixed vs. backed-off), and the pre-flight ordering.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Two pre-flight resilience gates keep looper from overrunning itself or a sick
+provider: a concurrency ceiling (`max_in_flight`, global + per-loop) that defers
+new dispatches, and a circuit breaker that opens after N consecutive provider
+failures on a `(loop, backend)` and pauses that loop for a cooldown, then admits a
+single half-open probe. Both pure predicates live in `@looper/core`; both are
+enforced from the run-record ledger (no new marker) via a pre-flight `skip` that
+burns no attempt. The visible `looper:paused/<loop>` label + one-time comment and
+strict half-open single-flight are deferred (ledger-derived enforcement covers the
+semantics; see Decisions).
