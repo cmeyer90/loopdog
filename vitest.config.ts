@@ -31,7 +31,7 @@ export default defineConfig({
       '@looper/backends': pkg('backends'),
       '@looper/adapters': pkg('adapters'),
       '@looper/runtime': pkg('runtime'),
-      '@looper/cli': pkg('cli'),
+      '@loopdog/cli': pkg('cli'),
       '@looper/testing': pkg('testing'),
     },
   },

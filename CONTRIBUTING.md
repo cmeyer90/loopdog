@@ -43,9 +43,9 @@ npx changeset    # pick bump level + write a human note
 
 Releases are cut by the two-stage pipeline in
 `.github/workflows/release.yml` (version PR → publish on merge). The publish
-job needs the maintainer-held `NPM_TOKEN` secret; see `SECURITY.md` for its
-scope. Manual fallback (maintainers): `npm run build && npx changeset publish`
-with an npm token, then `git push --follow-tags`.
+job authenticates to npm via **OIDC trusted publishing** — no stored token; see
+`SECURITY.md`. Manual fallback (maintainers): `npm run build && npx changeset
+publish` while logged in (`npm login`), then `git push --follow-tags`.
 
 ## Flaky tests
 

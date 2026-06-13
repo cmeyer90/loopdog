@@ -2,10 +2,21 @@
 # Stage 1 (every push to main with pending changesets): open/update the
 #   "Version Packages" PR — merging it is the human release gate.
 # Stage 2 (push to main where versions changed, i.e. the version PR merged):
-#   re-verify (lint+test+build, same as CI) then publish @looper/cli to npm
-#   with provenance, push the git tag, and cut a GitHub Release.
+#   re-verify (lint+test+build, same as CI) then publish @loopdog/cli to npm
+#   and cut the GitHub Release.
 # Re-running a partially-failed publish is safe: `changeset publish` skips
 # versions that are already on the registry.
+#
+# Auth is npm Trusted Publishing (OIDC) — https://docs.npmjs.com/trusted-publishers
+# — so there is NO long-lived NPM_TOKEN secret. Requirements:
+#   - `id-token: write` (below) so the job can mint an OIDC token,
+#   - npm >= 11.5.1 (Node 20 ships npm 10.x, so we upgrade npm before publish),
+#   - a Trusted Publisher entry on the @loopdog/cli package that names THIS repo
+#     (cmeyer90/looper) + this workflow file (release.yml); leave its Environment
+#     field blank to match (no `environment:` is set here).
+# One-time bootstrap: OIDC cannot create a brand-new package name (npm/cli#8544),
+# so @loopdog/cli must be published manually once before the Trusted Publisher is
+# configured; every release after that is tokenless. Provenance is automatic.
 name: release
 on:
   push:
@@ -16,7 +27,7 @@ concurrency: release-${{ github.ref }}
 permissions:
   contents: write
   pull-requests: write
-  id-token: write # npm provenance (OIDC attestation)
+  id-token: write # OIDC trusted publishing + provenance attestation
 
 jobs:
   release:
@@ -30,6 +41,8 @@ jobs:
           node-version: 20
           cache: npm
           registry-url: https://registry.npmjs.org
+      # Trusted publishing (OIDC) needs npm >= 11.5.1; Node 20 ships npm 10.x.
+      - run: npm install -g npm@latest
       - run: npm ci
       # Never publish an unverified tree — same gate as CI (0003).
       - run: npm run lint
@@ -43,5 +56,4 @@ jobs:
           createGithubReleases: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'

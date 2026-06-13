@@ -50,10 +50,14 @@ roadmap.
 - Releases: changesets two-stage pipeline
   ([`.github/workflows/release.yml`](.github/workflows/release.yml)) — push to
   `main` opens/updates a "Version Packages" PR; merging it publishes
-  `@looper/cli` (libraries bundled in; everything else `private: true`) to npm
-  with provenance and cuts the GitHub Release. Needs the `NPM_TOKEN` secret.
-  Manual fallback: `npm run build && npx changeset publish` +
-  `git push --follow-tags`.
+  `@loopdog/cli` (libraries bundled in; everything else `private: true`) to npm
+  with provenance and cuts the GitHub Release. Auth is **OIDC trusted
+  publishing** ([`docs.npmjs.com/trusted-publishers`](https://docs.npmjs.com/trusted-publishers)) —
+  no `NPM_TOKEN` secret; it needs a Trusted Publisher entry on the
+  `@loopdog/cli` package naming this repo + `release.yml`, and npm ≥ 11.5.1
+  (the workflow upgrades npm). OIDC can't create a new package name, so the
+  first publish is a one-time manual bootstrap. Manual fallback:
+  `npm run build && npx changeset publish` + `git push --follow-tags`.
 - Flaky tests: quarantine with `it.skip` + `// QUARANTINE(<issue-url>): <reason>`
   and a `flaky-test` issue — never delete (see CONTRIBUTING).
 
