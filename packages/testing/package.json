@@ -22,6 +22,7 @@
   "dependencies": {
     "@looper/core": "0.1.0",
     "@looper/config": "0.1.0",
-    "@looper/runtime": "0.1.0"
+    "@looper/runtime": "0.1.0",
+    "yaml": "^2.8.0"
   }
 }

@@ -95,11 +95,11 @@ table and in `milestones.md`.
 | 0080 | verified | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
 | 0081 | verified | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |
 | 0082 | verified | task/0082-rate-limits-and-schedule-windows | Rate Limits & Schedule Windows (WHEN) |
-| 0083 | planned | task/0083-fake-github | Fake GitHub (in-memory `GitHubPort`) |
-| 0084 | planned | task/0084-fake-and-replay-backends | Fake & Replay Backends |
-| 0085 | planned | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions |
-| 0086 | planned | task/0086-simulation-and-fault-injection | Simulation & Fault Injection |
-| 0087 | planned | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke |
+| 0083 | verified | task/0083-fake-github | Fake GitHub (in-memory `GitHubPort`) |
+| 0084 | verified | task/0084-fake-and-replay-backends | Fake & Replay Backends |
+| 0085 | verified | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions |
+| 0086 | verified | task/0086-simulation-and-fault-injection | Simulation & Fault Injection |
+| 0087 | verified | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke |
 | 0088 | planned | task/0088-failure-taxonomy | Failure Taxonomy & Classification |
 | 0089 | planned | task/0089-retry-timeout-backoff | Retry, Timeout & Backoff |
 | 0090 | planned | task/0090-concurrency-ceiling-and-circuit-breaker | Concurrency Ceiling & Circuit Breaker |

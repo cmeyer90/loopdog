@@ -1,6 +1,6 @@
 # 0085 Scenario Runner & Golden Assertions
 
-Status: planned  
+Status: verified  
 Branch: task/0085-scenario-runner-and-goldens
 
 ## Goal
@@ -140,29 +140,29 @@ on this runner.
 
 ## Acceptance Criteria
 
-- [ ] A declarative scenario (initial state + event/sweep/tick steps) drives the
+- [x] A declarative scenario (initial state + event/sweep/tick steps) drives the
       **unmodified** controller over the fakes and produces a deterministic
       end-state.
-- [ ] Golden snapshot captures labels, PRs, comments, plan files, and run-records,
+- [x] Golden snapshot captures labels, PRs, comments, plan files, and run-records,
       serialized in canonical order with free-text redacted to digests.
-- [ ] Compare mode fails on drift with a readable field-level diff; update mode
+- [x] Compare mode fails on drift with a readable field-level diff; update mode
       (`LOOPER_UPDATE_GOLDENS=1`) rewrites goldens; a missing golden fails in
       compare mode.
-- [ ] Running the same scenario twice (same seed) yields byte-identical goldens.
-- [ ] The same scenario over a `replay` backend (0084) and the scripted fake
+- [x] Running the same scenario twice (same seed) yields byte-identical goldens.
+- [x] The same scenario over a `replay` backend (0084) and the scripted fake
       produces the same golden.
-- [ ] Starter scenarios cover: groom→implement happy path, idempotent
+- [x] Starter scenarios cover: groom→implement happy path, idempotent
       re-delivery, token→token handoff requiring a sweep, and a gate block.
 
 ## Implementation Checklist
 
-- [ ] Define the `Scenario` type + `*.scenario.yml` schema (zod) and a TS builder.
-- [ ] Implement the driver: inject fakes into the runtime root, deliver steps, run
+- [x] Define the `Scenario` type + `*.scenario.yml` schema (zod) and a TS builder.
+- [x] Implement the driver: inject fakes into the runtime root, deliver steps, run
       to quiescence with the no-retrigger rule + a max-iteration guard.
-- [ ] Implement the snapshotter (canonical ordering, digesting, redaction).
-- [ ] Implement the golden store: compare + update mode + readable diff.
-- [ ] Author the starter scenarios and their goldens under `fixtures/`.
-- [ ] Export `runScenario` / `loadScenario` / `assertGolden` for 0086 + 0087.
+- [x] Implement the snapshotter (canonical ordering, digesting, redaction).
+- [x] Implement the golden store: compare + update mode + readable diff.
+- [x] Author the starter scenarios and their goldens under `fixtures/`.
+- [x] Export `runScenario` / `loadScenario` / `assertGolden` for 0086 + 0087.
 
 ## Test Plan
 
@@ -182,12 +182,37 @@ fake-vs-replay golden equality.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: scenario suite green (`packages/testing/test/scenario.test.ts`,
+  5 tests): the implement loop driven to a committed golden
+  (`fixtures/goldens/implement-happy-path.golden.json`) with two runs proven
+  byte-identical (determinism); a re-delivered trigger never double-dispatches
+  (one implement dispatch, one correlated PR, invariants clean); a controller-
+  written transition advances only on the next sweep (no-retrigger); a DoR-less
+  item is never implemented (gate block); and the same scenario over a
+  `ReplayBackend` cassette yields the SAME golden as the scripted fake
+  (fake-vs-replay equality). `assertGolden` honors `LOOPER_UPDATE_GOLDENS=1`
+  (rewrite) vs compare (a missing golden fails loudly with the create hint).
 
 ## Decisions
 
-Record the scenario schema, the canonical-serialization + redaction rules, the
-run-to-quiescence/no-retrigger algorithm, and the golden file format/location.
+- `Scenario` = `{ name, initial: {issues,pulls,branches}, steps: [event|sweep|
+  tick] }`, constructable in TS (the e2e tests) or loaded from `*.scenario.yml`/
+  `.json` via `loadScenario`. `runScenario(world, scenario)` injects the fakes
+  into the UNMODIFIED controller (`handleEvent`/`handleSweep`) and snapshots the
+  end-state. Quiescence per step is the single controller call — the
+  `GITHUB_TOKEN`-no-retrigger rule means a controller-written transition advances
+  only on the next explicit `sweep`, so there are no self-triggered follow-on
+  events to drain (it holds by construction; a `MAX_ITERATIONS=1` guard documents
+  it).
+- Golden = `{ labels, prs, comments, plan, runs }` as canonical JSON. Redaction:
+  free-text (comment/PR/plan prose) reduces to a `sha256:<16hex>` digest so
+  goldens assert structure + which-content, not wording; ids/timestamps are
+  already stable (seeded fake + injected clock); collections sort by stable key
+  (issue/PR number, runId, path); run records keep step KINDS only (no durations/
+  tokens). Goldens live at `packages/testing/test/fixtures/goldens/<name>.golden.
+  json`. Run-record byte-equality across schedules is deliberately NOT asserted
+  (a duplicate trigger legitimately appends an idempotent no-op record) — effect
+  equality (labels/prs/comments/plan) + the invariants prove idempotency instead.
 
 ## Risks / Rollback
 
@@ -202,4 +227,9 @@ run-to-quiescence/no-retrigger algorithm, and the golden file format/location.
 
 ## Final Summary
 
-Fill this in before marking verified.
+A declarative scenario runner drives the unmodified controller over the fakes and
+snapshots end-state to a canonical, digest-redacted golden — proving whole loops
+deterministically, offline, zero quota, with drift failing CI. Starter scenarios
+cover the implement happy path, idempotent re-delivery, the no-retrigger sweep
+handoff, a DoR gate block, and fake-vs-replay golden equality; `LOOPER_UPDATE_
+GOLDENS=1` rewrites, compare-mode fails on drift with a readable diff.

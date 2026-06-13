@@ -1,0 +1,49 @@
+# Tier-5 live smoke (task 0087). The ONLY tier that spends real subscription
+# quota: one safe loop edge (dispatch → real provider PR → real ingest/0073
+# correlation → one-edge advance + run-record) against a scratch repo, to catch
+# provider API/capability/correlation drift the fakes can only approximate.
+#
+# Gated to manual dispatch + nightly cron — it NEVER gates a PR merge. On
+# failure it opens/updates a tracking issue (dogfooding looper's escalation),
+# but does not block. Concurrency-guarded so nightly + manual never overlap and
+# double-spend the provider rate cap.
+name: looper-live-smoke
+on:
+  workflow_dispatch:
+    inputs:
+      provider:
+        description: Provider to smoke (claude | codex)
+        required: false
+        default: claude
+  schedule:
+    - cron: '0 7 * * *' # nightly 07:00 UTC
+
+permissions:
+  contents: read
+  issues: write # to open/update the drift tracking issue (non-blocking)
+
+concurrency:
+  group: looper-live-smoke # one live run at a time — never double-spend quota
+  cancel-in-progress: false
+
+jobs:
+  live-smoke:
+    name: tier 5 live smoke (real subscription)
+    runs-on: ubuntu-latest
+    # Never part of any required-check set; failures are advisory drift signals.
+    continue-on-error: true
+    env:
+      LOOPER_TIER: '5'
+      LOOPER_LIVE_SMOKE_REPO: ${{ vars.LOOPER_LIVE_SMOKE_REPO }}
+      LOOPER_LIVE_SMOKE_TOKEN: ${{ secrets.LOOPER_LIVE_SMOKE_TOKEN }}
+      LOOPER_LIVE_SMOKE_PROVIDER: ${{ github.event.inputs.provider || 'claude' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - name: live smoke (one real loop edge)
+        run: npx vitest run

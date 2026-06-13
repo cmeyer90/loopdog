@@ -1,6 +1,7 @@
 import type {
   ActorRef,
   CheckRunSnapshot,
+  Clock,
   CommentSnapshot,
   GitHubPort,
   IssueSnapshot,
@@ -33,6 +34,13 @@ export class FakeGitHub implements GitHubPort {
   actor: ActorRef = { login: 'github-actions[bot]', type: 'Bot' };
   /** Base instant for the fake's deterministic monotonic clock. */
   clockBase = '2026-06-09T12:00:00Z';
+  /**
+   * Optional virtual clock (0086): when set, mutations bump `updatedAt` and
+   * new comments timestamp at clock-time, so time-based correlation (the
+   * fix-loop `updatedAfterDispatch` guard, 0073) is exercised under
+   * simulation. Unset → the fixed monotonic default (existing tests).
+   */
+  clock?: Clock;
   defaultBranch = 'main';
   visibility: 'public' | 'private' | 'internal' = 'public';
 
@@ -41,6 +49,30 @@ export class FakeGitHub implements GitHubPort {
    * throw from it to simulate API failures.
    */
   beforeOp: (op: string) => void = () => {};
+
+  /** Read-only state dump for golden snapshots (0085). */
+  dump(): {
+    issues: IssueSnapshot[];
+    pulls: PullRequestSnapshot[];
+    comments: Array<{ item: number; bodies: string[] }>;
+    files: Array<{ path: string; content: string }>;
+  } {
+    const comments: Array<{ item: number; bodies: string[] }> = [];
+    for (const [key, list] of this.comments) {
+      const number = Number(key.split('#')[1]);
+      comments.push({ item: number, bodies: list.map((c) => c.body) });
+    }
+    const files: Array<{ path: string; content: string }> = [];
+    for (const branch of this.branches.values()) {
+      for (const [path, file] of branch) files.push({ path, content: file.content });
+    }
+    return {
+      issues: [...this.issues.values()].map((i) => structuredClone(i)),
+      pulls: [...this.pulls.values()].map((p) => structuredClone(p)),
+      comments,
+      files,
+    };
+  }
 
   // ---- seeding helpers (test setup) ----
 
@@ -78,8 +110,8 @@ export class FakeGitHub implements GitHubPort {
       assignees: [],
       author: { login: 'provider[bot]', type: 'Bot' },
       authorAssociation: 'NONE',
-      createdAt: '2026-06-09T00:00:00Z',
-      updatedAt: '2026-06-09T00:00:00Z',
+      createdAt: this.clock?.().toISOString() ?? '2026-06-09T00:00:00Z',
+      updatedAt: this.clock?.().toISOString() ?? '2026-06-09T00:00:00Z',
       baseRef: 'main',
       draft: false,
       merged: false,
@@ -168,7 +200,10 @@ export class FakeGitHub implements GitHubPort {
       author: structuredClone(this.actor),
       authorAssociation: 'NONE',
       // deterministic monotonic clock: comment N is N seconds past the base
-      createdAt: new Date(Date.parse(this.clockBase) + id * 1000).toISOString(),
+      // (or clock-time when a virtual clock is injected, +id ms to stay unique)
+      createdAt: this.clock
+        ? new Date(this.clock().getTime() + id).toISOString()
+        : new Date(Date.parse(this.clockBase) + id * 1000).toISOString(),
     });
     this.comments.set(key(ref), list);
     this.mutations.push(`createComment ${key(ref)} #${id}`);
@@ -415,6 +450,9 @@ export class FakeGitHub implements GitHubPort {
   private mutate(ref: ItemRef): IssueSnapshot {
     const found = this.issues.get(key(ref)) ?? this.pulls.get(key(ref));
     if (!found) throw new Error(`fake: no item ${key(ref)}`);
+    // Under a virtual clock, every mutation advances the item's updatedAt so
+    // time-based correlation (the fix-loop updatedAfterDispatch guard) works.
+    if (this.clock) found.updatedAt = this.clock().toISOString();
     return found;
   }
 

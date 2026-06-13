@@ -46,6 +46,13 @@ export interface ControllerOptions {
   templatesDir?: string;
   botLogin?: string;
   now?: () => Date;
+  /**
+   * Invocation-unique claimant nonce (the event-vs-sweep double-dispatch
+   * defense). Defaults to a random suffix; the simulation (0086) injects a
+   * deterministic monotonic counter so runs are reproducible without
+   * collapsing two racing claimants to one.
+   */
+  claimNonce?: () => string;
   /** One-invocation tighten-only override (0009). */
   forceDryRun?: boolean;
 }
@@ -220,6 +227,7 @@ async function load(opts: ControllerOptions): Promise<{
     }),
     ...(opts.botLogin ? { botLogin: opts.botLogin } : {}),
     ...(opts.now ? { now: opts.now } : {}),
+    ...(opts.claimNonce ? { claimNonce: opts.claimNonce } : {}),
     ...(opts.forceDryRun ? { forceDryRun: true } : {}),
   };
   return { config: result.config, deps };

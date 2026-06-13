@@ -1,6 +1,6 @@
 # 0086 Simulation & Fault Injection
 
-Status: planned  
+Status: verified  
 Branch: task/0086-simulation-and-fault-injection
 
 ## Goal
@@ -122,36 +122,36 @@ claim (must defer, not steal).
 
 ## Acceptance Criteria
 
-- [ ] A `Clock` port exists in `@looper/core` and the runtime reads time only
+- [x] A `Clock` port exists in `@looper/core` and the runtime reads time only
       through it; a `VirtualClock` drives all time in simulation (no wall-clock
       reads in the controller path).
-- [ ] The simulation engine deterministically interleaves event delivery + sweep
+- [x] The simulation engine deterministically interleaves event delivery + sweep
       ticks (incl. a `concurrent` step) from a single seed.
-- [ ] Each fault injector (storm, event↔sweep race, drop, duplicate, crash-mid-run)
+- [x] Each fault injector (storm, event↔sweep race, drop, duplicate, crash-mid-run)
       is implemented and has a scenario reproducing the hazard.
-- [ ] The five invariants are checked after every step and at quiescence, and fail
+- [x] The five invariants are checked after every step and at quiescence, and fail
       the test with a readable trace on violation.
-- [ ] A dropped webhook leaves no stranded item: the sweep recovers it (proven by a
+- [x] A dropped webhook leaves no stranded item: the sweep recovers it (proven by a
       scenario asserting recovery and `noStrandedItems`).
-- [ ] A duplicated event / re-delivered PR produces exactly one effect
+- [x] A duplicated event / re-delivered PR produces exactly one effect
       (`idempotentIngest`).
-- [ ] An event-storm on one item yields ≤1 dispatch (`noDoubleDispatch`).
-- [ ] A crash after any step boundary recovers on the next invocation with no
+- [x] An event-storm on one item yields ≤1 dispatch (`noDoubleDispatch`).
+- [x] A crash after any step boundary recovers on the next invocation with no
       double-dispatch and no orphaned claim past lease.
-- [ ] Fuzz mode runs N seeds and, on violation, prints the minimal reproducing seed
+- [x] Fuzz mode runs N seeds and, on violation, prints the minimal reproducing seed
       + trace; a fixed seed set is fast enough for per-PR CI.
 
 ## Implementation Checklist
 
-- [ ] Add the `Clock` port to `@looper/core`; thread it through `runtime`
+- [x] Add the `Clock` port to `@looper/core`; thread it through `runtime`
       (pipeline, sweep, lease, backoff, telemetry) and the fake GitHub (0083).
-- [ ] Implement `VirtualClock` + the simulation engine (`step`,
+- [x] Implement `VirtualClock` + the simulation engine (`step`,
       `runToQuiescence`, `concurrent`) over the shared fakes.
-- [ ] Implement the schedule/`Action` model + seeded interleaving.
-- [ ] Implement the five fault injectors as a `FaultPlan` overlay.
-- [ ] Implement the invariant checkers and per-step + quiescence evaluation.
-- [ ] Implement fuzz mode with seed shrinking + repro printing.
-- [ ] Author the canonical hazard scenarios (one per injector + the combined cases).
+- [x] Implement the schedule/`Action` model + seeded interleaving.
+- [x] Implement the five fault injectors as a `FaultPlan` overlay.
+- [x] Implement the invariant checkers and per-step + quiescence evaluation.
+- [x] Implement fuzz mode with seed shrinking + repro printing.
+- [x] Author the canonical hazard scenarios (one per injector + the combined cases).
 
 ## Test Plan
 
@@ -167,13 +167,49 @@ npx vitest run packages/testing/src/simulation
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: simulation suite green (`packages/testing/test/simulation.test.ts`,
+  6 tests), each driving the REAL controller under the `VirtualClock`: an event
+  storm (5 near-simultaneous events) → ≤1 implement dispatch (`noDoubleDispatch`);
+  an event↔sweep race (`concurrent`) → exactly one advance; a dropped webhook →
+  the sweep recovers it with nothing stranded (`noStrandedItems`); a duplicated
+  webhook (×3) → one correlated PR (`idempotentIngest`); a crash mid-dispatch
+  (injected via the fake's `beforeOp` on the marker write) → the dispatch guard
+  releases the claim (no orphan), recovery re-dispatches, invariants hold; and a
+  fuzz sweep over 8 seeds with no violation. All five invariants run after every
+  step and at quiescence. Found no new runtime bug — the M03 double-dispatch
+  defense, claim/lease, and 0073 correlation hold under adversity.
 
 ## Decisions
 
-Record the `Clock` port shape, the engine's step/interleave model, the seed/shrink
-strategy, and the exact invariant definitions (especially how `noDoubleDispatch`
-counts effective dispatches vs. correlated re-ingests).
+- `Clock` port = `type Clock = () => Date` in `@looper/core` (+ `systemClock`
+  default). The runtime already threaded an injectable `now` everywhere; this
+  names it. The one wall-clock leak (`ingestPhase`'s plan-sync timestamp) now
+  reads `deps.now`, so the controller path reads time ONLY through the clock when
+  injected. `VirtualClock` (in `@looper/testing`) conforms and owns all
+  advancement; the `FakeGitHub` reads the same clock for `updatedAt`/comment
+  timestamps.
+- Engine: one `step()` = deliver one event OR one sweep OR advance the clock OR a
+  `concurrent([...])` interleave (Promise.all against the SAME shared fakes, to
+  expose TOCTOU). Faults are schedule builders: `eventStorm`, `raceEventSweep`,
+  `duplicateWebhook`, `sweepRecovery` (dropped webhook = no event + a later
+  sweep), `crashAfter(op,k)` (throw on the k-th `op` via `beforeOp`). A
+  deterministic-but-unique claim nonce (a monotonic counter injected via
+  `ControllerOptions.claimNonce`, replacing `Math.random`) keeps racing claimants
+  distinct without breaking reproducibility.
+- Fuzz: a `mulberry32(seed)` PRNG permutes a base schedule (shuffle + 25% event
+  duplication) across N seeds; on the first `SimViolation` it shrinks to the
+  shortest failing prefix and returns `{seed, invariant, detail, trace, schedule}`
+  for a deterministic repro.
+- Invariant definitions: `noDoubleDispatch` counts DISTINCT runIds with a
+  `dispatch` step per (loop,item) idempotency key, grouped by attempt index — >1
+  runId for the SAME attempt is the bug; sequential attempts (a0,a1,…) are legal
+  retries, and correlated re-ingests share the runId so they don't count.
+  `idempotentIngest` flags >1 effective ingest (an `ingest` step + a transition)
+  per runId. `noStrandedItems` is lease-expiry-aware: a claim/lease with no
+  in-flight pending record is stranded ONLY once the lease has LAPSED (before
+  that it's recovering; after, the sweep reclaims). `claimExclusivity` (≤1 claim/
+  lock marker per item) and `monotonicState` (≤1 state label per item) read
+  labels directly.
 
 ## Risks / Rollback
 
@@ -187,4 +223,11 @@ change touching shipped code and is a safe, inert indirection.
 
 ## Final Summary
 
-Fill this in before marking verified.
+A deterministic-clock simulation engine drives the REAL controller through event
+storms, event↔sweep races, dropped/duplicated webhooks, and mid-run crashes, and
+checks five invariants (no-double-dispatch, idempotent-ingest, no-stranded-items,
+claim-exclusivity, monotonic-state) after every step and at quiescence — with a
+seeded fuzz mode that shrinks to a minimal repro on violation. The `Clock` port
++ a deterministic claim nonce remove the last wall-clock/`Math.random`
+nondeterminism from the controller path. All hazards hold; no new runtime bug
+surfaced.

@@ -29,7 +29,7 @@ North-star architecture for the V1 roadmap:
 | 15 | Release | planned | [V1 Hardening & Release](milestones/milestone-15-v1-hardening-and-release.md) |
 | 16 | Operator | verified | [Loop Control & Observability CLI](milestones/milestone-16-loop-control-and-observability-cli.md) |
 | 17 | Hardening | verified | [Authorization & Trigger Control](milestones/milestone-17-authorization-and-trigger-control.md) |
-| 18 | Hardening | planned | [Test & Simulation Harness](milestones/milestone-18-test-and-simulation-harness.md) |
+| 18 | Hardening | verified | [Test & Simulation Harness](milestones/milestone-18-test-and-simulation-harness.md) |
 | 19 | Hardening | planned | [Resilience & Failure Policy](milestones/milestone-19-resilience-and-failure-policy.md) |
 
 Dependency order: **00 (validation spikes) gates everything** → 01 → 02 →
@@ -132,11 +132,11 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0080 | Milestone 17: Authorization & Trigger Control | verified | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
 | 0081 | Milestone 17: Authorization & Trigger Control | verified | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |
 | 0082 | Milestone 17: Authorization & Trigger Control | verified | task/0082-rate-limits-and-schedule-windows | Rate Limits & Schedule Windows (WHEN) |
-| 0083 | Milestone 18: Test & Simulation Harness | planned | task/0083-fake-github | Fake GitHub (in-memory `GitHubPort`) |
-| 0084 | Milestone 18: Test & Simulation Harness | planned | task/0084-fake-and-replay-backends | Fake & Replay Backends |
-| 0085 | Milestone 18: Test & Simulation Harness | planned | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions |
-| 0086 | Milestone 18: Test & Simulation Harness | planned | task/0086-simulation-and-fault-injection | Simulation & Fault Injection |
-| 0087 | Milestone 18: Test & Simulation Harness | planned | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke |
+| 0083 | Milestone 18: Test & Simulation Harness | verified | task/0083-fake-github | Fake GitHub (in-memory `GitHubPort`) |
+| 0084 | Milestone 18: Test & Simulation Harness | verified | task/0084-fake-and-replay-backends | Fake & Replay Backends |
+| 0085 | Milestone 18: Test & Simulation Harness | verified | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions |
+| 0086 | Milestone 18: Test & Simulation Harness | verified | task/0086-simulation-and-fault-injection | Simulation & Fault Injection |
+| 0087 | Milestone 18: Test & Simulation Harness | verified | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke |
 | 0088 | Milestone 19: Resilience & Failure Policy | planned | task/0088-failure-taxonomy | Failure Taxonomy & Classification |
 | 0089 | Milestone 19: Resilience & Failure Policy | planned | task/0089-retry-timeout-backoff | Retry, Timeout & Backoff |
 | 0090 | Milestone 19: Resilience & Failure Policy | planned | task/0090-concurrency-ceiling-and-circuit-breaker | Concurrency Ceiling & Circuit Breaker |

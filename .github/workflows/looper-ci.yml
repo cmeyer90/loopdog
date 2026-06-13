@@ -1,0 +1,44 @@
+# Looper's tiered test gate (task 0087). Runs the FIVE-tier pyramid's tiers 1–4
+# — unit · component (conformance, replay) · scenario (goldens) · simulation
+# (invariants) — on every PR/push, provably offline and quota-free:
+#   - LOOPER_HERMETIC=1 installs the network guard (any outbound socket = a red
+#     test) and asserts NO provider/GITHUB_TOKEN secret is present.
+#   - LOOPER_CASSETTE=replay pins component tests to recorded cassettes; a
+#     missing cassette fails loudly (never falls through to the network).
+#   - LOOPER_TIER=1-4 excludes the live smoke (*.live.test.ts) — tier 5 only
+#     runs from looper-live-smoke.yml.
+# This workflow takes NO secrets. The tier-5 live smoke is a separate, gated,
+# non-blocking workflow.
+name: looper-ci
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+# No secrets reach this workflow's jobs; read-only is all tiers 1–4 need.
+permissions:
+  contents: read
+
+concurrency:
+  group: looper-ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  tiers-1-4:
+    name: tiers 1-4 (hermetic, zero-quota)
+    runs-on: ubuntu-latest
+    env:
+      LOOPER_TIER: '1-4'
+      LOOPER_HERMETIC: '1'
+      LOOPER_CASSETTE: replay
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+      - run: npm ci
+      - run: npm run build
+      - run: npm run lint
+      - name: tiers 1-4 (unit · component · scenario · simulation)
+        run: npx vitest run

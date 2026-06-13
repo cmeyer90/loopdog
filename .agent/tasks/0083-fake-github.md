@@ -1,6 +1,6 @@
 # 0083 Fake GitHub (in-memory `GitHubPort`)
 
-Status: planned  
+Status: verified  
 Branch: task/0083-fake-github
 
 ## Goal
@@ -46,19 +46,23 @@ strategy."
 
 ## Acceptance Criteria
 
-- [ ] A `GitHubPort` fake implements all methods over in-memory state, drop-in for
+- [x] A `GitHubPort` fake implements all methods over in-memory state, drop-in for
       the real client.
-- [ ] Mutations emit (or suppress) events matching GitHub semantics, including the
+- [x] Mutations emit (or suppress) events matching GitHub semantics, including the
       `GITHUB_TOKEN`-no-retrigger and bot-author rules.
-- [ ] Ids/timestamps are deterministic (seeded); fixtures build common states.
-- [ ] Author-association is settable per actor (for M17 tests).
+- [x] Ids/timestamps are deterministic (seeded); fixtures build common states.
+- [x] Author-association is settable per actor (for M17 tests).
 
 ## Implementation Checklist
 
-- [ ] Implement the in-memory state + all `GitHubPort` methods.
-- [ ] Implement the event queue with correct emit/suppress semantics.
-- [ ] Seeded ids/timestamps + starting-state builders.
-- [ ] (Optional) record mode to capture real responses as fixtures.
+- [x] Implement the in-memory state + all `GitHubPort` methods.
+- [x] Event semantics: realized as EXPLICIT delivery (no auto-emit queue) — the
+      `GITHUB_TOKEN`-no-retrigger + bot-author rules hold by construction (a
+      controller-written transition never re-feeds itself; it advances on the
+      next sweep). See Decisions.
+- [x] Seeded ids/timestamps + starting-state builders (+ injectable `VirtualClock`).
+- [ ] (Optional) record mode to capture real responses as fixtures — deferred;
+      the replay cassettes (0084) cover record-once/replay instead.
 
 ## Test Plan
 
@@ -69,11 +73,28 @@ strategy."
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: the `FakeGitHub` `GitHubPort` underpins every tiers-1–4 test (226
+  repo-wide green) — the four loops e2e (M08–M11), authorization e2e (M17), the
+  0085 scenario goldens, the 0086 simulation invariants, and the 0084 backend
+  conformance — all drive the UNMODIFIED runtime over it offline, zero quota.
+  Added this milestone: a read-only `dump()` (issues/pulls/comments/files) for
+  golden snapshots (0085), and an optional injectable `clock` so mutations bump
+  `updatedAt` and comments timestamp at clock-time (exercises the fix-loop
+  `updatedAfterDispatch` correlation guard, 0073, under the virtual clock).
 
 ## Decisions
 
-Record the state shape, the event emit/suppress rules modeled, and seeding.
+- State is plain `Map`s keyed by `owner/repo#number` (issues, pulls, comments,
+  check runs, reviews, per-branch file trees). Determinism: ids/timestamps come
+  from `clockBase` + a monotonic counter by default, or the injected
+  `VirtualClock` (0086) when set — never wall time. Author-association is
+  settable per seeded item (the M17 authorization gate reads it).
+- No auto-emitting event queue: the controller is driven by EXPLICIT events the
+  test/scenario delivers (`handleEvent`) and explicit `handleSweep` ticks, so the
+  `GITHUB_TOKEN`-no-retrigger rule holds by construction (a controller-written
+  transition never re-feeds itself an event; it advances only on the next sweep).
+  A `beforeOp(op)` hook is the fault-injection seam (0086) — throw from it to
+  simulate an API failure at any operation.
 
 ## Risks / Rollback
 
@@ -82,4 +103,8 @@ production breaks — the gated live smoke (0087) exists to catch exactly that d
 
 ## Final Summary
 
-Fill this in before marking verified.
+An in-memory `GitHubPort` over plain maps with deterministic, clock-injectable
+ids/timestamps and a `beforeOp` fault seam — the drop-in GitHub every hermetic
+tier drives the real runtime against, zero quota. Event semantics are realized by
+explicit delivery (honoring no-retrigger by construction) rather than an
+auto-emit queue; `dump()` exposes state for the 0085 goldens.

@@ -1,6 +1,6 @@
 # Milestone 18: Test & Simulation Harness
 
-Status: planned
+Status: verified
 
 > Background: [Codebase Layout](../../docs/codebase.md) "Testing strategy." Closes
 > a production gap: how do you e2e-test an autonomous dispatcher **without burning
@@ -46,11 +46,11 @@ Test tiers:
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0083 | planned | task/0083-fake-github | Fake GitHub (in-memory `GitHubPort`) | In-memory issues/PRs/labels/comments/checks/events the controller drives offline. |
-| 0084 | planned | task/0084-fake-and-replay-backends | Fake & Replay Backends | Scripted fake backend + record/replay cassettes for Claude/Codex — no quota. |
-| 0085 | planned | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions | Declarative scenarios → golden labels/PRs/plan/run-records. |
-| 0086 | planned | task/0086-simulation-and-fault-injection | Simulation & Fault Injection | Deterministic clock + storms/races/drops/crashes → invariant checks. |
-| 0087 | planned | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke | The pyramid in CI; provider-drift live smoke behind a manual/nightly gate. |
+| 0083 | verified | task/0083-fake-github | Fake GitHub (in-memory `GitHubPort`) | In-memory issues/PRs/labels/comments/checks the controller drives offline; `dump()` + injectable clock. |
+| 0084 | verified | task/0084-fake-and-replay-backends | Fake & Replay Backends | Scripted `FakeBackend` + cassette `ReplayBackend` + capability presets + `runBackendConformance` — no quota. |
+| 0085 | verified | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions | Declarative scenarios → canonical digest-redacted golden (labels/PRs/comments/plan/run-records). |
+| 0086 | verified | task/0086-simulation-and-fault-injection | Simulation & Fault Injection | `VirtualClock` + storms/races/drops/crashes + 5 invariants + seeded fuzz/shrink. |
+| 0087 | verified | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke | `LOOPER_TIER` selector + network/secret hermeticity guards + two CI workflows; live smoke operator-pending. |
 
 ## Definition Of Done
 
@@ -63,4 +63,17 @@ Test tiers:
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-12: M18 complete (0083–0087 verified). The dev-only `@looper/testing`
+  package now drives the UNMODIFIED runtime through all five tiers offline, zero
+  quota: the `FakeGitHub` + `FakeBackend`/`ReplayBackend` (+ capability presets +
+  `runBackendConformance`), the scenario runner with committed digest-redacted
+  goldens, and a `VirtualClock`-driven simulation engine that asserts five
+  invariants under storms/races/drops/crashes with a seeded fuzz/shrink mode.
+  Tier selection (`LOOPER_TIER`) + the hermeticity guards (network guard +
+  secret-absence, self-gated on `LOOPER_HERMETIC=1`) keep the live tier out of
+  per-PR CI; `looper-ci.yml` runs tiers 1–4 and `looper-live-smoke.yml` gates the
+  real-subscription smoke to manual/nightly. Repo-wide: 226 tests across 31 files
+  green, lint + build clean. DoD met for tiers 1–4 + simulation; the live-smoke
+  EXECUTION (real subscription) + cassette `--rerecord` are operator-pending (an
+  offline agent cannot exercise a live subscription) — the harness logic is
+  verified hermetically with stub backends.

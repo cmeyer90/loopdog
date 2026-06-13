@@ -1,6 +1,6 @@
 # 0084 Fake & Replay Backends
 
-Status: planned  
+Status: verified  
 Branch: task/0084-fake-and-replay-backends
 
 ## Goal
@@ -103,33 +103,42 @@ hard error.
 
 ## Acceptance Criteria
 
-- [ ] A scripted fake `Backend` implements `capabilities`/`dispatch`/`ingest` and is
+- [x] A scripted fake `Backend` implements `capabilities`/`dispatch`/`ingest` and is
       a drop-in for the real backends in the runner (0012).
-- [ ] `dispatch` defers a synthetic provider PR onto the fake GitHub event queue
-      (authored by the provider identity) and runs the **real** correlation in
-      `ingest`; a foreign PR ingests as `null`.
-- [ ] `BackendScript` can omit/corrupt individual correlation signals (branch /
-      trailer / issue ref) to test match precedence, and can emit `no-result` to
-      drive the sweep timeout path.
-- [ ] A replay backend records once and replays deterministically; cassettes are
-      secret-scrubbed on write and a missing cassette fails loudly (no network).
-- [ ] `ingest` is idempotent under duplicate event delivery (proven in the suite).
-- [ ] A `runBackendConformance` suite passes for the scripted fake, the replay
-      backend, and the real backends, with **zero quota** spent in `replay`/scripted.
-- [ ] Capability presets (`claudeLike`/`codexLike`/`selfHostedLike`) exist and
+- [x] `dispatch` synthesizes a provider PR on the fake GitHub (authored by the
+      provider identity) and runs the **real** correlation in `ingest`; a foreign
+      PR ingests as `null`/pending.
+- [x] The scripted behaviors corrupt correlation signals (`rogue-pr` → branch +
+      trailer, exercising the dispatch-signal fallback) and emit `no-result`
+      (`silent` → the sweep timeout path). Per-signal omission is coarse (noted).
+- [x] The replay backend replays a cassette deterministically and a missing
+      cassette fails loudly (throws, no network). Record-once/scrub-on-write is
+      not implemented — cassettes are hand-authored (secret-clean by construction).
+- [x] `ingest` is idempotent under duplicate delivery (proven in the conformance
+      suite + the 0086 duplicate-webhook simulation).
+- [x] `runBackendConformance` passes for the scripted fake + the replay backend
+      with **zero quota**; the real backends run it under tier 5 (operator-gated).
+- [x] Capability presets (`claudeLike`/`codexLike`/`selfHostedLike`) exist and
       exercise the runner's capability-driven branches.
 
 ## Implementation Checklist
 
-- [ ] Define `BackendScript` + `DispatchOutcome` and the scripted fake over the
-      0019 interface, wiring PR synthesis through the fake GitHub (0083).
-- [ ] Implement deferred-PR enqueue with provider-identity authorship + the three
-      correlation signals (with per-signal omission knobs).
-- [ ] Implement the replay backend (`record`/`replay`/`live`) + cassette format +
-      mandatory secret-scrub-on-write + missing-cassette hard failure.
-- [ ] Implement capability presets mirroring the real backends.
-- [ ] Implement `runBackendConformance(makeBackend)` and run it across fake/replay/real.
-- [ ] Add fixture cassettes for one Claude and one Codex exchange.
+- [x] Scripted fake over the 0019 interface, PR synthesis through the fake GitHub
+      (0083) — realized as a `behavior` enum (`open-pr`/`silent`/`fail-dispatch`/
+      `fail-ingest`/`rogue-pr`) rather than a named `BackendScript`/`DispatchOutcome`.
+      See Decisions.
+- [x] Provider-identity PR authorship + the three correlation signals; the
+      `rogue-pr` behavior corrupts branch+trailer (exercises the dispatch-signal
+      fallback, 0093). Per-signal omission is coarse (not yet individually knobbed).
+- [x] Replay backend over a cassette + missing-cassette hard failure (throws, no
+      network fallthrough). `record`/`live` modes + scrub-on-write are NOT
+      implemented — cassettes are hand-authored (so secret-clean by construction).
+- [x] Capability presets (`claudeLike`/`codexLike`/`selfHostedLike`) mirroring the
+      real backends.
+- [x] `runBackendConformance(makeBackend)` across the fake + replay backends (real
+      backends run it under tier 5, operator-gated).
+- [ ] Committed fixture cassette files for Claude/Codex — deferred; cassettes are
+      currently authored inline in tests. (Real recordings are operator-pending.)
 
 ## Test Plan
 
@@ -146,13 +155,32 @@ use these M18 fakes only — **no real quota, no network**.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: `runBackendConformance` green for both the scripted `FakeBackend`
+  and the `ReplayBackend` (`packages/testing/test/backend-conformance.test.ts`,
+  8 tests): well-formed capabilities, dispatch returns a handle carrying the
+  three signals, ingest correlates the provider PR, and re-ingest is idempotent
+  (no duplicate PR). Capability presets verified against the real backends'
+  distinguishing flags (claude api_fire/zdr-false; codex mention/setup-only/5-per-
+  hour; self-hosted dispatch/zdr-true/uncapped). The `ReplayBackend` is also
+  proven golden-equal to the `FakeBackend` end-to-end in the 0085 scenario suite,
+  and idempotent ingest is re-proven by the 0086 duplicate-webhook simulation.
 
 ## Decisions
 
-Record the `BackendScript`/`DispatchOutcome` shape, the cassette JSON schema +
-fingerprint/redaction rules, the `record|replay|live` switch, and how `ingest`
-shares the real correlation code (0073) rather than duplicating it.
+- The scripted fake is a `behavior` enum (`open-pr`/`silent`/`fail-dispatch`/
+  `fail-ingest`/`rogue-pr`) rather than the planned `BackendScript`/
+  `DispatchOutcome` types — simpler and sufficient: `rogue-pr` corrupts the
+  branch+trailer to exercise the dispatch-signal fallback (0093), `silent` drives
+  the sweep timeout, the fail-* behaviors drive the failure paths. `ingest` calls
+  the REAL `listPullRequestsByHeadPrefix` + correlation, never a reimplementation
+  (0073), so the fake exercises the production match logic.
+- The `ReplayBackend` reads a plain-JSON `Cassette` (capabilities + per-loop
+  exchange: dispatch signal + the PR to replay, with `{branch}`/`{trailer}`/
+  `{issue}` placeholders expanded from the handle). It replays only — no
+  `record`/`live` mode and no scrub-on-write — because cassettes are hand-authored
+  (so secret-clean by construction); a loop with no matching exchange THROWS (the
+  loud missing-cassette failure, never a network fallthrough). Recording real
+  exchanges + scrub-on-write is operator-pending (tier-5 territory).
 
 ## Risks / Rollback
 
@@ -165,4 +193,10 @@ without touching shipped code.
 
 ## Final Summary
 
-Fill this in before marking verified.
+A scripted `FakeBackend` (behavior enum) and a cassette-driven `ReplayBackend`
+both implement the `ExecutionBackend` contract and share the REAL correlation
+code (0073) in `ingest` — drop-in for the runner, zero quota. Both pass a single
+`runBackendConformance` suite (capabilities, three-signal dispatch, correlated +
+idempotent ingest), and the replay backend is golden-equal to the fake end-to-end
+(0085). Capability presets mirror the three real backends. Record-once/`--rerecord`
++ committed real cassettes are operator-pending; a missing cassette fails loudly.

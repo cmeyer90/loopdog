@@ -658,7 +658,7 @@ async function ingestPhase(
       ...sessionArtifact(pending.handle.signal),
     },
   });
-  const ingestNow = new Date();
+  const ingestNow = deps.now?.() ?? new Date();
   await syncPlanAfterTransition(deps.gh, deps.planFiles, gate, item, target, done, ingestNow);
   return done;
 }

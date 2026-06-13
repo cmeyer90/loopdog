@@ -7,6 +7,7 @@ export type {
   AuthorAssociation,
   CheckConclusion,
   CheckRunSnapshot,
+  Clock,
   CommentSnapshot,
   IssueSnapshot,
   ItemKind,
@@ -18,6 +19,7 @@ export type {
   ReviewState,
   TriggerEvent,
 } from './ports/types.js';
+export { systemClock } from './ports/types.js';
 export type {
   ChecksPort,
   GitHubPort,
