@@ -1,0 +1,8 @@
+# Fix-and-revalidate (0044): apply review feedback on the SAME PR, re-enter review.
+name: fix
+trigger:
+  github_event: pull_request
+  action: [labeled]
+transition: { from: changes-requested, to: in-review }
+expects: pull-request
+gates: { require_dor: true, require_ci: true, tier: default }

@@ -1,0 +1,13 @@
+# Auto-rollback (0048): a failed deploy rolls back via the adapter's rollback
+# command in YOUR CI, then re-verifies health.
+name: rollback
+trigger:
+  github_event: issues
+  action: [labeled]
+transition: { from: deploy-failed, to: rolled-back }
+expects: none
+gates:
+  require_dor: false
+  require_ci: false
+  tier: core
+  required_checks: [rollback]

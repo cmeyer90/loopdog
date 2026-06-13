@@ -1,0 +1,44 @@
+{
+  "labels": {
+    "42": ["looper:state/in-review"],
+    "9001": ["looper:state/in-review"]
+  },
+  "prs": [
+    {
+      "number": 9001,
+      "head": "looper/implement/42-run-implement-42-a1-229e8e1a",
+      "base": "main",
+      "state": "open",
+      "merged": false,
+      "linksIssue": 42
+    }
+  ],
+  "comments": [
+    {
+      "target": "#42",
+      "author": "looper",
+      "bodyDigest": "sha256:4d2435aab3239a2f"
+    }
+  ],
+  "plan": {
+    ".looper/plans/tasks/0001-add-todolist-clear.md": "sha256:dc9a926a5bcffa44"
+  },
+  "runs": [
+    {
+      "runId": "run-implement-42-a1-229e8e1a",
+      "loop": "implement",
+      "item": 42,
+      "status": "pending",
+      "transition": "",
+      "steps": ["gate", "claim", "compose", "dispatch", "write"]
+    },
+    {
+      "runId": "run-implement-42-a1-229e8e1a",
+      "loop": "implement",
+      "item": 42,
+      "status": "done",
+      "transition": "ready-for-agent->in-review",
+      "steps": ["ingest", "write"]
+    }
+  ]
+}

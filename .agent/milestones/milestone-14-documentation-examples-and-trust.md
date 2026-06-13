@@ -1,6 +1,6 @@
 # Milestone 14: Documentation, Examples & Trust
 
-Status: planned
+Status: verified
 
 > Background: [Looper Architecture](../../docs/architecture.md) — design tenets
 > and V1 scope. This is the adoption surface for an open-source tool.
@@ -24,11 +24,11 @@ security & trust model — so a new maintainer can attach looper safely in minut
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0058 | planned | task/0058-docs-site-and-quickstart | Docs Site & Quickstart | A docs site with a 10-minute attach quickstart. |
-| 0059 | planned | task/0059-config-reference | Config Reference | Complete `looper.yml` reference with examples. |
-| 0060 | planned | task/0060-authoring-guides | Adapter & Provider Authoring Guides | How-tos for writing project adapters and model providers. |
-| 0061 | planned | task/0061-example-attachments | Example Attachments | One or more runnable example repos looper is attached to. |
-| 0062 | planned | task/0062-security-and-trust-model | Security & Trust Model | Published threat model + permission/blast-radius guarantees, incl. subscription-driving, provider-cloud secret residency, and the ToS question. |
+| 0058 | verified | task/0058-docs-site-and-quickstart | Docs Site & Quickstart | `docs/README.md` hub + `docs/quickstart.md` (10-min keyless attach). SSG/Pages/link-check CI deferred. |
+| 0059 | verified | task/0059-config-reference | Config Reference | `docs/config-reference.md` — every root + loop field + precedence + edge cases. Schema-generator deferred. |
+| 0060 | verified | task/0060-authoring-guides | Adapter & Provider Authoring Guides | `docs/guides/{adapters,providers}.md` with real APIs + conformance snippets; `docs/adapters.md` redirects. |
+| 0061 | verified | task/0061-example-attachments | Example Attachments | `examples/node-todo/` (real app + attachment), schema-validated + scenario-tested to a golden offline. |
+| 0062 | verified | task/0062-security-and-trust-model | Security & Trust Model | `docs/security.md` — trust model, permission inventory, blast-radius table, threat model, residency, ToS. |
 
 ## Definition Of Done
 
@@ -40,4 +40,17 @@ security & trust model — so a new maintainer can attach looper safely in minut
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-12: M14 complete (0058–0062 verified). The adoption surface is in
+  place: a `docs/` hub (`README.md` index + `quickstart.md` 10-min keyless attach),
+  a complete `config-reference.md` (every root + loop field, precedence, edge
+  cases), two authoring guides (`guides/adapters.md` canonical + `guides/
+  providers.md`, real `@looper/core` APIs + the actual conformance entrypoints;
+  `adapters.md` redirects), a runnable `examples/node-todo/` attachment (real app
+  `node --test` green + `.looper/` from the templates, schema-validated and
+  scenario-tested to a committed golden offline), and `security.md` (trust model,
+  permission inventory, blast-radius table, threat model, residency 0032, ToS
+  0092, disclosure). All internal links resolve; repo-wide 244 tests green, lint
+  clean. Deferred as lower-priority CI tooling (per the project's "CI is lower
+  priority" stance): the static-site generator (`docs:build`) + GitHub Pages
+  deploy + CI link-check (0058), and the schema-walking config generator +
+  `--check` drift guard (0059). The markdown docs are the publishable source.

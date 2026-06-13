@@ -1,0 +1,14 @@
+# Merge: graduated auto-merge once the verification ladder passes (DoD gate:
+# every acceptance criterion checked + required checks green + approval).
+# tier:core can never be promoted to auto-merge; promote tier:safe loops first.
+name: merge
+trigger:
+  github_event: pull_request_review
+  action: [submitted]
+transition: { from: verified, to: merged }
+expects: none
+gates:
+  require_dor: false
+  require_ci: true
+  tier: core
+  required_checks: [lint, test, build]

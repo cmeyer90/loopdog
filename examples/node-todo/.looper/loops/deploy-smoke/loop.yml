@@ -1,0 +1,13 @@
+# Smoke/canary gate (0047): the deploy + smoke checks decide promotion.
+# Green -> deployed; red -> deploy-failed (which triggers the rollback loop).
+name: deploy-smoke
+trigger:
+  github_event: check_suite
+  action: [completed]
+transition: { from: deploying, to: deployed, fallback: deploy-failed }
+expects: none
+gates:
+  require_dor: false
+  require_ci: false
+  tier: core
+  required_checks: [deploy, deploy-smoke]

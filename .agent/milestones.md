@@ -25,7 +25,7 @@ North-star architecture for the V1 roadmap:
 | 11 | Loops | verified | [Deploy & Operational Verification](milestones/milestone-11-deploy-and-operational-verification.md) |
 | 12 | Cross-cutting | verified | [Observability, Cost & Safety](milestones/milestone-12-observability-cost-and-safety.md) |
 | 13 | Cross-cutting | verified | [Multi-Model Orchestration](milestones/milestone-13-multi-model-orchestration.md) |
-| 14 | Release | planned | [Documentation, Examples & Trust](milestones/milestone-14-documentation-examples-and-trust.md) |
+| 14 | Release | verified | [Documentation, Examples & Trust](milestones/milestone-14-documentation-examples-and-trust.md) |
 | 15 | Release | planned | [V1 Hardening & Release](milestones/milestone-15-v1-hardening-and-release.md) |
 | 16 | Operator | verified | [Loop Control & Observability CLI](milestones/milestone-16-loop-control-and-observability-cli.md) |
 | 17 | Hardening | verified | [Authorization & Trigger Control](milestones/milestone-17-authorization-and-trigger-control.md) |
@@ -112,11 +112,11 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0055 | Milestone 13: Multi-Model Orchestration | verified | task/0055-ensemble-and-judge | Ensemble & Judge on `tier:core` |
 | 0056 | Milestone 13: Multi-Model Orchestration | verified | task/0056-outcome-driven-routing | Outcome-Driven Routing |
 | 0057 | Milestone 13: Multi-Model Orchestration | verified | task/0057-cost-quality-routing-config | Cost/Quality Routing Config |
-| 0058 | Milestone 14: Documentation, Examples & Trust | planned | task/0058-docs-site-and-quickstart | Docs Site & Quickstart |
-| 0059 | Milestone 14: Documentation, Examples & Trust | planned | task/0059-config-reference | Config Reference |
-| 0060 | Milestone 14: Documentation, Examples & Trust | planned | task/0060-authoring-guides | Adapter & Provider Authoring Guides |
-| 0061 | Milestone 14: Documentation, Examples & Trust | planned | task/0061-example-attachments | Example Attachments |
-| 0062 | Milestone 14: Documentation, Examples & Trust | planned | task/0062-security-and-trust-model | Security & Trust Model |
+| 0058 | Milestone 14: Documentation, Examples & Trust | verified | task/0058-docs-site-and-quickstart | Docs Site & Quickstart |
+| 0059 | Milestone 14: Documentation, Examples & Trust | verified | task/0059-config-reference | Config Reference |
+| 0060 | Milestone 14: Documentation, Examples & Trust | verified | task/0060-authoring-guides | Adapter & Provider Authoring Guides |
+| 0061 | Milestone 14: Documentation, Examples & Trust | verified | task/0061-example-attachments | Example Attachments |
+| 0062 | Milestone 14: Documentation, Examples & Trust | verified | task/0062-security-and-trust-model | Security & Trust Model |
 | 0063 | Milestone 15: V1 Hardening & Release | planned | task/0063-end-to-end-dogfood | End-to-End External Dogfood |
 | 0064 | Milestone 15: V1 Hardening & Release | planned | task/0064-security-review | Security Review |
 | 0065 | Milestone 15: V1 Hardening & Release | planned | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks |

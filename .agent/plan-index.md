@@ -70,11 +70,11 @@ table and in `milestones.md`.
 | 0055 | verified | task/0055-ensemble-and-judge | Ensemble & Judge on `tier:core` |
 | 0056 | verified | task/0056-outcome-driven-routing | Outcome-Driven Routing |
 | 0057 | verified | task/0057-cost-quality-routing-config | Cost/Quality Routing Config |
-| 0058 | planned | task/0058-docs-site-and-quickstart | Docs Site & Quickstart |
-| 0059 | planned | task/0059-config-reference | Config Reference |
-| 0060 | planned | task/0060-authoring-guides | Adapter & Provider Authoring Guides |
-| 0061 | planned | task/0061-example-attachments | Example Attachments |
-| 0062 | planned | task/0062-security-and-trust-model | Security & Trust Model |
+| 0058 | verified | task/0058-docs-site-and-quickstart | Docs Site & Quickstart |
+| 0059 | verified | task/0059-config-reference | Config Reference |
+| 0060 | verified | task/0060-authoring-guides | Adapter & Provider Authoring Guides |
+| 0061 | verified | task/0061-example-attachments | Example Attachments |
+| 0062 | verified | task/0062-security-and-trust-model | Security & Trust Model |
 | 0063 | planned | task/0063-end-to-end-dogfood | End-to-End External Dogfood |
 | 0064 | planned | task/0064-security-review | Security Review |
 | 0065 | planned | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks |

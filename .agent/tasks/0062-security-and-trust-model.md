@@ -1,6 +1,6 @@
 # 0062 Security & Trust Model
 
-Status: planned  
+Status: verified  
 Branch: task/0062-security-and-trust-model
 
 ## Goal
@@ -158,41 +158,41 @@ no provider calls, fully offline.
 
 ## Acceptance Criteria
 
-- [ ] `docs/security.md` exists and opens with the one-paragraph trust model and
+- [x] `docs/security.md` exists and opens with the one-paragraph trust model and
       the V1 non-negotiables (human-gated default; secrets never in
       looper-controlled model context; looper can never edit the gating checks).
-- [ ] A permission inventory names every identity (Actions `GITHUB_TOKEN`,
+- [x] A permission inventory names every identity (Actions `GITHUB_TOKEN`,
       optional PAT, Codex provider App, Claude routine fire URL/token, optional
       Claude GitHub App for native triggers, OAuth `client_id`) with scope and
       grantor, and states **no looper GitHub App** and **no model API key on the
       primary path**.
-- [ ] A blast-radius guarantee table maps each control (dry-run default, risk
+- [x] A blast-radius guarantee table maps each control (dry-run default, risk
       tiers, `max_files`, budgets/kill-switch, authorization gate, untamperable CI)
       to its owning milestone/task.
-- [ ] A threat model enumerates attacker classes with target asset, mitigating
+- [x] A threat model enumerates attacker classes with target asset, mitigating
       control, and honest residual risk — including quota drain, prompt injection,
       and provider-cloud compromise.
-- [ ] Explicit "what looper can / cannot do" lists, including that it cannot edit
+- [x] Explicit "what looper can / cannot do" lists, including that it cannot edit
       the checks that gate it and cannot merge `tier:core` without a human.
-- [ ] The provider-cloud residency boundary is stated and **links 0032**; the ToS
+- [x] The provider-cloud residency boundary is stated and **links 0032**; the ToS
       question links 0092 as an open risk without implying resolution.
-- [ ] A responsible-disclosure section (or pointer to `SECURITY.md`) exists.
-- [ ] The quickstart (0058) / onboarding links to it; the drift guard fails if the
+- [x] A responsible-disclosure section (or pointer to `SECURITY.md`) exists.
+- [x] The quickstart (0058) / onboarding links to it; the drift guard fails if the
       doc is missing or unreferenced.
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Inspect 0032 / 0079 / 0050 / 0029 / 0076 so the security doc stays
+- [x] Inspect 0032 / 0079 / 0050 / 0029 / 0076 so the security doc stays
       consistent and links rather than duplicates.
-- [ ] Draft `docs/security.md` following the eight-section spine above.
-- [ ] Build the permission inventory, blast-radius guarantee, and threat-model
+- [x] Draft `docs/security.md` following the eight-section spine above.
+- [x] Build the permission inventory, blast-radius guarantee, and threat-model
       tables.
-- [ ] Write the can/cannot lists and the ToS-posture paragraph (link 0092).
-- [ ] Add the responsible-disclosure section / `SECURITY.md` pointer.
-- [ ] Cross-link 0032, 0050, 0079, 0076, 0058, 0092 and the relevant
+- [x] Write the can/cannot lists and the ToS-posture paragraph (link 0092).
+- [x] Add the responsible-disclosure section / `SECURITY.md` pointer.
+- [x] Cross-link 0032, 0050, 0079, 0076, 0058, 0092 and the relevant
       architecture sections.
-- [ ] Add the link from the quickstart / onboarding and the drift-guard assertion.
+- [x] Add the link from the quickstart / onboarding and the drift-guard assertion.
 
 ## Test Plan
 
@@ -208,12 +208,32 @@ docs task, so the only test is the drift guard plus a relative-link check.
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: `docs/security.md` published — opens with the one-paragraph trust
+  model + the three V1 non-negotiables (human-gated default; secrets never in
+  model context; Looper can't edit its own gates). Includes a permission inventory
+  (every identity: `GITHUB_TOKEN`, optional PAT, Codex App, Claude routine fire
+  URL/token, optional Claude App, OAuth client_id, and the self-hosted
+  `LOOPER_MODEL_API_KEY` as the only key-holder — explicitly "no Looper GitHub
+  App, no model API key on the primary path"), a blast-radius guarantee table
+  (control → owning milestone), a threat-model table (attacker → asset →
+  mitigation → residual risk, incl. quota drain, prompt injection, provider-cloud
+  compromise), explicit can/cannot lists (incl. can't edit gating checks, can't
+  merge `tier:core` without a human), the residency boundary linking
+  [trust-boundary.md](../../docs/trust-boundary.md) (0032), the open ToS question
+  linking 0092, and a responsible-disclosure pointer to `SECURITY.md`. Linked from
+  the Quickstart + docs index.
 
 ## Decisions
 
-Record the final doc location (`docs/security.md` vs. a `trust/` subfolder), the
-exact threat-model rows, whether responsible-disclosure lives inline or in a
+- Doc location: `docs/security.md` (a top-level doc, not a `trust/` subfolder) —
+  it complements the existing `docs/trust-boundary.md` (the credential-residency
+  detail) rather than duplicating it; security.md is the decision-making overview
+  and links into it. Responsible disclosure stays in the repo's existing
+  `SECURITY.md` (security.md points to it). The ToS question links 0092 as an open
+  risk without implying resolution.
+- Original placeholder follows for reference: the final doc location
+  (`docs/security.md` vs. a `trust/` subfolder), the exact threat-model rows,
+  whether responsible-disclosure lives inline or in a
 top-level `SECURITY.md`, and where the drift guard lives (docs CI vs. a vitest
 assertion).
 
@@ -229,4 +249,10 @@ one assertion; delete the file and the guard to revert with no runtime impact.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`docs/security.md` is Looper's canonical trust model: the one-paragraph model +
+V1 non-negotiables, a full permission inventory (no Looper App, no primary-path
+API key), a blast-radius guarantee table mapped to owning milestones, a threat
+model with honest residual risk, explicit can/cannot lists, the provider-cloud
+residency boundary (links 0032), the open ToS question (links 0092), and a
+responsible-disclosure pointer. A maintainer can make an informed attach decision
+before exposing code, secrets, or quota.

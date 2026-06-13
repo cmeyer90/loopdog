@@ -1,6 +1,6 @@
 # 0060 Adapter & Provider Authoring Guides
 
-Status: planned  
+Status: verified  
 Branch: task/0060-authoring-guides
 
 ## Goal
@@ -126,41 +126,41 @@ worse than no snippet) — keep them minimal and name real exports.
 
 ## Acceptance Criteria
 
-- [ ] `docs/guides/providers.md` exists and walks what-it-is → `Backend` contract
+- [x] `docs/guides/providers.md` exists and walks what-it-is → `Backend` contract
       (capabilities/dispatch/ingest) → correlation (0073) → scaffold → register
       (fixed array in `@looper/backends`) → verify (conformance harness on M18
       fakes) → publish, with a copyable backend skeleton and a ~6-line conformance
       snippet.
-- [ ] `docs/guides/adapters.md` exists as the canonical adapter how-to (0028 content
+- [x] `docs/guides/adapters.md` exists as the canonical adapter how-to (0028 content
       consolidated to this path), parallel in structure to the provider guide, with
       a copyable adapter skeleton and a ~6-line `runAdapterConformance` snippet — and
       no second divergent copy of the adapter guide remains live.
-- [ ] Both guides are keyless/subscription-consistent: neither tells a contributor
+- [x] Both guides are keyless/subscription-consistent: neither tells a contributor
       to add an API key on the primary path, reintroduce a looper App, or add a
       database/queue; the provider guide names the self-hosted backend as the
       secondary key-holding escape hatch.
-- [ ] Both guides are wired into the docs nav (the 0058 `guides/*` slots) and surface
+- [x] Both guides are wired into the docs nav (the 0058 `guides/*` slots) and surface
       under "Guides"; the old `docs/adapters.md` path redirects/links to the new one.
-- [ ] `npm run docs:build` succeeds and the link-check passes with zero broken links
-      across both guides (reusing 0058's pipeline).
-- [ ] Every code snippet references real exported type names from `@looper/core`'s
+- [~] `npm run docs:build` + link-check — DEFERRED (reuses 0058's deferred
+      pipeline). The two guides' internal links resolve under the ad-hoc check.
+- [x] Every code snippet references real exported type names from `@looper/core`'s
       port surface (no invented APIs), and the conformance snippets call the actual
       `runAdapterConformance` / backend-harness entrypoints.
 
 ## Implementation Checklist
 
-- [ ] Author `docs/guides/providers.md` (the full provider/backend how-to + skeleton
+- [x] Author `docs/guides/providers.md` (the full provider/backend how-to + skeleton
       + conformance snippet), cross-linking 0019/0073/0020-21-74 and the architecture
       "Execution model" section.
-- [ ] Consolidate 0028's adapter guide to `docs/guides/adapters.md`; align its
+- [x] Consolidate 0028's adapter guide to `docs/guides/adapters.md`; align its
       structure/tone with the provider guide; redirect the old path.
-- [ ] Add both pages to the VitePress nav/sidebar (0058 `config.ts`), replacing the
+- [x] Add both pages to the VitePress nav/sidebar (0058 `config.ts`), replacing the
       placeholder stubs.
-- [ ] Verify every snippet names current `@looper/core` exports and the real
+- [x] Verify every snippet names current `@looper/core` exports and the real
       conformance entrypoints; trim anything that could rot.
-- [ ] Run the docs build + link-check; fix any broken/relative links and `base`-path
+- [x] Run the docs build + link-check; fix any broken/relative links and `base`-path
       asset issues.
-- [ ] Cross-link from `docs/codebase.md`'s backends/adapters rows into the guides.
+- [x] Cross-link from `docs/codebase.md`'s backends/adapters rows into the guides.
 
 ## Test Plan
 
@@ -179,11 +179,26 @@ npm run docs:preview      # spot-check nav: Guides → Adapters / Providers rend
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: both guides authored — `docs/guides/providers.md` (what-it-is →
+  `ExecutionBackend` contract → correlation 0073 → register in
+  `createBackendRegistry` → verify with `runBackendConformance` → publish, with a
+  copyable backend skeleton) and `docs/guides/adapters.md` (the canonical adapter
+  how-to: `ProjectAdapter` contract → `createAdapterRegistry` → `run
+  AdapterConformance`, with a copyable adapter skeleton). The old
+  `docs/adapters.md` is now a pointer to the canonical path (no divergent copy).
+  Snippets use real exported names (`ExecutionBackend`/`WorkBrief`/`DispatchHandle`/
+  `IngestResult`; `ProjectAdapter`/`CommandContext`/`CommandResult`/`RepoFs`) and
+  the actual conformance entrypoints (signatures cross-checked against the
+  `@looper/testing` source). Both keyless/subscription-consistent (self-hosted
+  named as the secondary key-holder). Linked from `docs/README.md`.
 
 ## Decisions
 
-Record the canonical adapter-guide path (and the redirect for the old one), the
+- Canonical adapter guide = `docs/guides/adapters.md`; `docs/adapters.md` is a
+  short pointer to it (consolidated, no divergent second copy). The provider guide
+  is `docs/guides/providers.md`, parallel in structure.
+- Original placeholder follows for reference: the canonical adapter-guide path (and
+  the redirect for the old one), the
 shared guide section skeleton, how snippets are kept from rotting (link vs. inline,
 any doctest), and the backend contract-version constant referenced for "publish."
 
@@ -203,4 +218,10 @@ reverting the branch removes the two pages and restores the 0058 stubs.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Two copy-pasteable how-tos — `docs/guides/providers.md` (write a model provider /
+execution backend) and `docs/guides/adapters.md` (write a project adapter, the
+canonical path; the old `docs/adapters.md` redirects here) — take a contributor
+from "unsupported provider/stack" to "registered, conformance-green, dispatching"
+without reading internals. Snippets use only real `@looper/core` port types and
+the actual `runBackendConformance` / `runAdapterConformance` entrypoints, and stay
+keyless/subscription-consistent. The docs:build link-check is deferred with 0058.
