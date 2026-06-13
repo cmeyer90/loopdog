@@ -1,6 +1,6 @@
 # 0064 Security Review
 
-Status: planned  
+Status: verified  
 Branch: task/0064-security-review
 
 ## Goal
@@ -115,33 +115,33 @@ work-cell logs (must be redacted before ingest).
 
 ## Acceptance Criteria
 
-- [ ] `docs/security-review.md` exists with a threat model and a findings table
+- [x] `docs/security-review.md` exists with a threat model and a findings table
       (severity · surface · disposition · link) covering all three surfaces.
-- [ ] Every reusable workflow declares a least-privilege `permissions:` block and
+- [x] Every reusable workflow declares a least-privilege `permissions:` block and
       grants no write to the checks that gate looper.
-- [ ] A redaction test injects a sentinel secret and proves it appears in zero
+- [x] A redaction test injects a sentinel secret and proves it appears in zero
       model-visible or persisted output (brief, comment, plan, run record, log).
-- [ ] The authorization gate parks an untrusted trigger before any dispatch, and
+- [x] The authorization gate parks an untrusted trigger before any dispatch, and
       a self-approval by the untrusted actor does not release it (test or
       documented manual check).
-- [ ] The brief composer is shown to treat untrusted issue/comment bodies as data,
+- [x] The brief composer is shown to treat untrusted issue/comment bodies as data,
       not instructions (delimited + preamble), with a regression test.
-- [ ] Every finding is dispositioned: fixed (with PR link), accepted-risk (with
+- [x] Every finding is dispositioned: fixed (with PR link), accepted-risk (with
       rationale), or deferred (with a follow-up task id).
-- [ ] Relevant checks pass.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Write the threat model (actors → assets → gates) into `docs/security-review.md`.
-- [ ] Audit Surface 1 (identity/permissions): workflows, PAT path, CLI token storage.
-- [ ] Audit Surface 2 (secrets): brief composer, run-record emitter, leak guards,
+- [x] Write the threat model (actors → assets → gates) into `docs/security-review.md`.
+- [x] Audit Surface 1 (identity/permissions): workflows, PAT path, CLI token storage.
+- [x] Audit Surface 2 (secrets): brief composer, run-record emitter, leak guards,
       trust-boundary doc.
-- [ ] Audit Surface 3 (injection/auth): pre-flight gate ordering, parking,
+- [x] Audit Surface 3 (injection/auth): pre-flight gate ordering, parking,
       data-not-instructions composition, correlation-spoofing.
-- [ ] Add regression tests for each confirmed finding (redaction sentinel,
+- [x] Add regression tests for each confirmed finding (redaction sentinel,
       self-approval, untrusted-body-as-data) in `@looper/testing`.
-- [ ] Land in-scope fixes; spawn follow-up tasks for deferred items.
-- [ ] Fill the findings table with dispositions and link the report from the trust docs.
+- [x] Land in-scope fixes; spawn follow-up tasks for deferred items.
+- [x] Fill the findings table with dispositions and link the report from the trust docs.
 
 ## Test Plan
 
@@ -157,12 +157,31 @@ npm run lint        # incl. workflow permissions lint if present
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: `docs/security-review.md` published — a findings table over the
+  three surfaces (GitHub permissions/identity, secret handling, prompt/trigger
+  injection), every finding dispositioned (fixed-with-test / accepted-by-design /
+  deferred). Concrete ACs proven: reusable workflows declare least-privilege
+  `permissions:` and grant no write to the gating checks; the scrubber redaction
+  test injects sentinels and asserts zero leakage (`backends/test/secrets.test.ts`
+  + the prompt secret-literal lint); the authorization gate parks an untrusted
+  trigger with zero dispatch and an untrusted self-approval doesn't release it
+  (`runtime/test/authorization-e2e.test.ts`); and the brief composer now places
+  untrusted issue/discussion content below an explicit data/instructions boundary
+  with a preamble — NEW regression test in `backends/test/compose.test.ts`
+  ("treats untrusted … content as data"). No unresolved high/critical.
 
 ## Decisions
 
-Record the threat-model scope, the independent-reviewer method chosen, the
-severity rubric, and each accepted-risk rationale.
+- Scope = the three highest-risk surfaces named in the goal. This is a documented
+  **self-review** against the threat model with the fixes proven by tests; an
+  **independent third-party review** is recorded as the remaining operator step
+  before a public 1.0.0 (not something an offline agent can perform).
+- Severity rubric: critical (secret/quota exfil), high (privilege/injection that
+  needs a control), medium (bounded/defense-in-depth). Accepted-risk items
+  (trusted-account compromise, in-blast-radius injection on a promoted loop,
+  provider-cloud visibility, ToS) are explicit in the report with rationale, never
+  silent. The brief-composer untrusted-input preamble was added as part of this
+  review (3.2) rather than only documented.
 
 ## Risks / Rollback
 
@@ -175,4 +194,9 @@ in the report, never silent.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`docs/security-review.md` reviews the three highest-risk surfaces with every
+finding fixed-with-test or accepted-by-design and no unresolved high/critical:
+least-privilege workflows that can't edit their own gates, a tested secret
+scrubber, the authorization park, and a NEW untrusted-input boundary + preamble in
+the brief composer (with a prompt-injection regression test). The independent
+third-party review is the one remaining operator step before a public 1.0.0.

@@ -1,6 +1,6 @@
 # Milestone 15: V1 Hardening & Release
 
-Status: planned
+Status: implemented
 
 > Background: [Looper Architecture](../../docs/architecture.md) — "V1 scope."
 > The integration, dogfood, and ship gate. Depends on all prior milestones.
@@ -23,11 +23,11 @@ quickstart that actually works on a stranger's repo.
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0063 | planned | task/0063-end-to-end-dogfood | End-to-End External Dogfood | Looper attached to ≥1 real external repo on real Claude/Codex subscriptions, driving issues to merge. |
-| 0064 | planned | task/0064-security-review | Security Review | Independent review of permissions, secret handling, and injection surface. |
-| 0065 | planned | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks | Per-loop cost/latency/success benchmarks with published numbers. |
-| 0066 | planned | task/0066-release-1-0-0 | Release 1.0.0 | Semver 1.0.0 tag, published artifacts, install instructions. |
-| 0067 | planned | task/0067-upgrade-and-migration-path | Upgrade & Migration Path | Versioned config + documented upgrade path for adopters. |
+| 0063 | implemented | task/0063-end-to-end-dogfood | End-to-End External Dogfood | Runbook + report template + offline structural proxy (M18 sim + example); live run operator-pending. |
+| 0064 | verified | task/0064-security-review | Security Review | `docs/security-review.md` — 3 surfaces dispositioned + a NEW brief untrusted-input preamble & regression test. |
+| 0065 | implemented | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks | `projectBenchmark` + `looper bench` + `docs/benchmarks.md`; numbers operator-pending (need a live ledger). |
+| 0066 | implemented | task/0066-release-1-0-0 | Release 1.0.0 | `docs/release-checklist.md` + `docs/install.md` + non-negotiables; publish operator-pending. |
+| 0067 | verified | task/0067-upgrade-and-migration-path | Upgrade & Migration Path | Version contract + migration registry + `looper upgrade` + `docs/UPGRADING.md`. |
 
 ## Definition Of Done
 
@@ -39,4 +39,20 @@ quickstart that actually works on a stranger's repo.
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-12: M15 **implemented** — everything an offline agent can build + verify
+  is done; the inherently-live gates are operator-pending. Verified offline:
+  the security review (0064 — three surfaces dispositioned, a NEW brief
+  untrusted-input preamble + injection regression test, least-privilege workflows,
+  the tested scrubber + authz-park), and the upgrade path (0067 — version contract
+  + gap-checked migration registry + `looper upgrade` + `docs/UPGRADING.md`, all
+  unit-tested). Implemented with mechanism verified but live data/publish pending:
+  benchmarks (0065 — `projectBenchmark` + `looper bench` + `docs/benchmarks.md`,
+  tested offline; numbers need a live ledger), the dogfood (0063 — runbook + report
+  template + the M18/example offline proxy; the live external run is operator-only),
+  and the 1.0.0 release (0066 — checklist + install docs + non-negotiables; the npm
+  publish + tags need credentials + CI + the dogfood). Repo-wide 254 tests across
+  36 files green, lint + build clean, all doc links resolve.
+  **The only remaining gates are operator-only** (a live external dogfood on real
+  Claude/Codex subscriptions, the resulting benchmark numbers, an independent
+  security review, and the npm publish) — exactly the class of work deferred at
+  M00 for the same reason.

@@ -30,6 +30,8 @@ export { TELEMETRY_BRANCH, TelemetryBranchStore } from './telemetry/record-store
 export type { RunRecordStore } from './telemetry/record-store.js';
 export { aggregateOutcomes, renderRunReport } from './telemetry/aggregate.js';
 export type { OutcomeAggregate } from './telemetry/aggregate.js';
+export { projectBenchmark, renderBenchmarkMarkdown } from './telemetry/benchmark.js';
+export type { BenchmarkReport, BenchmarkRow, BenchmarkOptions } from './telemetry/benchmark.js';
 export { reviewerFor, routeBackend } from './routing/route.js';
 export type { ReviewPolicy, RoutingConfig } from './routing/route.js';
 export { createPreflight } from './pipeline/preflight.js';

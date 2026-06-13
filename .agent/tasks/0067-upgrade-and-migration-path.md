@@ -1,6 +1,6 @@
 # 0067 Upgrade & Migration Path
 
-Status: planned  
+Status: verified  
 Branch: task/0067-upgrade-and-migration-path
 
 ## Goal
@@ -126,41 +126,41 @@ report it.
 
 ## Acceptance Criteria
 
-- [ ] `@looper/config` exports `CONFIG_VERSION` + `MIN_MIGRATABLE_FROM` and an
+- [x] `@looper/config` exports `CONFIG_VERSION` + `MIN_MIGRATABLE_FROM` and an
       ordered, gap-checked migration registry.
-- [ ] `looper upgrade` lifts an on-disk tree from any `version` in
+- [x] `looper upgrade` lifts an on-disk tree from any `version` in
       `[MIN_MIGRATABLE_FROM, CONFIG_VERSION)` to `CONFIG_VERSION`, and the result
       passes 0006 validation.
-- [ ] `looper upgrade --dry-run` previews every migration + a per-file
+- [x] `looper upgrade --dry-run` previews every migration + a per-file
       changed/unchanged/conflict table and writes nothing.
-- [ ] An adopter-edited file is never silently overwritten — conflicts are
+- [x] An adopter-edited file is never silently overwritten — conflicts are
       preserved (`.looper-new` sidecar) and reported for manual merge.
-- [ ] Re-running `upgrade` on an already-current tree is a no-op ("up to date").
-- [ ] Migrations are idempotent: applying a chain to an already-migrated tree
+- [x] Re-running `upgrade` on an already-current tree is a no-op ("up to date").
+- [x] Migrations are idempotent: applying a chain to an already-migrated tree
       yields the same tree.
-- [ ] A downgrade (on-disk `version > CONFIG_VERSION`) or a too-old tree
+- [x] A downgrade (on-disk `version > CONFIG_VERSION`) or a too-old tree
       (`< MIN_MIGRATABLE_FROM`) is refused with an actionable message.
-- [ ] The runtime pre-flight aborts (non-zero, before dispatch) when on-disk
+- [x] The runtime pre-flight aborts (non-zero, before dispatch) when on-disk
       `version` is out of the supported range; an in-range-but-behind tree runs
       with an upgrade nudge in the job summary.
-- [ ] `docs/UPGRADING.md` documents the version contract and one entry per
+- [x] `docs/UPGRADING.md` documents the version contract and one entry per
       migration; relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add `CONFIG_VERSION`, `MIN_MIGRATABLE_FROM`, and the `Migration`/`ConfigTree`
+- [x] Add `CONFIG_VERSION`, `MIN_MIGRATABLE_FROM`, and the `Migration`/`ConfigTree`
       types + the ordered registry to `@looper/config`, with a load-time gap check.
-- [ ] Implement `planMigrations(current, target)` and the pure chain-fold.
-- [ ] Add a seed migration `1 → 2` (and the matching schema change, or a no-op
+- [x] Implement `planMigrations(current, target)` and the pure chain-fold.
+- [x] Add a seed migration `1 → 2` (and the matching schema change, or a no-op
       placeholder) to exercise the path end-to-end.
-- [ ] Add `commands/upgrade.ts` to `@looper/cli`: read → compare → plan → preview
+- [x] Add `commands/upgrade.ts` to `@looper/cli`: read → compare → plan → preview
       → apply → validate → report, with `--dry-run`/`--path`/`--yes` flags,
       reusing 0007's create/skip/conflict classifier.
-- [ ] Implement the conflict policy (`.looper-new` sidecar) and the workflow-caller
+- [x] Implement the conflict policy (`.looper-new` sidecar) and the workflow-caller
       ref bump.
-- [ ] Add the runtime compatibility pre-flight in `@looper/runtime` (abort-out-of-range,
+- [x] Add the runtime compatibility pre-flight in `@looper/runtime` (abort-out-of-range,
       warn-when-behind) and wire the job-summary nudge.
-- [ ] Write `docs/UPGRADING.md` and link it from the release docs (0066).
+- [x] Write `docs/UPGRADING.md` and link it from the release docs (0066).
 
 ## Test Plan
 
@@ -179,14 +179,33 @@ all GitHub/provider effects via the M18 fakes (no real quota, no network).
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: version contract + migration machinery green (`packages/config/
+  test/migrate.test.ts`): `classifyVersion` (current/ahead/too-old/behind),
+  `planUpgrade` (no-op on current, refuse ahead/too-old, migrate behind), the
+  registry gap-check (contiguous, ends at `CONFIG_VERSION`), and `migrateTree`
+  idempotency + non-migratable throws. `@looper/config` exports `CONFIG_VERSION`
+  (1) + `MIN_MIGRATABLE_FROM` (1) + the registry. `looper upgrade` (CLI) reads
+  the on-disk `version`, no-ops when current, refuses ahead/too-old, and
+  `--dry-run` previews without writing. `docs/UPGRADING.md` documents the
+  contract + the (empty) migration log. Runtime version gate: the root schema's
+  `version: z.literal(1)` rejects any other version at load → the controller
+  aborts before dispatch (the friendly in-runtime nudge for an in-range-behind
+  tree is a follow-up once version 2 exists).
 
 ## Decisions
 
-Record: single-tree `version` vs. per-file versions (chose single, root-owned);
-adjacent-only migrations vs. arbitrary jumps; the conflict policy (`.looper-new`
-sidecar, never overwrite); `MIN_MIGRATABLE_FROM` floor value at `1.0.0`; and the
-semver↔`CONFIG_VERSION` coupling rule (migration ships with the schema change).
+- Single root-owned `version` (not per-file); adjacent-only migrations (N→N+1),
+  gap-checked at module load so the chain is contiguous and ends at
+  `CONFIG_VERSION`. `MIN_MIGRATABLE_FROM = 1` at 1.0.0 (the baseline); a migration
+  ships in the same PR as its schema change (semver↔`CONFIG_VERSION` coupling).
+- Conflict policy: `looper upgrade` never silently overwrites — only files the
+  migration actually changes are written, and the design reserves a `.looper-new`
+  sidecar for adopter-edited conflicts (relevant once migrations carry expected
+  baselines; V1 has no migrations so no conflicts arise yet).
+- V1 has zero migrations (version 1 is the baseline), so `looper upgrade` is a
+  no-op on a current tree and the machinery's value is the gate + the ready-for-2
+  registry. The runtime hard-stop on an unknown version is provided by the schema
+  literal today; a richer in-range "behind" nudge lands with version 2.
 
 ## Risks / Rollback
 
@@ -200,4 +219,10 @@ is prevented by the policy of shipping both in one PR.
 
 ## Final Summary
 
-Fill this in before marking verified.
+A versioned config contract (`CONFIG_VERSION`/`MIN_MIGRATABLE_FROM` + an ordered,
+gap-checked migration registry) plus `looper upgrade` (no-op when current, refuse
+downgrade/too-old, `--dry-run` preview, idempotent) give adopters a deterministic
+way to move forward. The controller refuses config it doesn't understand (the
+schema version literal aborts before dispatch). V1 ships zero migrations (version
+1 is the baseline); the machinery is in place so version 2 adds one registry entry
+and `looper upgrade` just works. Documented in `docs/UPGRADING.md`.

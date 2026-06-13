@@ -15,6 +15,15 @@ export type {
   ResolvedConfig,
   ValidationResult,
 } from './validate/validate.js';
+export {
+  CONFIG_VERSION,
+  MIN_MIGRATABLE_FROM,
+  MIGRATIONS,
+  classifyVersion,
+  planUpgrade,
+  migrateTree,
+} from './migrate/migrate.js';
+export type { Migration, FileTree, UpgradePlan, VersionStatus } from './migrate/migrate.js';
 
 import { discoverConfig } from './load/discover.js';
 import { validateConfig } from './validate/validate.js';

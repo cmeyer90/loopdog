@@ -12,6 +12,13 @@ The controller lives in your Actions, labels are the state machine, and it's
 - [Config Reference](config-reference.md) — every `looper.yml` / `loop.yml` field.
 - [Resilience & Failure Policy](resilience.md) — retries, timeouts, ceiling,
   circuit breaker, quarantine.
+- [Benchmarks](benchmarks.md) — per-loop/provider cost/latency/success (`looper bench`).
+- [Upgrading](UPGRADING.md) — the config version contract + `looper upgrade`.
+
+## Install & Release
+
+- [Install](install.md) — install the CLI, attach a repo, pin the workflows.
+- [Release Checklist](release-checklist.md) — the 1.0.0 ship gate.
 
 ## Guides
 
@@ -29,6 +36,7 @@ The controller lives in your Actions, labels are the state machine, and it's
   threat model, the ToS question.
 - [Trust Boundary & Secret Residency](trust-boundary.md) — where every credential
   lives and what each path can verify.
+- [Security Review](security-review.md) — the pre-1.0.0 findings + dispositions.
 
 ## How it's built
 

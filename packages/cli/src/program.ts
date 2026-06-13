@@ -12,6 +12,8 @@ import { registerLoops } from './commands/loops.js';
 import { registerRuns } from './commands/runs.js';
 import { registerStatus } from './commands/status.js';
 import { registerRun } from './commands/run.js';
+import { registerBench } from './commands/bench.js';
+import { registerUpgrade } from './commands/upgrade.js';
 
 const require = createRequire(import.meta.url);
 const { version } = require('../package.json') as { version: string };
@@ -40,6 +42,8 @@ export function buildProgram(backends: ReadonlyMap<string, ExecutionBackend> = n
   registerRuns(program);
   registerStatus(program);
   registerRun(program);
+  registerBench(program);
+  registerUpgrade(program);
   registerController(program, backends);
   return program;
 }

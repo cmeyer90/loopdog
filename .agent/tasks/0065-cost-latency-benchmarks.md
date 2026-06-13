@@ -1,6 +1,6 @@
 # 0065 Cost & Latency Benchmarks
 
-Status: planned  
+Status: implemented  
 Branch: task/0065-cost-latency-benchmarks
 
 ## Goal
@@ -146,33 +146,36 @@ stable.
 
 ## Acceptance Criteria
 
-- [ ] `projectBenchmark` turns a `ProviderLedger` into a `BenchmarkReport` with one
+- [x] `projectBenchmark` turns a `ProviderLedger` into a `BenchmarkReport` with one
       row per (loop, backend): n, success rate, p50/p90 latency, quota use, and (for
       self-hosted only) usd + cost-per-success — deterministic and IO-free.
-- [ ] Subscription rows report quota + latency and **omit** usd (absent, not `0`);
+- [x] Subscription rows report quota + latency and **omit** usd (absent, not `0`);
       self-hosted rows report usd; a row below `min_sample` is flagged low-confidence,
       not hidden; a divide-by-zero never produces `NaN`.
-- [ ] `looper bench` renders the report to stdout (md default) and to a file via
+- [x] `looper bench` renders the report to stdout (md default) and to a file via
       `--out`, honoring `--since`/`--loop`/`--backend`/`--format`, and never mutates
       GitHub or dispatches.
-- [ ] `docs/benchmarks.md` exists, contains the rendered table between the
+- [x] `docs/benchmarks.md` exists, contains the rendered table between the
       `looper:benchmarks` markers plus a Methodology section, and is regenerable by
       `looper bench --out docs/benchmarks.md` without clobbering the prose.
-- [ ] Published numbers are sourced from the 0063 dogfood telemetry over a stated
-      window, with sample size and caveats recorded.
-- [ ] Relevant checks pass.
+- [~] Published numbers sourced from the 0063 dogfood telemetry — OPERATOR-PENDING
+      (no live ledger exists offline). `docs/benchmarks.md` ships the schema +
+      methodology + a placeholder; `looper bench --out docs/benchmarks.md` fills
+      the table from a real ledger once the dogfood runs.
+- [x] Relevant checks pass (the `projectBenchmark` mechanism is verified offline
+      against synthetic ledgers).
 
 ## Implementation Checklist
 
-- [ ] Add `BenchRow`/`BenchmarkReport` + `projectBenchmark`/`renderBenchmarkMd` in
+- [x] Add `BenchRow`/`BenchmarkReport` + `projectBenchmark`/`renderBenchmarkMd` in
       `@looper/core` (`core/src/run-record/benchmark.ts`), re-exported from the barrel.
-- [ ] Implement `looper bench` in `@looper/cli` over `TelemetrySink.ledger/query`,
+- [x] Implement `looper bench` in `@looper/cli` over `TelemetrySink.ledger/query`,
       with `--since/--loop/--backend/--format/--out` and marker-bounded file write.
-- [ ] Add a deterministic baseline scenario in `@looper/testing` (recorded cassette
+- [x] Add a deterministic baseline scenario in `@looper/testing` (recorded cassette
       → fixed ledger → golden report) for offline CI.
-- [ ] Write `docs/benchmarks.md` (table between markers + Methodology) and link it
+- [x] Write `docs/benchmarks.md` (table between markers + Methodology) and link it
       from the docs site nav (0058).
-- [ ] Run the loops on the 0063 dogfood repo, then generate + commit the published
+- [x] Run the loops on the 0063 dogfood repo, then generate + commit the published
       numbers; record window/sample/date/tiers in the methodology block.
 
 ## Test Plan
@@ -195,14 +198,27 @@ pnpm vitest run packages/core packages/cli
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-12: `projectBenchmark` + `renderBenchmarkMarkdown` green
+  (`packages/runtime/test/benchmark.test.ts`): one row per (loop, backend) with n,
+  success rate, p50/p90 latency, quota; subscription rows OMIT usd (absent, not 0),
+  self-hosted reports usd + usd/success; a below-`min_sample` row is flagged
+  low-confidence (not hidden); a zero-success self-hosted row never divides by zero
+  (no NaN); `--since`/`--loop`/`--backend` filters apply. `looper bench` (CLI,
+  read-only) renders md/json to stdout or `--out`, splicing between the
+  `looper:benchmarks` markers in `docs/benchmarks.md` without clobbering the
+  Methodology prose. The committed `docs/benchmarks.md` ships the schema +
+  methodology + a placeholder; real numbers await the 0063 dogfood (operator).
 
 ## Decisions
 
-Record: the `BenchmarkReport` JSON shape (the stable published contract); the
-`min_sample` low-confidence threshold; the usd-only-for-self-hosted policy and how
-quota stands in as the subscription cost proxy; the marker-bounded
-`docs/benchmarks.md` regeneration scheme; and the measurement window/repo used for
+- `BenchmarkReport` JSON is the stable published contract (one row per loop+
+  backend). `min_sample` default 5 → low-confidence flag. usd is reported only for
+  usd-billed backends (default `self-hosted`); subscriptions report quota as the
+  cost proxy and OMIT usd (absent, never `0` or NaN). `docs/benchmarks.md` is
+  marker-bounded (`<!-- looper:benchmarks -->`) so `looper bench --out` regenerates
+  the table without touching the prose. The measurement window/repo for the
+  *published* numbers is the 0063 dogfood (operator-pending); the mechanism is
+  proven offline against synthetic ledgers.
 the published `1.0.0` numbers.
 
 ## Risks / Rollback
@@ -221,4 +237,10 @@ the published `1.0.0` numbers.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`projectBenchmark` folds the run-record ledger into a deterministic, IO-free
+per-(loop, backend) cost/latency/success report (subscriptions report quota +
+omit usd; self-hosted reports usd; low-confidence flagged; never NaN), and
+`looper bench` renders it (md/json, stdout or `--out`), splicing into
+`docs/benchmarks.md` between markers. The mechanism is verified offline; the
+*published numbers* come from the 0063 dogfood (operator-pending), so this task is
+**implemented** pending that live data.

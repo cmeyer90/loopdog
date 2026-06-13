@@ -75,11 +75,11 @@ table and in `milestones.md`.
 | 0060 | verified | task/0060-authoring-guides | Adapter & Provider Authoring Guides |
 | 0061 | verified | task/0061-example-attachments | Example Attachments |
 | 0062 | verified | task/0062-security-and-trust-model | Security & Trust Model |
-| 0063 | planned | task/0063-end-to-end-dogfood | End-to-End External Dogfood |
-| 0064 | planned | task/0064-security-review | Security Review |
-| 0065 | planned | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks |
-| 0066 | planned | task/0066-release-1-0-0 | Release 1.0.0 |
-| 0067 | planned | task/0067-upgrade-and-migration-path | Upgrade & Migration Path |
+| 0063 | implemented | task/0063-end-to-end-dogfood | End-to-End External Dogfood |
+| 0064 | verified | task/0064-security-review | Security Review |
+| 0065 | implemented | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks |
+| 0066 | implemented | task/0066-release-1-0-0 | Release 1.0.0 |
+| 0067 | verified | task/0067-upgrade-and-migration-path | Upgrade & Migration Path |
 | 0068 | verified | task/0068-cli-loop-introspection | Loop Introspection (`looper loops list` / `looper loops show`) |
 | 0069 | verified | task/0069-cli-run-history-and-tracing | Run History & Tracing (`looper runs list` / `looper runs show`) |
 | 0070 | verified | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`) |
