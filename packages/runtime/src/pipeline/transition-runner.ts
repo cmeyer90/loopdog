@@ -229,17 +229,22 @@ async function processItem(
     case 'skip':
       return null; // not an attempt — common on sweeps; no record spam
     case 'park': {
-      const { reason, retryAfter } = decision.verdict;
-      await gate.mutate('label', `add looper:parked (${reason})`, () =>
-        deps.gh.addLabels(item.ref, ['looper:parked']),
+      const { reason, retryAfter, holdLabel } = decision.verdict;
+      const label = holdLabel ?? 'looper:parked';
+      const approvalHold = label === 'looper:needs-approval';
+      await gate.mutate('label', `add ${label} (${reason})`, () =>
+        deps.gh.addLabels(item.ref, [label]),
       );
       await gate.comment(`park notice`, () =>
         upsertMarkedComment(
           deps.gh,
           item.ref,
           `looper:hold ${JSON.stringify({ reason, retryAfter: retryAfter ?? null })}`,
-          `⏸️ looper parked this item: ${reason}` +
-            (retryAfter ? `\n\nWill retry after ${retryAfter}.` : '\n\nHeld until released.'),
+          (approvalHold
+            ? `🔒 looper held this item for maintainer approval: ${reason}\n\n` +
+              'A collaborator can apply `looper:approved` or run `looper approve`.'
+            : `⏸️ looper parked this item: ${reason}`) +
+            (retryAfter ? `\n\nWill retry after ${retryAfter}.` : ''),
         ).then(() => {}),
       );
       return record({ status: 'parked' });

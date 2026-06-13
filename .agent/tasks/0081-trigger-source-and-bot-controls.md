@@ -1,7 +1,7 @@
 # 0081 Trigger Source & Bot Controls (WHAT)
 
-Status: planned  
-Branch: task/0081-trigger-source-and-bot-controls
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -129,35 +129,35 @@ via the sweep (0076), so its bot disposition must allow the system identity.
 
 ## Acceptance Criteria
 
-- [ ] A loop with `trigger_sources` set acts only on those event kinds; an event
+- [x] A loop with `trigger_sources` set acts only on those event kinds; an event
       of another kind/action/predicate is a no-op for that loop, and `cron` is
       never filtered out.
-- [ ] `trigger_sources` validates against 0008's canonical event/action matrix;
+- [x] `trigger_sources` validates against 0008's canonical event/action matrix;
       `pull_request.closed[merged]`, item-label selectors, `status`, and
       `workflow_run.completed` have explicit tests.
-- [ ] A bot actor is detected (login `*[bot]` or type `Bot`) and decided from
+- [x] A bot actor is detected (login `*[bot]` or type `Bot`) and decided from
       `bots.allow`/`bots.deny` only — `deny` wins, `"*"` matches all bots,
       unmatched bots are denied (fail-closed).
-- [ ] An allowed bot is treated as trusted for the rest of pre-flight; a denied
+- [x] An allowed bot is treated as trusted for the rest of pre-flight; a denied
       bot/source routes through `on_unauthorized` (0080), not a silent spend.
-- [ ] Per-loop config narrows but cannot widen past the repo default (strictest
+- [x] Per-loop config narrows but cannot widen past the repo default (strictest
       wins), consistent with 0079.
-- [ ] The provider agent's bot login is allowed by the built-in loops' defaults so
+- [x] The provider agent's bot login is allowed by the built-in loops' defaults so
       PR ingestion (0073) is not parked.
-- [ ] The runner consumes `TriggerSourceDecision` in pre-flight after 0079 and
+- [x] The runner consumes `TriggerSourceDecision` in pre-flight after 0079 and
       before 0080.
 
 ## Implementation Checklist
 
-- [ ] Add the `trigger_sources` + `bots.{allow,deny}` schema (root + per-loop) in
+- [x] Add the `trigger_sources` + `bots.{allow,deny}` schema (root + per-loop) in
       `@looper/config` with zod validation against 0008's canonical event/action
       matrix.
-- [ ] Implement source-filter + bot-disposition logic in `@looper/core`
+- [x] Implement source-filter + bot-disposition logic in `@looper/core`
       (IO-free), returning `TriggerSourceDecision`.
-- [ ] Implement bot detection via login suffix / `GitHubPort` actor type.
-- [ ] Wire the decision into the runtime pre-flight order (after 0079, before 0080).
-- [ ] Ship provider-bot + `github-actions[bot]` allow defaults for built-in loops.
-- [ ] Apply strictest-wins repo ∪ per-loop resolution (shared with 0079).
+- [x] Implement bot detection via login suffix / `GitHubPort` actor type.
+- [x] Wire the decision into the runtime pre-flight order (after 0079, before 0080).
+- [x] Ship provider-bot + `github-actions[bot]` allow defaults for built-in loops.
+- [x] Apply strictest-wins repo ∪ per-loop resolution (shared with 0079).
 
 ## Test Plan
 
@@ -176,13 +176,23 @@ Tests run via the repo's `vitest` runner; behavioral cases use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: authorization suite green (196 tests repo-wide): pure WHO/WHAT/
+  WHEN gates (association floors, deny-wins, allow-override, allowlist, cron-
+  trusted, strictest-wins merge; trigger-source + bot allow/deny; rate +
+  schedule windows) and the e2e controller flow (untrusted → parked
+  needs-approval with zero dispatch; untrusted self-approval revoked; trusted
+  collaborator approval releases + dispatches; trusted trigger dispatches
+  immediately).
 
 ## Decisions
 
-Record the canonical trigger-source selector grammar (shared with 0008), the
-bot-detection rule, the fail-closed default, the cron-exemption, and the set of
-provider/system bot logins shipped as defaults.
+- Per-loop `authorization.trigger_sources` (event selectors, validated
+  against the 0008 matrix incl. `pull_request.closed[merged]`) constrains
+  which delivered events a loop acts on beyond its natural trigger;
+  `authorization.bots.{allow,deny}` gates `[bot]` actors (bots need explicit
+  allow because `author_association` is ill-defined for them). `triggerSourceAllowed`
+  is pure; an off-source or unallowed-bot trigger feeds 0080's on_unauthorized
+  park (or ignore).
 
 ## Risks / Rollback
 
@@ -196,4 +206,6 @@ source filtering), so the feature is additive and safe to disable per loop.
 
 ## Final Summary
 
-Fill this in before marking verified.
+`triggerSourceAllowed` filters which events a loop acts on and which bots may
+drive it — the WHAT control, composed after actor trust and feeding the
+approval gate; `dependabot[bot]` can drive dep-update while unknown bots can't.

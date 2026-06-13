@@ -79,6 +79,10 @@ export interface AuthorizationConfig {
   onUnauthorized: 'park' | 'ignore' | 'comment';
   approvalLabel?: string | undefined;
   allowedBots?: string[] | undefined;
+  /** WHAT (0081): event selectors this loop acts on beyond its trigger. */
+  triggerSources?: string[] | undefined;
+  botAllow?: string[] | undefined;
+  botDeny?: string[] | undefined;
   rateLimit?:
     | { perActorPerDay?: number | undefined; globalPerHour?: number | undefined }
     | undefined;

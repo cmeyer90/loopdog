@@ -9,13 +9,19 @@ import type {
   TriggerEvent,
 } from '@looper/core';
 import {
+  NEEDS_APPROVAL_LABEL,
   backendDispatchesInWindow,
   budgetGate,
   killSwitchGate,
   ledgerStats,
   quotaGate,
+  rateLimitGate,
+  resolveActorTrust,
+  resolveAuthorizationPolicy,
+  scheduleWindowGate,
+  triggerSourceAllowed,
 } from '@looper/core';
-import type { QuotaModel } from '@looper/core';
+import type { AuthorizationConfig, QuotaModel, TriggerActor } from '@looper/core';
 import type { RunRecordStore } from '../telemetry/record-store.js';
 
 /**
@@ -40,6 +46,8 @@ export interface PreflightConfig {
       | Record<string, { window?: string | undefined; max_dispatches?: number | undefined }>
       | undefined;
   };
+  /** Repo-default authorization policy (M17); per-loop tightens it. */
+  authorization?: AuthorizationConfig | undefined;
 }
 
 export interface PreflightDeps {
@@ -69,6 +77,72 @@ export function createPreflight(deps: PreflightDeps) {
 
     // Only dispatching work spends anything; deterministic relabels are free.
     if (!ctx.loop.expects) return checks;
+
+    // 0. authorization (M17): WHO/WHAT/WHEN, before any spend. Already-approved
+    //    items pass straight through (the release was checked at label time).
+    const rootAuth = deps.config.authorization;
+    if (
+      rootAuth &&
+      !ctx.item.labels.includes(ctx.loop.authorization?.approvalLabel ?? 'looper:approved')
+    ) {
+      const policy = resolveAuthorizationPolicy(rootAuth, ctx.loop.authorization);
+      const actor = triggerActor(ctx.trigger);
+
+      const trust = resolveActorTrust(policy, actor);
+      const source = triggerSourceAllowed(
+        {
+          ...policy,
+          triggerSources: ctx.loop.authorization?.triggerSources,
+          botAllow: ctx.loop.authorization?.botAllow ?? policy.allowedBots,
+          botDeny: ctx.loop.authorization?.botDeny,
+        },
+        ctx.trigger.kind === 'event' ? ctx.trigger.name : 'cron',
+        actor,
+      );
+      const unauthorized = !trust.trusted || !source.allowed;
+      if (unauthorized) {
+        const reason = !trust.trusted ? trust.reason : source.reason;
+        const mode = policy.onUnauthorized;
+        if (mode === 'ignore') {
+          checks.push({ name: 'guard:authorization', verdict: { kind: 'skip', reason } });
+          return checks;
+        }
+        // park (default) and comment both refuse dispatch; park holds for approval.
+        checks.push({
+          name: 'guard:authorization',
+          verdict: {
+            kind: 'park',
+            reason: `untrusted trigger (${actor.login}): ${reason}`,
+            holdLabel: NEEDS_APPROVAL_LABEL,
+          },
+        });
+        return checks;
+      }
+
+      // WHEN: per-actor + global rate caps, then the schedule window.
+      const records = await recentRecords(deps.records, now, 2);
+      const rate = rateLimitGate(records, actor.login, policy.rateLimit, now);
+      if (rate.verdict !== 'allow') {
+        checks.push({
+          name: 'guard:rate-limit',
+          verdict: {
+            kind: 'park',
+            reason: rate.reason,
+            ...(rate.verdict === 'defer' && rate.until ? { retryAfter: rate.until } : {}),
+          },
+        });
+        return checks;
+      }
+      const win = scheduleWindowGate(policy.scheduleWindow, now);
+      if (win.verdict !== 'allow') {
+        checks.push({
+          name: 'guard:schedule-window',
+          verdict: { kind: 'park', reason: win.reason },
+        });
+        return checks;
+      }
+      checks.push({ name: 'guard:authorization', verdict: { kind: 'proceed' } });
+    }
 
     // 1. kill switch (cheapest): repo variable (authoritative) — the
     //    looper:stop label on the ITEM is already a standard hold.
@@ -122,6 +196,24 @@ function quotaModelFor(deps: PreflightDeps, backend: string): QuotaModel | undef
     return { maxDispatches: caps.throughput.tasksPerHour, windowMs: 3_600_000, kind: 'rolling' };
   }
   return undefined; // uncapped (self-hosted / unknown)
+}
+
+/** Build the trust actor from a normalized trigger (cron = the system actor). */
+function triggerActor(trigger: {
+  kind: string;
+  name?: string;
+  actor?: { login: string; type: string } | undefined;
+  authorAssociation?: string | undefined;
+}): TriggerActor {
+  if (trigger.kind === 'cron') {
+    return { login: 'system', isBot: true, association: 'NONE', system: true };
+  }
+  const login = trigger.actor?.login ?? 'unknown';
+  return {
+    login,
+    isBot: trigger.actor?.type === 'Bot',
+    association: (trigger.authorAssociation ?? 'NONE') as TriggerActor['association'],
+  };
 }
 
 async function recentRecords(store: RunRecordStore, now: Date, days: number): Promise<RunRecord[]> {

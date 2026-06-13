@@ -14,6 +14,12 @@ export const authorizationSchema = z.object({
   on_unauthorized: z.enum(['park', 'ignore', 'comment']).default('park'),
   approval_label: z.string().default('looper:approved'),
   allowed_bots: z.array(z.string()).default([]),
+  /** WHAT (0081): event selectors this loop will act on (beyond its trigger). */
+  trigger_sources: z.array(z.string()).optional(),
+  /** WHAT (0081): per-loop bot allow/deny (bots need explicit allow). */
+  bots: z
+    .object({ allow: z.array(z.string()).default([]), deny: z.array(z.string()).default([]) })
+    .optional(),
   rate_limit: z
     .object({
       per_actor_per_day: z.number().int().min(1).optional(),

@@ -91,10 +91,10 @@ table and in `milestones.md`.
 | 0076 | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
 | 0077 | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
 | 0078 | verified | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) |
-| 0079 | planned | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) |
-| 0080 | planned | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
-| 0081 | planned | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |
-| 0082 | planned | task/0082-rate-limits-and-schedule-windows | Rate Limits & Schedule Windows (WHEN) |
+| 0079 | verified | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) |
+| 0080 | verified | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
+| 0081 | verified | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |
+| 0082 | verified | task/0082-rate-limits-and-schedule-windows | Rate Limits & Schedule Windows (WHEN) |
 | 0083 | planned | task/0083-fake-github | Fake GitHub (in-memory `GitHubPort`) |
 | 0084 | planned | task/0084-fake-and-replay-backends | Fake & Replay Backends |
 | 0085 | planned | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions |

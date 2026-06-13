@@ -1,6 +1,6 @@
 # Milestone 17: Authorization & Trigger Control
 
-Status: planned
+Status: verified
 
 > Background: [Looper Architecture](../../docs/architecture.md) "Authorization &
 > trigger control." Closes a production gap: on a public repo, anyone can open an
@@ -48,21 +48,25 @@ authorization:
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0079 | planned | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) | author-association / collaborators / org / allow+deny resolution; repo-default + per-loop, strictest-wins. |
-| 0080 | planned | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) | `looper:needs-approval` hold + `on_unauthorized` behavior + `looper:approved`/`looper approve` release, audited. |
-| 0081 | planned | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) | Per-loop allowed events/bots; deny/allow bot actors; honor only configured trigger sources. |
-| 0082 | planned | task/0082-rate-limits-and-schedule-windows | Rate Limits & Schedule Windows (WHEN) | Per-actor + global trigger rate caps; optional schedule windows; coordinate with budget (M12). |
+| 0079 | verified | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) | author-association / collaborators / org / allow+deny resolution; repo-default + per-loop, strictest-wins. |
+| 0080 | verified | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) | `looper:needs-approval` hold + `on_unauthorized` behavior + `looper:approved`/`looper approve` release, audited. |
+| 0081 | verified | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) | Per-loop allowed events/bots; deny/allow bot actors; honor only configured trigger sources. |
+| 0082 | verified | task/0082-rate-limits-and-schedule-windows | Rate Limits & Schedule Windows (WHEN) | Per-actor + global trigger rate caps; optional schedule windows; coordinate with budget (M12). |
 
 ## Definition Of Done
 
-- A documented `authorization:` policy (root + per-loop) is enforced as a pre-flight
-  gate; the strictest applicable rule wins.
-- An untrusted-actor trigger on a public repo **never dispatches/spends**; it is
-  parked (`needs-approval`) until a trusted human releases it.
-- Per-actor and global trigger rate limits and optional schedule windows are
-  honored; bot/event sources are allow/deny-able per loop.
-- Approvals and denials are audited (who/when/what), visible from the CLI.
+- [x] A documented `authorization:` policy (root + per-loop) is enforced as a
+  pre-flight gate; strictest applicable wins (resolveAuthorizationPolicy).
+- [x] An untrusted-actor trigger on a public repo NEVER dispatches/spends; it
+  is parked (needs-approval) until a trusted human releases it (e2e-proven).
+- [x] Per-actor + global rate limits and optional schedule windows are honored
+  (defer, never spend); bot/event sources are allow/deny-able per loop.
+- [x] Approvals/denials are audited (run records + hold/release comments) and
+  visible from the CLI (`looper status`, `looper approve`).
 
 ## Verification Log
 
-Add dated entries as tasks land.
+- 2026-06-09: M17 verified; 196 tests green repo-wide. WHO/WHAT/WHEN are pure
+  core gates composed into the runtime pre-flight ahead of budget/quota;
+  parking reuses the operational-hold machinery; trusted-only release is
+  enforced at the approval-label event. `looper approve` added to the CLI.

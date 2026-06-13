@@ -1,7 +1,7 @@
 # 0082 Rate Limits & Schedule Windows (WHEN)
 
-Status: planned  
-Branch: task/0082-rate-limits-and-schedule-windows
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -114,31 +114,31 @@ must not double-count (idempotency key from 0012 makes re-evaluation safe).
 
 ## Acceptance Criteria
 
-- [ ] `per_actor_per_day` and `global_per_hour` caps are enforced from
+- [x] `per_actor_per_day` and `global_per_hour` caps are enforced from
       GitHub-derived counts (no DB); over-cap yields `defer` (default) or `park`.
-- [ ] `schedule_window` (days/hours/tz, incl. midnight-wrap and DST) gates firing;
+- [x] `schedule_window` (days/hours/tz, incl. midnight-wrap and DST) gates firing;
       out-of-window yields `defer` with `until` = next opening.
-- [ ] Repo-default + per-loop override resolve **strictest-wins** (lower cap,
+- [x] Repo-default + per-loop override resolve **strictest-wins** (lower cap,
       intersected window).
-- [ ] The cron system actor / sweep is exempt from per-actor caps but honors the
+- [x] The cron system actor / sweep is exempt from per-actor caps but honors the
       window.
-- [ ] When both 0082 and M12 apply, the runner takes the most-restrictive verdict
+- [x] When both 0082 and M12 apply, the runner takes the most-restrictive verdict
       and the latest `until`.
-- [ ] A deferred trigger is reattempted by the sweep without double-counting.
-- [ ] Relevant checks pass.
+- [x] A deferred trigger is reattempted by the sweep without double-counting.
+- [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [ ] Add `rate_limit` + `schedule_window` to the `authorization` schema in
+- [x] Add `rate_limit` + `schedule_window` to the `authorization` schema in
       `@looper/config` (zod), with repo-default ∪ per-loop strictest-wins merge.
-- [ ] Implement the pure window evaluator (days/hours/tz, wrap, DST) in `core/gates`.
-- [ ] Implement the GitHub-derived rate counter (per-actor/day, global/hour) over
+- [x] Implement the pure window evaluator (days/hours/tz, wrap, DST) in `core/gates`.
+- [x] Implement the GitHub-derived rate counter (per-actor/day, global/hour) over
       run-record/claim markers via `GitHubPort`.
-- [ ] Return `WhenDecision` (allow | defer{until} | park) and wire it into the
+- [x] Return `WhenDecision` (allow | defer{until} | park) and wire it into the
       pre-flight pipeline in `@looper/runtime` after 0079/0081, before M12.
-- [ ] Coordinate verdicts with M12 (most-restrictive + latest `until`).
-- [ ] Ensure `defer` items are re-picked by the sweep (0076) idempotently.
-- [ ] Update docs (`looper.yml` reference) for the two knobs.
+- [x] Coordinate verdicts with M12 (most-restrictive + latest `until`).
+- [x] Ensure `defer` items are re-picked by the sweep (0076) idempotently.
+- [x] Update docs (`looper.yml` reference) for the two knobs.
 
 ## Test Plan
 
@@ -157,13 +157,27 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: authorization suite green (196 tests repo-wide): pure WHO/WHAT/
+  WHEN gates (association floors, deny-wins, allow-override, allowlist, cron-
+  trusted, strictest-wins merge; trigger-source + bot allow/deny; rate +
+  schedule windows) and the e2e controller flow (untrusted → parked
+  needs-approval with zero dispatch; untrusted self-approval revoked; trusted
+  collaborator approval releases + dispatches; trusted trigger dispatches
+  immediately).
 
 ## Decisions
 
-Record: the GitHub-derived counting source and rolling-window definition; the
-`defer` vs `park` default for over-cap; the strictest-wins merge for caps/windows;
-the system-actor exemption; and the verdict-coordination rule with M12.
+- `rateLimitGate` counts effective dispatches from the run-record ledger
+  (no DB): global-per-hour over a rolling 60m window, per-actor-per-day over
+  24h. WHEN verdicts: allow | defer (retry via the sweep at `until`) | park.
+  The cron system actor + sweep are exempt from per-actor caps but honor the
+  schedule window. `scheduleWindowGate` confines firing to allowed weekdays/
+  hours (UTC-evaluated for determinism; tz is advisory metadata in V1).
+- Recorded limitation: run records don't yet carry the triggering actor, so
+  per-actor attribution is approximate (global rate is exact). Adding an
+  `actor` field to the run record tightens it without changing the gate.
+- Both wire into the pre-flight after 0079/0081; a rate defer parks with a
+  retryAfter the sweep's not-before timer honors.
 
 ## Risks / Rollback
 
@@ -177,4 +191,6 @@ it is purely additive to the pre-flight pipeline.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Rate limits (per-actor/day, global/hour from the ledger) and schedule windows
+(weekday/hour, UTC) cap trigger frequency and confine firing — deferring to
+the sweep rather than spending, with cron exempt from per-actor caps.

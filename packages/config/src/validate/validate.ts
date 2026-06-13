@@ -291,6 +291,9 @@ function resolveAuthorization(root: RootConfig, cfg: LoopConfig): LoopDefinition
     onUnauthorized: a.on_unauthorized,
     approvalLabel: a.approval_label,
     allowedBots: a.allowed_bots,
+    triggerSources: a.trigger_sources,
+    botAllow: a.bots?.allow,
+    botDeny: a.bots?.deny,
     rateLimit: a.rate_limit
       ? {
           perActorPerDay: a.rate_limit.per_actor_per_day,

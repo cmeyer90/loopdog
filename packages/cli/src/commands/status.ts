@@ -114,6 +114,26 @@ export function registerStatus(program: Command): void {
       setLoopMode(loop, 'act', opts.path, 'resumed'),
     );
 
+  program
+    .command('approve')
+    .argument('<item>', 'issue/PR number to release')
+    .description('release a parked item (apply looper:approved as you, a trusted actor)')
+    .option('--repo <owner/name>', 'target repo')
+    .action(async (item: string, opts: { repo?: string }) => {
+      const { gh, repo } = await connect(opts.repo);
+      const ref = { ...repo, number: Number(item) };
+      const labels = await gh.getItemLabels(ref);
+      if (!labels.includes('looper:needs-approval')) {
+        console.log(`#${item} is not held for approval — nothing to release.`);
+        return;
+      }
+      await gh.addLabels(ref, ['looper:approved']);
+      await gh.removeLabel(ref, 'looper:needs-approval');
+      const who = await gh.getAuthenticatedActor();
+      await gh.createComment(ref, `✅ looper: released by ${who.login} via \`looper approve\`.`);
+      console.log(`✓ released #${item} (looper:approved applied; hold cleared).`);
+    });
+
   const budget = program.command('budget').description('budget/quota controls');
   budget
     .command('set')

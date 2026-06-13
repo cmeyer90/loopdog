@@ -8,7 +8,13 @@ import type {
   RunRecord,
   TriggerEvent,
 } from '@looper/core';
-import { STATE_LABEL_PREFIX, stateLabel } from '@looper/core';
+import {
+  STATE_LABEL_PREFIX,
+  resolveActorTrust,
+  resolveAuthorizationPolicy,
+  stateLabel,
+} from '@looper/core';
+import type { AuthorizationConfig } from '@looper/core';
 import { loadConfig, parseDuration } from '@looper/config';
 import { parseActionsEvent, resolveRepoIdentity } from '@looper/github';
 import { RepoPlanStoreFiles, assertSupportedFormatVersion } from '@looper/plans';
@@ -83,6 +89,30 @@ export async function handleEvent(
         await opts.gh.addLabels(trigger.item, [stateLabel('new')]);
         intake = true;
       }
+    }
+  }
+
+  // Trusted-only approval release (M17 · 0080): an untrusted actor applying
+  // `looper:approved` does NOT release the hold — revoke the self-approval.
+  if (
+    trigger.kind === 'event' &&
+    (trigger.name === 'issues.labeled' || trigger.name === 'pull_request.labeled') &&
+    trigger.label === (config.root.authorization.approval_label ?? 'looper:approved') &&
+    trigger.item !== undefined
+  ) {
+    const policy = resolveAuthorizationPolicy(toAuthorizationConfig(config.root.authorization));
+    const trust = resolveActorTrust(policy, {
+      login: trigger.actor?.login ?? 'unknown',
+      isBot: trigger.actor?.type === 'Bot',
+      association: trigger.authorAssociation ?? 'NONE',
+    });
+    if (!trust.trusted) {
+      await opts.gh.removeLabel(trigger.item, config.root.authorization.approval_label);
+      await opts.gh.createComment(
+        trigger.item,
+        `🔒 looper: \`${config.root.authorization.approval_label}\` from an untrusted actor ` +
+          `(${trust.actor}) does not count — a collaborator must approve.`,
+      );
     }
   }
 
@@ -184,6 +214,7 @@ async function load(opts: ControllerOptions): Promise<{
         budgets: result.config.root.budgets,
         kill_switch: result.config.root.kill_switch,
         quota: result.config.root.quota,
+        authorization: toAuthorizationConfig(result.config.root.authorization),
       },
       ...(opts.now ? { now: opts.now } : {}),
     }),
@@ -214,6 +245,38 @@ export function createFsPromptSource(repoDir: string, templatesDir?: string): Pr
     overlay: (loop, backend) =>
       tryRead(join(repoDir, '.looper', 'loops', loop, `prompt.${backend}.md`)),
     policy: (name) => tryRead(join(repoDir, '.looper', 'policies', `${name}.md`)),
+  };
+}
+
+/** Map the snake_case root authorization config to the core camelCase shape. */
+function toAuthorizationConfig(a: {
+  actors: 'anyone' | 'org-members' | 'collaborators' | 'allowlist';
+  allow: string[];
+  deny: string[];
+  on_unauthorized: 'park' | 'ignore' | 'comment';
+  approval_label: string;
+  allowed_bots: string[];
+  rate_limit?:
+    | { per_actor_per_day?: number | undefined; global_per_hour?: number | undefined }
+    | undefined;
+  schedule_window?:
+    | { days?: string[] | undefined; hours?: string | undefined; tz?: string | undefined }
+    | undefined;
+}): AuthorizationConfig {
+  return {
+    actors: a.actors,
+    allow: a.allow,
+    deny: a.deny,
+    onUnauthorized: a.on_unauthorized,
+    approvalLabel: a.approval_label,
+    allowedBots: a.allowed_bots,
+    rateLimit: a.rate_limit
+      ? {
+          perActorPerDay: a.rate_limit.per_actor_per_day,
+          globalPerHour: a.rate_limit.global_per_hour,
+        }
+      : undefined,
+    scheduleWindow: a.schedule_window,
   };
 }
 

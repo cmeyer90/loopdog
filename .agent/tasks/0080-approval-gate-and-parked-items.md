@@ -1,7 +1,7 @@
 # 0080 Approval Gate & Parked Items (WHEN / release)
 
-Status: planned  
-Branch: task/0080-approval-gate-and-parked-items
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -48,20 +48,20 @@ the subscription or reaching an acting work cell. See
 
 ## Acceptance Criteria
 
-- [ ] An unauthorized trigger with `park` adds `looper:needs-approval`, comments,
+- [x] An unauthorized trigger with `park` adds `looper:needs-approval`, comments,
       and dispatches nothing.
-- [ ] Applying `approval_label` **by a trusted actor** (or `looper approve`) releases
+- [x] Applying `approval_label` **by a trusted actor** (or `looper approve`) releases
       the item; an untrusted self-approval does **not** release it.
-- [ ] `ignore` and `comment` modes behave as specified.
-- [ ] Every park/approve/deny is recorded (approver + timestamp) and surfaced to the
+- [x] `ignore` and `comment` modes behave as specified.
+- [x] Every park/approve/deny is recorded (approver + timestamp) and surfaced to the
       CLI (`looper status` shows parked items).
 
 ## Implementation Checklist
 
-- [ ] Implement the hold marker + the pre-flight block while held.
-- [ ] Implement `on_unauthorized` modes (park/ignore/comment).
-- [ ] Implement trusted-only release via label + `looper approve` CLI.
-- [ ] Audit + surface parked items in the CLI.
+- [x] Implement the hold marker + the pre-flight block while held.
+- [x] Implement `on_unauthorized` modes (park/ignore/comment).
+- [x] Implement trusted-only release via label + `looper approve` CLI.
+- [x] Audit + surface parked items in the CLI.
 
 ## Test Plan
 
@@ -73,11 +73,29 @@ the subscription or reaching an acting work cell. See
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: authorization suite green (196 tests repo-wide): pure WHO/WHAT/
+  WHEN gates (association floors, deny-wins, allow-override, allowlist, cron-
+  trusted, strictest-wins merge; trigger-source + bot allow/deny; rate +
+  schedule windows) and the e2e controller flow (untrusted → parked
+  needs-approval with zero dispatch; untrusted self-approval revoked; trusted
+  collaborator approval releases + dispatches; trusted trigger dispatches
+  immediately).
 
 ## Decisions
 
-Record hold-label-vs-state choice, the self-approval defense, and the audit shape.
+- `looper:needs-approval` is an operational hold (the park verdict's
+  holdLabel); the runner's standardChecks treat it as blocking UNLESS
+  `looper:approved` is also present. `on_unauthorized`: park (default, holds
+  + comments), ignore (skip silently), comment (advisory). 
+- Trusted-only release: the controller intercepts `issues.labeled`/
+  `pull_request.labeled` adding the approval label and, if the labeler is
+  untrusted (0079), STRIPS it + comments — so an untrusted self-approval can't
+  release. `looper approve <item>` (CLI) applies the label as the operator's
+  (trusted) identity. The approval-label event itself re-runs the loops, so
+  release and dispatch happen in one step.
+- Audit: park/approve are recorded as run records (status: parked) + sticky
+  `looper:hold` marker comments + the release comment; `looper status` lists
+  off-ramp/hold items.
 
 ## Risks / Rollback
 
@@ -87,4 +105,6 @@ presence.
 
 ## Final Summary
 
-Fill this in before marking verified.
+Untrusted triggers park (needs-approval) with no spend; only a trusted
+human's `looper:approved` (or `looper approve`) releases them — untrusted
+self-approval is revoked. Every park/release is audited and CLI-visible.

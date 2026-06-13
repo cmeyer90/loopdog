@@ -144,6 +144,22 @@ export type { DodInput } from './gates/dod.js';
 export { evaluateDod } from './gates/dod.js';
 export type { EffectPolicy, Mode, PlannedAction } from './gates/mode.js';
 export { DEFAULT_MODE, allowedEffects } from './gates/mode.js';
+export type {
+  ActorTrust,
+  ScheduleWindow,
+  TriggerActor,
+  TriggerSourceDecision,
+  WhenVerdict,
+} from './gates/authorization.js';
+export {
+  DEFAULT_APPROVAL_LABEL,
+  NEEDS_APPROVAL_LABEL,
+  rateLimitGate,
+  resolveActorTrust,
+  resolveAuthorizationPolicy,
+  scheduleWindowGate,
+  triggerSourceAllowed,
+} from './gates/authorization.js';
 export type { BudgetCeilings, GuardVerdict, LedgerStats, QuotaModel } from './gates/guards.js';
 export {
   NOT_BEFORE_PREFIX,

@@ -28,7 +28,7 @@ North-star architecture for the V1 roadmap:
 | 14 | Release | planned | [Documentation, Examples & Trust](milestones/milestone-14-documentation-examples-and-trust.md) |
 | 15 | Release | planned | [V1 Hardening & Release](milestones/milestone-15-v1-hardening-and-release.md) |
 | 16 | Operator | verified | [Loop Control & Observability CLI](milestones/milestone-16-loop-control-and-observability-cli.md) |
-| 17 | Hardening | planned | [Authorization & Trigger Control](milestones/milestone-17-authorization-and-trigger-control.md) |
+| 17 | Hardening | verified | [Authorization & Trigger Control](milestones/milestone-17-authorization-and-trigger-control.md) |
 | 18 | Hardening | planned | [Test & Simulation Harness](milestones/milestone-18-test-and-simulation-harness.md) |
 | 19 | Hardening | planned | [Resilience & Failure Policy](milestones/milestone-19-resilience-and-failure-policy.md) |
 
@@ -128,10 +128,10 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0071 | Milestone 16: Loop Control & Observability CLI | verified | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`looper status` + control verbs) |
 | 0072 | Milestone 16: Loop Control & Observability CLI | verified | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) |
 | 0078 | Milestone 16: Loop Control & Observability CLI | verified | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) |
-| 0079 | Milestone 17: Authorization & Trigger Control | planned | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) |
-| 0080 | Milestone 17: Authorization & Trigger Control | planned | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
-| 0081 | Milestone 17: Authorization & Trigger Control | planned | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |
-| 0082 | Milestone 17: Authorization & Trigger Control | planned | task/0082-rate-limits-and-schedule-windows | Rate Limits & Schedule Windows (WHEN) |
+| 0079 | Milestone 17: Authorization & Trigger Control | verified | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) |
+| 0080 | Milestone 17: Authorization & Trigger Control | verified | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
+| 0081 | Milestone 17: Authorization & Trigger Control | verified | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |
+| 0082 | Milestone 17: Authorization & Trigger Control | verified | task/0082-rate-limits-and-schedule-windows | Rate Limits & Schedule Windows (WHEN) |
 | 0083 | Milestone 18: Test & Simulation Harness | planned | task/0083-fake-github | Fake GitHub (in-memory `GitHubPort`) |
 | 0084 | Milestone 18: Test & Simulation Harness | planned | task/0084-fake-and-replay-backends | Fake & Replay Backends |
 | 0085 | Milestone 18: Test & Simulation Harness | planned | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions |

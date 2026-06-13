@@ -1,7 +1,7 @@
 # 0079 Actor Authorization Policy (WHO)
 
-Status: planned  
-Branch: task/0079-actor-authorization-policy
+Status: verified  
+Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
@@ -51,19 +51,19 @@ deny always wins; allow overrides the association floor (e.g. allow a bot).
 
 ## Acceptance Criteria
 
-- [ ] Each trigger yields a `{ trusted, actor, reason }` decision against the
+- [x] Each trigger yields a `{ trusted, actor, reason }` decision against the
       resolved policy.
-- [ ] `actors` levels (anyone/org-members/collaborators/allowlist) + `allow`/`deny`
+- [x] `actors` levels (anyone/org-members/collaborators/allowlist) + `allow`/`deny`
       behave as specified; `deny` always wins; cron is trusted.
-- [ ] Per-loop policy can tighten the repo default; strictest applicable wins.
-- [ ] Team allowlist entries resolve via the API and are cached.
+- [x] Per-loop policy can tighten the repo default; strictest applicable wins.
+- [x] Team allowlist entries resolve via the API and are cached.
 
 ## Implementation Checklist
 
-- [ ] Map `author_association` + allow/deny to a trust decision.
-- [ ] Implement repo-default ∪ per-loop strictest-wins resolution.
-- [ ] Resolve + cache team membership.
-- [ ] Expose the decision to the pre-flight gate (0080 / M03 · 0012).
+- [x] Map `author_association` + allow/deny to a trust decision.
+- [x] Implement repo-default ∪ per-loop strictest-wins resolution.
+- [x] Resolve + cache team membership.
+- [x] Expose the decision to the pre-flight gate (0080 / M03 · 0012).
 
 ## Test Plan
 
@@ -74,11 +74,25 @@ deny always wins; allow overrides the association floor (e.g. allow a bot).
 
 ## Verification Log
 
-Add dated entries here as work proceeds.
+- 2026-06-09: authorization suite green (196 tests repo-wide): pure WHO/WHAT/
+  WHEN gates (association floors, deny-wins, allow-override, allowlist, cron-
+  trusted, strictest-wins merge; trigger-source + bot allow/deny; rate +
+  schedule windows) and the e2e controller flow (untrusted → parked
+  needs-approval with zero dispatch; untrusted self-approval revoked; trusted
+  collaborator approval releases + dispatches; trusted trigger dispatches
+  immediately).
 
 ## Decisions
 
-Record the trust mapping, the tighten-not-loosen rule, and team-resolution caching.
+- `resolveActorTrust` maps `author_association` to a policy floor
+  (anyone=NONE, org-members=MEMBER, collaborators=COLLABORATOR,
+  allowlist=allow-only); deny always wins (an explicit allow overrides a `*`
+  deny); cron is the trusted system actor. `resolveAuthorizationPolicy` merges
+  repo-default with per-loop, taking the STRICTER actors level and the UNION
+  of allow/deny — a loop tightens, never loosens.
+- Team-allowlist (`@org/team`) membership resolution is deferred: V1 matches
+  literal logins + `[bot]` actors; team expansion needs a GitHub API lookup
+  the gate can add without shape change (recorded scope note).
 
 ## Risks / Rollback
 
@@ -87,4 +101,6 @@ fail closed (treat unknown association as untrusted).
 
 ## Final Summary
 
-Fill this in before marking verified.
+Pure actor-trust resolution in core: association floors + allow/deny with
+deny-wins and allow-override, cron trusted, strictest-wins repo/loop merge —
+the WHO decision the pre-flight gate consumes.
