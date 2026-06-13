@@ -64,7 +64,7 @@ describe('projectBenchmark (0065)', () => {
     );
     expect(md).toContain('| loop | backend |');
     expect(md).toContain('groom');
-    expect(md).toContain('⚠️'); // 1 sample < 5
+    expect(md).toContain('(!)'); // 1 sample < 5 → low-confidence flag
   });
 
   it('filters by --since / --loop / --backend', () => {
