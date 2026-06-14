@@ -69,7 +69,9 @@ describe('looper init (0007)', () => {
     await writeFile(loopFile, edited);
 
     const plan = await buildScaffoldPlan(await findTemplatesDir(), dir);
-    const byAction = Object.groupBy(plan.files, (f) => f.action);
+    // Manual grouping (Object.groupBy needs Node 21+; the project targets Node 20).
+    const byAction: Record<string, typeof plan.files> = {};
+    for (const f of plan.files) (byAction[f.action] ??= []).push(f);
     expect(byAction['create']).toBeUndefined();
     expect(byAction['conflict']?.map((f) => f.path)).toEqual(['.looper/loops/groom/loop.yml']);
     expect(byAction['skip']?.length ?? 0).toBe(plan.files.length - 1);
