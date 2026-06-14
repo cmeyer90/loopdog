@@ -32,7 +32,7 @@ them. Release *machinery* (changesets/CI publish) is task 0005; this is the gate
 ## Publish (machinery — task 0005 + operator)
 
 - [ ] A single `major` changeset bumps the `@looper/*` line to `1.0.0`.
-- [ ] The pipeline publishes `@looper/cli@1.0.0` with npm provenance.
+- [ ] The pipeline publishes `@loopdog/cli@1.0.0` with npm provenance.
 - [ ] A `v1.0.0` GitHub Release is cut with notes enumerating breaking changes
       since the last `0.x`.
 - [ ] A floating `v1` tag points at `v1.0.0`; scaffolded workflows reference `@v1`.

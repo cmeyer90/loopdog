@@ -2,7 +2,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildProgram } from '@looper/cli';
+import { buildProgram } from '@loopdog/cli';
 import { loadConfig } from '@looper/config';
 
 let dirs: string[] = [];

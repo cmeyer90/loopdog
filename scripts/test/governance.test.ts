@@ -55,12 +55,12 @@ describe('CODEOWNERS (task 0004)', () => {
 describe('release configuration (task 0005)', () => {
   it('keeps all @looper/* packages on one fixed version line', () => {
     const cfg = JSON.parse(readFileSync(join(root, '.changeset/config.json'), 'utf8'));
-    expect(cfg.fixed).toEqual([['@looper/*']]);
+    expect(cfg.fixed).toEqual([['@looper/*', '@loopdog/cli']]);
     expect(cfg.access).toBe('public');
     expect(cfg.baseBranch).toBe('main');
   });
 
-  it('publishes only @looper/cli; every other package is private', () => {
+  it('publishes only @loopdog/cli; every other package is private', () => {
     const packages = [
       'core',
       'config',

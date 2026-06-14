@@ -19,7 +19,7 @@ Looper GitHub App, no API key on the primary path.
 
 - A GitHub repo you can add workflows + labels to.
 - A **Claude** or **Codex** subscription (the kind you already use interactively).
-- Node 20+ and the `looper` CLI (`npm i -g @looper/cli`, or `npx @looper/cli`).
+- Node 20+ and the `looper` CLI (`npm i -g @loopdog/cli`, or `npx @loopdog/cli`).
 
 ## The seven steps
 

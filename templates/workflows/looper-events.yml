@@ -42,6 +42,6 @@ permissions:
 jobs:
   looper:
     # LOOPER_VERSION_REF: pinned by `looper init` to the installed CLI version.
-    uses: cmeyer90/looper/.github/workflows/reusable-events.yml@v0.1.0
+    uses: cmeyer90/loopdog/.github/workflows/reusable-events.yml@v0.1.0
     with:
       looper-version: 0.1.0

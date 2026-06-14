@@ -1,5 +1,5 @@
 {
-  "name": "@looper/cli",
+  "name": "@loopdog/cli",
   "version": "0.1.0",
   "description": "Looper — autonomous-SDLC loops for any GitHub repository, driven by your existing Claude Code and Codex subscriptions.",
   "license": "Apache-2.0",
@@ -38,7 +38,7 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/cmeyer90/looper.git",
+    "url": "git+https://github.com/cmeyer90/loopdog.git",
     "directory": "packages/cli"
   },
   "scripts": {

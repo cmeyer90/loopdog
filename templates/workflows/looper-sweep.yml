@@ -13,6 +13,6 @@ permissions:
 
 jobs:
   looper:
-    uses: cmeyer90/looper/.github/workflows/reusable-sweep.yml@v0.1.0
+    uses: cmeyer90/loopdog/.github/workflows/reusable-sweep.yml@v0.1.0
     with:
       looper-version: 0.1.0
