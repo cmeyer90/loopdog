@@ -21,7 +21,7 @@
     }
   ],
   "plan": {
-    ".loopdog/plans/tasks/0001-add-todolist-clear.md": "sha256:b4a60d1622ad74b7"
+    ".loopdog/plans/tasks/0001-add-todolist-clear.md": "sha256:c5f72e8de0bdf16e"
   },
   "runs": [
     {

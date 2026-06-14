@@ -1,9 +1,20 @@
 import type { GitHubPort, IssueSnapshot, ItemRef } from '@loopdog/core';
-import { parseCriteriaBlock, renderCriteriaBlock, statusForLabels } from '@loopdog/core';
+import {
+  parseCriteriaBlock,
+  parseScopeBlock,
+  renderCriteriaBlock,
+  statusForLabels,
+} from '@loopdog/core';
 import type { RepoPlanStoreFiles } from '../store/repo-plan-store.js';
 import { slugify } from '../store/repo-plan-store.js';
 import { STORE_LAYOUT, TASK_TEMPLATE, renderTemplate } from '../format/templates.js';
-import { parsePlan, serializePlan, setStatus, appendToSection } from '../format/plan-doc.js';
+import {
+  parsePlan,
+  serializePlan,
+  setStatus,
+  appendToSection,
+  type PlanDoc,
+} from '../format/plan-doc.js';
 
 /**
  * Issue ↔ plan binding (task 0016): every issue gets a durable plan; either
@@ -45,11 +56,16 @@ export async function bindIssue(
     return { issue: issue.ref, taskId: marker.taskId, path: regenerated };
   }
 
-  const taskId = await files.nextTaskId();
-  const path = await writeTaskFile(files, taskId, issue);
+  // No marker on the issue body. Before minting a NEW plan, look for one already
+  // bound to this issue (a prior run created it but the marker write lost a race,
+  // or this snapshot predates the marker). Idempotency for concurrent triage:
+  // reuse the existing plan instead of allocating a second `nextTaskId()` stub.
+  const existing = await findPlanForIssue(files, issue.ref.number);
+  const taskId = existing?.taskId ?? (await files.nextTaskId());
+  const path = existing?.path ?? (await writeTaskFile(files, taskId, issue));
   const binding: Binding = { issue: issue.ref, taskId, path };
 
-  // Issue → plan marker (idempotent append).
+  // Issue → plan marker (idempotent append) so future reads short-circuit.
   if (!issue.body.includes('<!-- loopdog:plan ')) {
     await gh.updateIssueBody(
       issue.ref,
@@ -67,6 +83,7 @@ async function writeTaskFile(
   const slug = slugify(issue.title);
   const path = files.path(STORE_LAYOUT.tasks, `${taskId}-${slug}.md`);
   const { criteria } = parseCriteriaBlock(issue.body);
+  const scope = parseScopeBlock(issue.body);
   const content = renderTemplate(TASK_TEMPLATE, {
     id: taskId,
     title: issue.title,
@@ -75,7 +92,7 @@ async function writeTaskFile(
     issue: `#${issue.ref.number}`,
     goal: issue.title,
     background: firstParagraph(issue.body) || '(from the bound issue)',
-    scope: '- (groomed scope lands here)',
+    scope: scope ?? '- (groomed scope lands here)',
     criteria:
       criteria && criteria.length > 0
         ? renderCriteriaBlock(criteria)
@@ -86,26 +103,38 @@ async function writeTaskFile(
   return path;
 }
 
-/** Resolve the binding from GitHub state alone (marker, then slug scan). */
+/** Resolve the binding from GitHub state alone (marker, then Issue-field scan). */
 export async function resolveBinding(
   files: RepoPlanStoreFiles,
   issue: IssueSnapshot,
 ): Promise<Binding | null> {
   const marker = parsePlanMarker(issue.body);
   if (marker) return { issue: issue.ref, taskId: marker.taskId, path: marker.path };
-  // Fallback scan: a task whose Issue: field references this number.
+  const found = await findPlanForIssue(files, issue.ref.number);
+  return found ? { issue: issue.ref, taskId: found.taskId, path: found.path } : null;
+}
+
+/**
+ * Scan active task files for a plan whose `Issue:` header references this issue
+ * number — the marker-free fallback that both resolveBinding and bindIssue use.
+ * Matches `#N` exactly so `#2` never collides with `#20`.
+ */
+async function findPlanForIssue(
+  files: RepoPlanStoreFiles,
+  number: number,
+): Promise<{ taskId: string; path: string } | null> {
   const { docs } = await files.readPlans(files.path(STORE_LAYOUT.tasks));
   for (const doc of docs) {
-    if (
-      doc.headerLines.some(
-        (l) => l.trim().startsWith('Issue:') && l.includes(`#${issue.ref.number}`),
-      )
-    ) {
-      const file = await files.findTaskFile(doc.id);
-      if (file) return { issue: issue.ref, taskId: doc.id, path: file };
-    }
+    if (!issueFieldReferences(doc, number)) continue;
+    const file = await files.findTaskFile(doc.id);
+    if (file) return { taskId: doc.id, path: file };
   }
   return null;
+}
+
+function issueFieldReferences(doc: PlanDoc, number: number): boolean {
+  const line = doc.headerLines.find((l) => l.trim().startsWith('Issue:'));
+  return line ? new RegExp(`#${number}(?!\\d)`).test(line) : false;
 }
 
 /**

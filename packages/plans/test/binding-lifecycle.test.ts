@@ -108,6 +108,45 @@ describe('issue <-> plan binding (0016)', () => {
   });
 });
 
+describe('plan-store fragmentation (0097)', () => {
+  it('reuses the existing plan when a racing triage run lost the marker write', async () => {
+    const { gh, files, issue } = await setup();
+    // Run A binds: writes 0001 and appends the marker onto the live issue body.
+    const a = await bindIssue(gh, files, issue);
+    expect(a.taskId).toBe('0001');
+
+    // Run B raced on a snapshot taken BEFORE the marker existed (no marker in
+    // its body). It must reuse 0001 via the Issue-field scan, not mint 0002.
+    const stale = { ...issue, body: GROOMED_BODY };
+    const b = await bindIssue(gh, files, stale);
+    expect(b.taskId).toBe('0001');
+    expect(b.path).toBe(a.path);
+    expect((await files.list('.loopdog/plans/tasks')).length).toBe(1);
+    expect(parsePlanMarker((await gh.getIssue(ref)).body)?.taskId).toBe('0001');
+  });
+
+  it('openPlan carries the groomed scope block into the plan Scope section', async () => {
+    const { gh, files, issue } = await setup();
+    const binding = await openPlan(gh, files, issue);
+    const plan = (await files.read(binding.path))!.content;
+    expect(plan).toMatch(/## Scope\n+api only/);
+    expect(plan).not.toContain('(groomed scope lands here)');
+  });
+
+  it('matches the Issue: field on #N exactly, so #2 never resolves to #20', async () => {
+    const { gh, files } = await setup();
+    const twenty = gh.seedIssue({ ref: { ...repo, number: 20 }, title: 'Twenty', body: 'x' });
+    await bindIssue(gh, files, twenty); // 0001 bound to #20
+
+    const two = gh.seedIssue({ ref: { ...repo, number: 2 }, title: 'Two', body: 'no marker' });
+    expect(await resolveBinding(files, two)).toBeNull(); // #2 must NOT find #20's plan
+
+    const bound = await bindIssue(gh, files, two);
+    expect(bound.taskId).toBe('0002'); // its own plan, not a reuse of 0001
+    expect((await files.read(bound.path))!.content).toContain('Issue: #2');
+  });
+});
+
 describe('plan lifecycle (0017)', () => {
   it('open -> update -> verify -> archive, each idempotent under double-apply', async () => {
     const { gh, files, issue } = await setup();
