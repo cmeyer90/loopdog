@@ -28,7 +28,8 @@ Welcome to loopdog. Let's connect your accounts — no API keys needed.
   Claude →
     → Open Claude Routines and create/edit the loop routine
     → Select acme/widgets and the Claude cloud environment
-    → Add an API trigger, then paste the /fire URL and one-time token
+    → Routine prompt: any placeholder — loopdog overrides it on every /fire
+    → Add an API trigger, then paste the one-time token, then the /fire URL
   ✓ Imported Claude routine fire URL + token as Actions secret refs
   ✓ Recorded repo/environment setup assertion for acme/widgets
 
@@ -49,8 +50,10 @@ Welcome to loopdog. Let's connect your accounts — no API keys needed.
 - **Claude** uses **manual routine import** — *not* an API key and not the Claude
   Code GitHub Action. Dana creates or edits a routine in Claude's web UI, selects
   the repo and Claude cloud environment, adds an API trigger, and gives loopdog the
-  generated `/fire` URL plus one-time bearer token. Loopdog stores only secret refs
-  and later calls `/fire` from Actions on Dana's subscription.
+  one-time bearer token and the generated `/fire` URL (Claude reveals them in that
+  order). The routine's own prompt is irrelevant — loopdog sends the real task in
+  every `/fire` call. Loopdog stores only secret refs and later calls `/fire` from
+  Actions on Dana's subscription.
 - **Claude project env vars** are configured in the Claude cloud environment, not
   passed from GitHub Actions when loopdog calls `/fire`.
 
