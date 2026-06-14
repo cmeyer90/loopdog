@@ -720,11 +720,13 @@ async function ingestPhase(
   // Verdict routing (0033/0042): comment-shaped results may land on the
   // fallback state (changes-requested, needs-clarification).
   let target = loop.transition.to;
-  if (!result.pr && result.commentId !== undefined) {
-    const verdictComment = (await deps.gh.listComments(item.ref)).find(
-      (c) => c.id === result.commentId,
-    );
-    const verdict = verdictComment ? parseVerdict(verdictComment.body) : null;
+  if (!result.pr && (result.verdict !== undefined || result.commentId !== undefined)) {
+    // The verdict can arrive as a formal PR review (result.verdict) or an issue
+    // comment (result.commentId) — read whichever the backend matched.
+    const verdictBody =
+      result.verdict ??
+      (await deps.gh.listComments(item.ref)).find((c) => c.id === result.commentId)?.body;
+    const verdict = verdictBody ? parseVerdict(verdictBody) : null;
     target = verdictTarget(loop, verdict);
     step('gate', `verdict: ${verdict ?? '(none)'} -> ${target}`);
 

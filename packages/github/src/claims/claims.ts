@@ -75,8 +75,12 @@ export async function acquireClaim(
   const claimant = opts.claimant ?? runId;
   const marker = claimMarker(claimant);
   await gh.addLabels(item, [claimLabel(claimant)]);
+  // The assignee is a cosmetic "someone is on it" signal — the claim LABEL is
+  // the real lock. Assigning a bot/agent fails under an Actions installation
+  // token ("Assigning agents is not supported…"), so never let it abort the
+  // claim and strand the item between marker and lease.
   if (opts.assignee) {
-    await gh.addAssignees(item, [opts.assignee]);
+    await tryAssign(() => gh.addAssignees(item, [opts.assignee!]));
   }
 
   const after = await gh.getItemLabels(item);
@@ -126,7 +130,20 @@ export async function releaseClaim(
     }
   }
   if (opts.assignee) {
-    await gh.removeAssignees(item, [opts.assignee]);
+    await tryAssign(() => gh.removeAssignees(item, [opts.assignee!]));
+  }
+}
+
+/**
+ * Run a best-effort (un)assignment. Assignment of bot/agent identities is not
+ * permitted under an Actions installation token; the claim's correctness rests
+ * on the label CAS, not the assignee, so a failure here is swallowed.
+ */
+async function tryAssign(fn: () => Promise<void>): Promise<void> {
+  try {
+    await fn();
+  } catch {
+    // cosmetic signal only — ignore (e.g. installation token can't assign agents)
   }
 }
 

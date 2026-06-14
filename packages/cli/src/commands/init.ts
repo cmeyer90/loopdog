@@ -155,9 +155,14 @@ function renderPlan(plan: ScaffoldPlan): void {
     );
   }
   console.log('\nloops this attaches (all safe-by-default until promoted):\n');
+  // Width columns to the actual content so names like `deploy-smoke` and long
+  // trigger lists stay aligned instead of ragged.
+  const nameW = Math.max(...plan.loops.map((l) => l.name.length));
+  const transW = Math.max(...plan.loops.map((l) => l.transition.length));
+  const trigW = Math.max(...plan.loops.map((l) => l.trigger.length));
   for (const l of plan.loops) {
     console.log(
-      `  ${l.name.padEnd(10)} ${l.transition.padEnd(32)} on ${l.trigger.padEnd(28)} mode=${l.mode}`,
+      `  ${l.name.padEnd(nameW)}  ${l.transition.padEnd(transW)}  on ${l.trigger.padEnd(trigW)}  mode=${l.mode}`,
     );
   }
   void relative; // (kept for future path rendering)
