@@ -1,5 +1,17 @@
 # @loopdog/runtime
 
+## 0.6.1
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @loopdog/adapters@0.6.1
+  - @loopdog/backends@0.6.1
+  - @loopdog/config@0.6.1
+  - @loopdog/core@0.6.1
+  - @loopdog/github@0.6.1
+  - @loopdog/plans@0.6.1
+
 ## 0.6.0
 
 ### Patch Changes
