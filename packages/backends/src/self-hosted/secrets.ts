@@ -177,12 +177,15 @@ export function dopplerSecretStore(options: DopplerStoreOptions = {}): SecretSto
   const token = options.token ?? env.DOPPLER_TOKEN;
   const project = options.project ?? env.DOPPLER_PROJECT;
   const config = options.config ?? env.DOPPLER_CONFIG;
-  const apiBase = trimTrailingSlash(options.apiBase ?? env.DOPPLER_API ?? 'https://api.doppler.com');
+  const apiBase = trimTrailingSlash(
+    options.apiBase ?? env.DOPPLER_API ?? 'https://api.doppler.com',
+  );
   const doFetch = options.fetchImpl ?? fetch;
   return {
     source: 'doppler',
     async resolve(refs) {
-      if (!token) throw new SecretResolutionError('*', 'doppler', 'DOPPLER_TOKEN is not configured');
+      if (!token)
+        throw new SecretResolutionError('*', 'doppler', 'DOPPLER_TOKEN is not configured');
       const out: ResolvedSecret[] = [];
       for (const ref of refs) {
         const name = ref.key ?? ref.name;
