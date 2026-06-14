@@ -1,6 +1,6 @@
 # End-to-End Dogfood Report (task 0063)
 
-The V1 integration gate: Looper attached to ≥1 real **externally-owned** repo on
+The V1 integration gate: Loopdog attached to ≥1 real **externally-owned** repo on
 real **Claude + Codex** subscriptions, driving real issues groom → implement →
 review → merge (→ deploy), human-gated at merge.
 
@@ -29,7 +29,7 @@ are for.
 
 ## Runbook (operator)
 
-1. Attach Looper to a real external repo via the documented flow
+1. Attach Loopdog to a real external repo via the documented flow
    ([quickstart](../quickstart.md)) — Claude routine import **and** Codex App.
 2. Open ≥1 real issue; drive it groom → implement → review → merge (human-gated).
 3. Ensure **both** providers each merge ≥1 issue, and a cross-provider review
@@ -44,7 +44,7 @@ are for.
 
 ## Per-issue traces
 
-_Fill from real run records (`looper runs show <id>` / the telemetry ledger)._
+_Fill from real run records (`loopdog runs show <id>` / the telemetry ledger)._
 
 | Issue | Provider | Path | Outcome | Run records | Notes |
 |---|---|---|---|---|---|
@@ -52,7 +52,7 @@ _Fill from real run records (`looper runs show <id>` / the telemetry ledger)._
 
 ## Aggregate
 
-_From `looper bench` over the dogfood window (feeds [benchmarks.md](../benchmarks.md))._
+_From `loopdog bench` over the dogfood window (feeds [benchmarks.md](../benchmarks.md))._
 
 ## Bug ledger
 

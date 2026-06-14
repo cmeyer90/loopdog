@@ -67,7 +67,7 @@ export function resolveWorkCellEnv(
     }
 
     if (backend === 'claude') {
-      // M00 decision: looper never forwards values into Claude at /fire time.
+      // M00 decision: loopdog never forwards values into Claude at /fire time.
       result.dropped.push({
         name,
         reason:

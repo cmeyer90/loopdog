@@ -1,5 +1,5 @@
 import { afterAll, describe, expect, it } from 'vitest';
-import { stateLabel } from '@looper/core';
+import { stateLabel } from '@loopdog/core';
 import {
   Sim,
   checkInvariants,
@@ -10,7 +10,7 @@ import {
   raceEventSweep,
   sweepRecovery,
   type Action,
-} from '@looper/testing';
+} from '@loopdog/testing';
 import { cleanup, GROOMED_BODY, makeWorld, repo, scaffoldActRepo } from './helpers.js';
 
 /**
@@ -89,7 +89,7 @@ describe('simulation & fault injection (0086)', () => {
     await sim.runToQuiescence();
     expect(world.backend.dispatched.filter((b) => b.loop === 'implement')).toHaveLength(1);
     // One correlated PR, despite three deliveries.
-    const prs = await world.gh.listPullRequestsByHeadPrefix(repo, 'looper/implement/', {
+    const prs = await world.gh.listPullRequestsByHeadPrefix(repo, 'loopdog/implement/', {
       state: 'all',
     });
     expect(prs).toHaveLength(1);
@@ -103,7 +103,7 @@ describe('simulation & fault injection (0086)', () => {
     const crashed = await sim.step(crashMidRun('createComment', 1, labeled));
     expect(crashed.violations).toEqual([]); // no invariant tripped by the abort
     const afterCrash = await world.gh.getIssue({ ...repo, number: 1 });
-    expect(afterCrash.labels.some((l) => l.startsWith('looper:claimed-by/'))).toBe(false); // released
+    expect(afterCrash.labels.some((l) => l.startsWith('loopdog:claimed-by/'))).toBe(false); // released
     // A later sweep retries the (now claim-free) item and drives it forward.
     await sim.runToQuiescence(8, 20 * 60_000); // 20-min ticks beat a 30-min lease
     expect(

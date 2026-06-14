@@ -78,7 +78,7 @@ rather than retrying in-process.
 - [x] Safe under both event and cron-sweep invocation: the concurrent
       event-vs-sweep race test proves exactly one dispatch.
 - [x] A failed step records the failure (class `transient`), releases the
-      claim, bumps `looper:attempts/N`, and escalates to `looper:needs-human`
+      claim, bumps `loopdog:attempts/N`, and escalates to `loopdog:needs-human`
       at the attempt ceiling (class `poisoned`) — M12/M19 refine this policy.
 
 ## Implementation Checklist
@@ -87,7 +87,7 @@ rather than retrying in-process.
 - [x] Implement the gate/claim/compose/dispatch/write pipeline (extra checks —
       budget/auth/resilience — compose in via `RunnerDeps.extraChecks`).
 - [x] Implement run-record emission (`TelemetryBranchStore` → day-bucketed
-      NDJSON on `looper/telemetry` with CAS-retry append; in-memory store for tests).
+      NDJSON on `loopdog/telemetry` with CAS-retry append; in-memory store for tests).
 - [x] Implement the idempotency key + in-flight short-circuit (pending dispatch
       markers take precedence over re-dispatch; live claims skip; reached
       target no-ops).
@@ -126,7 +126,7 @@ rather than retrying in-process.
   dispatching loop marks the canonical intermediate `in-progress` state when
   the table has that edge.
 - Failure handling: release claim BEFORE bumping attempts (item never stays
-  locked by a dead run); attempts ride a `looper:attempts/N` label so the
+  locked by a dead run); attempts ride a `loopdog:attempts/N` label so the
   sweep sees them without a datastore.
 - The claim CAS uses an invocation-unique claimant nonce (see 0013 decisions)
   — without it, the deterministic runId let event+sweep races double-dispatch.
@@ -139,7 +139,7 @@ together — all three must be in place before enabling `act` mode.
 
 ## Final Summary
 
-`runLoopOnce` in `@looper/runtime/pipeline/` is the stateless single-step
+`runLoopOnce` in `@loopdog/runtime/pipeline/` is the stateless single-step
 worker: select (event item or state scan) → decide (standard checks + DoR gate
 + composable extra checks) → claim (nonce'd CAS) → compose brief (versioned
 `briefRef`) → dispatch + persist handle marker → and on a later invocation

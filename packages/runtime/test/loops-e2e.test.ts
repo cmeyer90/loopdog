@@ -3,11 +3,11 @@ import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { handleEvent, handleSweep } from '@looper/runtime';
-import type { ControllerOptions } from '@looper/runtime';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@looper/testing';
-import { loadConfig } from '@looper/config';
-import { renderCriteriaBlock, stateLabel } from '@looper/core';
+import { handleEvent, handleSweep } from '@loopdog/runtime';
+import type { ControllerOptions } from '@loopdog/runtime';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@loopdog/testing';
+import { loadConfig } from '@loopdog/config';
+import { renderCriteriaBlock, stateLabel } from '@loopdog/core';
 import { buildScaffoldPlan } from '../../cli/src/commands/init.js';
 
 /**
@@ -27,7 +27,7 @@ afterAll(async () => {
 });
 
 async function scaffoldRepoDir(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'looper-e2e-'));
+  const dir = await mkdtemp(join(tmpdir(), 'loopdog-e2e-'));
   dirs.push(dir);
   const templatesDir = fileURLToPath(new URL('../../../templates/', import.meta.url));
   const plan = await buildScaffoldPlan(templatesDir, dir);
@@ -38,7 +38,7 @@ async function scaffoldRepoDir(): Promise<string> {
     await writeFile(target, await readFile(file.source, 'utf8'));
   }
   // act mode end-to-end for this test (scaffold default is dry-run)
-  const rootYml = join(dir, '.looper', 'looper.yml');
+  const rootYml = join(dir, '.loopdog', 'loopdog.yml');
   await writeFile(rootYml, (await readFile(rootYml, 'utf8')).replace('mode: dry-run', 'mode: act'));
   return dir;
 }
@@ -63,7 +63,7 @@ const GROOMED_CRITERIA = renderCriteriaBlock([
 ]);
 const GROOMED_PATCH = [
   GROOMED_CRITERIA,
-  '<!-- looper:scope -->api/ratelimit only<!-- /looper:scope -->',
+  '<!-- loopdog:scope -->api/ratelimit only<!-- /loopdog:scope -->',
 ].join('\n');
 
 describe('the four loops end-to-end (M08-M11)', () => {
@@ -96,7 +96,7 @@ describe('the four loops end-to-end (M08-M11)', () => {
       const live = await fake.getIssue(handle.item);
       await fake.updateIssueBody(handle.item, `${live.body}\n\n${GROOMED_PATCH}`);
     };
-    backend.resultVerdict = 'looper-verdict: ready';
+    backend.resultVerdict = 'loopdog-verdict: ready';
     await handleSweep(opts); // dispatch groom
     await handleSweep(opts); // ingest → ready-for-agent
     const groomed = await gh.getIssue(issueRef);
@@ -105,7 +105,7 @@ describe('the four loops end-to-end (M08-M11)', () => {
     const planFile = await gh.readFile(
       repo,
       'main',
-      '.looper/plans/tasks/0001-add-rate-limiting.md',
+      '.loopdog/plans/tasks/0001-add-rate-limiting.md',
     );
     expect(planFile!.content).toContain('Status: ready');
 
@@ -117,14 +117,14 @@ describe('the four loops end-to-end (M08-M11)', () => {
     await handleSweep(opts); // ingest the PR → in-review
     const inReview = await gh.getIssue(issueRef);
     expect(inReview.labels).toContain(stateLabel('in-review'));
-    const prs = await gh.listPullRequestsByHeadPrefix(repo, 'looper/implement/');
+    const prs = await gh.listPullRequestsByHeadPrefix(repo, 'loopdog/implement/');
     expect(prs).toHaveLength(1);
     const pr = prs[0]!;
     expect(pr.labels).toContain(stateLabel('in-review'));
 
     // 4. REVIEW: first pass requests changes (fallback), fix updates the SAME
     //    PR, second review approves.
-    backend.resultVerdict = 'looper-verdict: changes-requested';
+    backend.resultVerdict = 'loopdog-verdict: changes-requested';
     await handleSweep(opts); // dispatch review (issue is processed first)
     await handleSweep(opts); // ingest verdict → changes-requested
     expect((await gh.getIssue(issueRef)).labels).toContain(stateLabel('changes-requested'));
@@ -138,7 +138,7 @@ describe('the four loops end-to-end (M08-M11)', () => {
     expect((await gh.getIssue(issueRef)).labels).toContain(stateLabel('in-review'));
 
     backend.simulate = undefined as never;
-    backend.resultVerdict = 'looper-verdict: approve';
+    backend.resultVerdict = 'loopdog-verdict: approve';
     await handleSweep(opts); // dispatch review again
     await handleSweep(opts); // ingest → verified + criteria attested
     const verified = await gh.getIssue(issueRef);
@@ -198,7 +198,7 @@ describe('the four loops end-to-end (M08-M11)', () => {
       });
 
       // groom verdicts needs-clarification (genuinely ambiguous)
-      backend.resultVerdict = 'looper-verdict: needs-clarification';
+      backend.resultVerdict = 'loopdog-verdict: needs-clarification';
       await handleSweep(opts);
       await handleSweep(opts);
       expect((await gh.getIssue(issueRef)).labels).toContain(stateLabel('needs-clarification'));
@@ -208,7 +208,7 @@ describe('the four loops end-to-end (M08-M11)', () => {
         const live = await fake.getIssue(handle.item);
         await fake.updateIssueBody(handle.item, `${live.body}\n\n${GROOMED_PATCH}`);
       };
-      backend.resultVerdict = 'looper-verdict: ready';
+      backend.resultVerdict = 'loopdog-verdict: ready';
       const replied = await handleEvent(opts, 'issue_comment', {
         action: 'created',
         issue: { number: 1 },
@@ -227,7 +227,7 @@ describe('the four loops end-to-end (M08-M11)', () => {
     async () => {
       const repoDir = await scaffoldRepoDir();
       // tighten the implement loop's limit
-      const loopFile = join(repoDir, '.looper/loops/implement/loop.yml');
+      const loopFile = join(repoDir, '.loopdog/loops/implement/loop.yml');
       await writeFile(
         loopFile,
         (await readFile(loopFile, 'utf8')).replace('max_files: 20', 'max_files: 2'),
@@ -252,7 +252,7 @@ describe('the four loops end-to-end (M08-M11)', () => {
       await handleSweep(opts); // dispatch
       await handleSweep(opts); // ingest → blast-radius halt
       const issue = await gh.getIssue(issueRef);
-      expect(issue.labels).toContain('looper:needs-human');
+      expect(issue.labels).toContain('loopdog:needs-human');
       expect(issue.labels).not.toContain(stateLabel('in-review'));
       const comments = await gh.listComments(issueRef);
       expect(comments.some((c) => c.body.includes('over the loop'))).toBe(true);

@@ -5,11 +5,11 @@ Branch: task/0060-authoring-guides
 
 ## Goal
 
-Publish two complete, copy-pasteable how-to guides on looper's docs site —
+Publish two complete, copy-pasteable how-to guides on loopdog's docs site —
 **"Write a project adapter"** and **"Write a model provider / execution
 backend"** — that take a contributor from "I have a project type / a provider
-looper doesn't support yet" to "my adapter/backend is registered, conformance-
-green, and dispatching" without reading looper's internals.
+loopdog doesn't support yet" to "my adapter/backend is registered, conformance-
+green, and dispatching" without reading loopdog's internals.
 
 ## Background
 
@@ -19,7 +19,7 @@ requires the docs site cover **authoring guides**, and its guiding decision make
 docs a first-class deliverable. These two guides fill the `guides/adapters.md` and
 `guides/providers.md` nav slots the docs-site shell (0058) reserves as stubs.
 
-They document looper's two contributor-facing genericity surfaces from
+They document loopdog's two contributor-facing genericity surfaces from
 [architecture](../../docs/architecture.md) "Generic-ness, in three plugin systems"
 (*Project adapters* and *Model providers / execution backends*) and the
 [codebase](../../docs/codebase.md) decision that "backends and adapters are a small
@@ -54,16 +54,16 @@ no-database model.
 ### Technical detail
 
 **Lands in:** `docs/` only (plus the VitePress nav config from 0058). **No
-`@looper/*` runtime code** — the contracts (`ProjectAdapter`, `Backend`), the
+`@loopdog/*` runtime code** — the contracts (`ProjectAdapter`, `Backend`), the
 conformance kits, and the example impls are owned by 0024/0019/0028; this task is
 documentation that *references* them. Keep snippets minimal and pull real type
-names from `@looper/core`'s port surface so they don't rot.
+names from `@loopdog/core`'s port surface so they don't rot.
 
 **Provider/backend guide (`docs/guides/providers.md`)** — sections:
 
 - *What a backend is*: the dispatch→ingest split (a backend dispatches a brief to
   an execution surface and ingests the PR it produces); the controller (M03 · 0012)
-  is provider-agnostic and only speaks this interface; looper makes **no direct
+  is provider-agnostic and only speaks this interface; loopdog makes **no direct
   model API calls on the primary path** — a subscription backend dispatches to the
   provider's cloud, only the optional self-hosted backend holds a model key.
 - *Contract reference*: the `Backend` port from **0019** —
@@ -74,12 +74,12 @@ names from `@looper/core`'s port surface so they don't rot.
   capability field and how the runner adapts to it (e.g. `secret_phase: setup-only`
   ⇒ lean on the adopter's CI gate, M03 · 0014).
 - *Correlation*: a backend MUST instruct its agent to produce the three correlation
-  signals from **0073** — branch `looper/<loop>/<issue>-<run_id>`, a `looper-run:
+  signals from **0073** — branch `loopdog/<loop>/<issue>-<run_id>`, a `loopdog-run:
   <run_id>` PR trailer, and an issue ref — and `ingest` matches on them; an
   uncorrelated PR returns `null` ("not ours"). Document the async contract: dispatch
   returns, the PR is ingested by a *later* invocation (event or the sweep, 0076).
 - *Scaffold*: a copyable `MyBackend implements Backend` skeleton with TODOs, plus
-  where it registers — the **fixed registry array in `@looper/backends`** (no plugin
+  where it registers — the **fixed registry array in `@loopdog/backends`** (no plugin
   loader; contributors PR their backend in), per the codebase "small fixed registry"
   decision and the post-V1 marketplace exclusion.
 - *Capability honesty*: a backend must report capabilities it actually has; the
@@ -100,7 +100,7 @@ content at the site path and (b) make it parallel in structure and tone to the
 provider guide. **Do not duplicate** the conformance-clause detail from 0028 — link
 to it.
 
-**Consistency guardrails:** no API-key-on-the-primary-path, no looper GitHub App,
+**Consistency guardrails:** no API-key-on-the-primary-path, no loopdog GitHub App,
 no database/queue. The provider guide must state the subscription path is the
 default and the self-hosted/API backend is the secondary escape hatch (architecture
 "Self-hosted / API backend").
@@ -109,7 +109,7 @@ default and the self-hosted/API backend is the secondary escape hatch (architect
 `docs/guides/adapters.md` must not both be live and divergent — pick one canonical
 path and redirect; shared `docs/*.md` repo-relative links (`../.agent/...`) resolve
 on GitHub but not on the built site — reuse 0058's link rewrite/allowlist; code
-snippets must compile against the *current* `@looper/core` types (a stale snippet is
+snippets must compile against the *current* `@loopdog/core` types (a stale snippet is
 worse than no snippet) — keep them minimal and name real exports.
 
 ## Out Of Scope
@@ -128,7 +128,7 @@ worse than no snippet) — keep them minimal and name real exports.
 
 - [x] `docs/guides/providers.md` exists and walks what-it-is → `Backend` contract
       (capabilities/dispatch/ingest) → correlation (0073) → scaffold → register
-      (fixed array in `@looper/backends`) → verify (conformance harness on M18
+      (fixed array in `@loopdog/backends`) → verify (conformance harness on M18
       fakes) → publish, with a copyable backend skeleton and a ~6-line conformance
       snippet.
 - [x] `docs/guides/adapters.md` exists as the canonical adapter how-to (0028 content
@@ -136,14 +136,14 @@ worse than no snippet) — keep them minimal and name real exports.
       a copyable adapter skeleton and a ~6-line `runAdapterConformance` snippet — and
       no second divergent copy of the adapter guide remains live.
 - [x] Both guides are keyless/subscription-consistent: neither tells a contributor
-      to add an API key on the primary path, reintroduce a looper App, or add a
+      to add an API key on the primary path, reintroduce a loopdog App, or add a
       database/queue; the provider guide names the self-hosted backend as the
       secondary key-holding escape hatch.
 - [x] Both guides are wired into the docs nav (the 0058 `guides/*` slots) and surface
       under "Guides"; the old `docs/adapters.md` path redirects/links to the new one.
 - [~] `npm run docs:build` + link-check — DEFERRED (reuses 0058's deferred
       pipeline). The two guides' internal links resolve under the ad-hoc check.
-- [x] Every code snippet references real exported type names from `@looper/core`'s
+- [x] Every code snippet references real exported type names from `@loopdog/core`'s
       port surface (no invented APIs), and the conformance snippets call the actual
       `runAdapterConformance` / backend-harness entrypoints.
 
@@ -156,7 +156,7 @@ worse than no snippet) — keep them minimal and name real exports.
       structure/tone with the provider guide; redirect the old path.
 - [x] Add both pages to the VitePress nav/sidebar (0058 `config.ts`), replacing the
       placeholder stubs.
-- [x] Verify every snippet names current `@looper/core` exports and the real
+- [x] Verify every snippet names current `@loopdog/core` exports and the real
       conformance entrypoints; trim anything that could rot.
 - [x] Run the docs build + link-check; fix any broken/relative links and `base`-path
       asset issues.
@@ -174,7 +174,7 @@ backend), never real quota.
 npm run docs:build        # both guide pages build; exits non-zero on a broken link
 npm run docs:preview      # spot-check nav: Guides → Adapters / Providers render
 # (optional) a vitest assertion that config.ts nav includes both guides/* entries
-# (optional) compile-check the snippets against @looper/core's exported port types
+# (optional) compile-check the snippets against @loopdog/core's exported port types
 ```
 
 ## Verification Log
@@ -189,7 +189,7 @@ npm run docs:preview      # spot-check nav: Guides → Adapters / Providers rend
   Snippets use real exported names (`ExecutionBackend`/`WorkBrief`/`DispatchHandle`/
   `IngestResult`; `ProjectAdapter`/`CommandContext`/`CommandResult`/`RepoFs`) and
   the actual conformance entrypoints (signatures cross-checked against the
-  `@looper/testing` source). Both keyless/subscription-consistent (self-hosted
+  `@loopdog/testing` source). Both keyless/subscription-consistent (self-hosted
   named as the secondary key-holder). Linked from `docs/README.md`.
 
 ## Decisions
@@ -207,7 +207,7 @@ any doctest), and the backend contract-version constant referenced for "publish.
 - **Duplication/drift with 0028 and 0019.** Two adapter guides or a provider guide
   that restates the harness will diverge; mitigate by single-sourcing the adapter
   content at one path and linking (not copying) the conformance-clause detail.
-- **Snippet rot.** Inline code drifts from `@looper/core`; keep snippets minimal,
+- **Snippet rot.** Inline code drifts from `@loopdog/core`; keep snippets minimal,
   name real exports, and prefer linking the contract over pasting it. A breaking
   contract bump is caught by the version constant the "publish" section cites.
 - **Site-vs-GitHub link breakage.** Shared repo-relative links resolve on GitHub but
@@ -222,6 +222,6 @@ Two copy-pasteable how-tos — `docs/guides/providers.md` (write a model provide
 execution backend) and `docs/guides/adapters.md` (write a project adapter, the
 canonical path; the old `docs/adapters.md` redirects here) — take a contributor
 from "unsupported provider/stack" to "registered, conformance-green, dispatching"
-without reading internals. Snippets use only real `@looper/core` port types and
+without reading internals. Snippets use only real `@loopdog/core` port types and
 the actual `runBackendConformance` / `runAdapterConformance` entrypoints, and stay
 keyless/subscription-consistent. The docs:build link-check is deferred with 0058.

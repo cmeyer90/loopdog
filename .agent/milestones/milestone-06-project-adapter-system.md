@@ -2,13 +2,13 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — "Generic-ness,
+> Background: [Loopdog Architecture](../../docs/architecture.md) — "Generic-ness,
 > in three plugin systems" (project adapters). Without this, "any GitHub project"
 > is false.
 
 ## Objective
 
-Ship the plugin interface that lets looper operate an arbitrary project —
+Ship the plugin interface that lets loopdog operate an arbitrary project —
 `detect / build / test / lint / run / deploy` — with auto-detection for common
 stacks, bundled adapters, and a generic command escape hatch so any repo works on
 day one.
@@ -36,12 +36,12 @@ day one.
 
 - [x] A documented adapter interface exists, exercised by ≥2 bundled adapters
   (node + python + the generic reference — three).
-- [x] Looper auto-detects common stacks and falls back to the generic command
+- [x] Loopdog auto-detects common stacks and falls back to the generic command
   adapter otherwise (ranked detection, floor, deterministic ties).
 - [x] Any project can be configured to build/test/run without a bespoke
   adapter (`adapter_options.commands` via the generic adapter).
 - [x] Third parties can author and verify an adapter using the guide
-  (`docs/adapters.md`) + the seven-clause conformance kit in @looper/testing.
+  (`docs/adapters.md`) + the seven-clause conformance kit in @loopdog/testing.
 
 ## Verification Log
 

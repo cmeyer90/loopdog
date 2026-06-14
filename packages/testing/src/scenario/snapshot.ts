@@ -1,5 +1,5 @@
 import { createHash } from 'node:crypto';
-import type { RunRecord } from '@looper/core';
+import type { RunRecord } from '@loopdog/core';
 import type { FakeGitHub } from '../fake-github/fake-github.js';
 import type { InMemoryRunRecordStore } from '../fake-backends/in-memory-records.js';
 
@@ -15,7 +15,7 @@ import type { InMemoryRunRecordStore } from '../fake-backends/in-memory-records.
  * sorted by stable key; (d) volatile fields (durations, tokens) are dropped.
  */
 export interface Golden {
-  /** item number → sorted looper:* labels (state + operational). */
+  /** item number → sorted loopdog:* labels (state + operational). */
   labels: Record<string, string[]>;
   prs: Array<{
     number: number;
@@ -41,8 +41,8 @@ export interface Golden {
 const digest = (text: string): string =>
   'sha256:' + createHash('sha256').update(text).digest('hex').slice(0, 16);
 
-const looperLabels = (labels: string[]): string[] =>
-  labels.filter((l) => l.startsWith('looper:')).sort();
+const loopdogLabels = (labels: string[]): string[] =>
+  labels.filter((l) => l.startsWith('loopdog:')).sort();
 
 export function snapshotGolden(
   gh: FakeGitHub,
@@ -57,7 +57,7 @@ export function snapshotGolden(
   for (const i of [...all.issues, ...all.pulls]
     .filter(inRepo)
     .sort((a, b) => a.ref.number - b.ref.number)) {
-    const ll = looperLabels(i.labels);
+    const ll = loopdogLabels(i.labels);
     if (ll.length > 0) labels[String(i.ref.number)] = ll;
   }
 
@@ -80,7 +80,7 @@ export function snapshotGolden(
     .flatMap((c) =>
       c.bodies.map((body) => ({
         target: `#${c.item}`,
-        author: 'looper',
+        author: 'loopdog',
         bodyDigest: digest(body),
       })),
     )

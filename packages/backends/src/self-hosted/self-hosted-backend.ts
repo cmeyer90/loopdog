@@ -5,7 +5,7 @@ import type {
   GitHubPort,
   IngestResult,
   WorkBrief,
-} from '@looper/core';
+} from '@loopdog/core';
 import { ingestViaCorrelation } from '../correlation/correlate.js';
 
 /**
@@ -17,8 +17,8 @@ import { ingestViaCorrelation } from '../correlation/correlate.js';
  * logged.
  */
 
-export const SELF_HOSTED_WORKER_WORKFLOW = 'looper-self-hosted-worker.yml';
-export const DEFAULT_API_KEY_SECRET = 'LOOPER_MODEL_API_KEY';
+export const SELF_HOSTED_WORKER_WORKFLOW = 'loopdog-self-hosted-worker.yml';
+export const DEFAULT_API_KEY_SECRET = 'LOOPDOG_MODEL_API_KEY';
 
 export interface SelfHostedBackendOptions {
   gh: GitHubPort;

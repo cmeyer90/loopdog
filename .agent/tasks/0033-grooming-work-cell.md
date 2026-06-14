@@ -5,8 +5,8 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Ship looper's first dispatched work cell: a built-in **groom** loop that takes a
-raw issue and produces Definition-of-Ready — a `<!-- looper:acceptance-criteria -->`
+Ship loopdog's first dispatched work cell: a built-in **groom** loop that takes a
+raw issue and produces Definition-of-Ready — a `<!-- loopdog:acceptance-criteria -->`
 marker block (each criterion tagged `test:`/`manual:`), explicit scope bounds, and
 a test plan — then binds the durable plan and posts the plan-as-contract. The brief
 edits only issue text + plans, never code, so it proves triggering, claiming,
@@ -25,7 +25,7 @@ and the intent-diff (M10 · 0043) judges.
 
 This task is **loop-as-data**: it adds *no new code module*. The grooming behavior
 ships as the built-in asset `templates/loops/groom/` (executed by the generic
-`@looper/runtime` pipeline, 0012) and a built-in `groom` policy fragment. It depends
+`@loopdog/runtime` pipeline, 0012) and a built-in `groom` policy fragment. It depends
 on: the marker-block format + DoR predicate (0014), brief composition (0022),
 issue↔plan binding + label↔Status mirror (0016), dispatch/ingest correlation (0073),
 and the in-memory `GitHubPort` scenario harness (M18 · 0083). The clarification
@@ -36,13 +36,13 @@ trigger wiring + dry-run mode is 0036.
 ## Scope
 
 - Author `templates/loops/groom/loop.yml` — the built-in groom loop definition
-  (trigger, transition, backend, gates), shipped by `@looper/runtime`.
+  (trigger, transition, backend, gates), shipped by `@loopdog/runtime`.
 - Author `templates/loops/groom/prompt.md` — the grooming brief that instructs the
   provider cloud agent to emit DoR: the acceptance-criteria marker block, scope
   bounds, and a test plan, editing only the issue body + plan files.
 - Ship a built-in `groom` policy fragment encoding the DoR output contract +
   assume-and-proceed bias (composed in via 0022's `{% policy %}`).
-- A **golden scenario test** (M18 tier 3, in `@looper/testing`): a fixture raw
+- A **golden scenario test** (M18 tier 3, in `@loopdog/testing`): a fixture raw
   issue → drive the real runner over fake GitHub + a fake/replay backend → assert
   the DoR output shape (parseable marker block, ≥1 `test:` criterion, scope + test
   plan present, plan bound, contract comment posted, label advanced to
@@ -85,18 +85,18 @@ agent to:
 5. Apply the edits to the issue body + the bound plan file only — **touch no code**.
 
 The composer (0022) always appends the non-overridable output-contract trailer
-(branch `looper/groom/<issue>-<run_id>`, `looper-run:` PR trailer, issue ref) so the
+(branch `loopdog/groom/<issue>-<run_id>`, `loopdog-run:` PR trailer, issue ref) so the
 plan-edit PR/comments correlate back on ingest (0073).
 
 **The DoR output shape** the brief must produce (and the test asserts), mirroring
 0014's marker format exactly:
 
 ```
-<!-- looper:acceptance-criteria -->
+<!-- loopdog:acceptance-criteria -->
 - [x] rate limit enforced at 100 req/min per API key   (test: api/ratelimit.test.ts)
 - [x] returns 429 + Retry-After when exceeded          (test: api/ratelimit.test.ts)
 - [x] limit is configurable via env var                (manual)
-<!-- /looper:acceptance-criteria -->
+<!-- /loopdog:acceptance-criteria -->
 
 ### Scope
 In: per-key limiting + 429 response. Out: per-IP limiting, distributed quota.
@@ -113,7 +113,7 @@ the issue, and advances the label `needs-grooming → ready-for-agent` (which mi
 plan `Status: planned → ready`). The controller→controller handoff to the implement
 loop is carried by the cron sweep (0076), since `GITHUB_TOKEN` won't re-trigger.
 
-**Golden scenario test** (`@looper/testing/src/scenario/`, M18 tier 3): a fixture
+**Golden scenario test** (`@loopdog/testing/src/scenario/`, M18 tier 3): a fixture
 raw issue ("add rate limiting") seeded into fake GitHub (0083); a fake/replay
 backend returns a scripted DoR plan-edit PR; the real runner grooms it; golden
 assertions: (a) the issue body contains a *parseable* marker block with ≥1 `test:`
@@ -137,7 +137,7 @@ with the criteria mirrored, (d) a contract comment was posted, (e) the label is
       declares `from: needs-grooming → to: ready-for-agent`, `require_dor: false`,
       `tier: safe`, an issue+plan-only blast radius, and `mode: dry-run`.
 - [x] `templates/loops/groom/prompt.md` produces, when composed (0022), a brief that
-      instructs the agent to emit the `<!-- looper:acceptance-criteria -->` block
+      instructs the agent to emit the `<!-- loopdog:acceptance-criteria -->` block
       (each criterion tagged `test:`/`manual:`), scope bounds, and a test plan, and
       to edit only the issue body + plan files.
 - [x] The built-in `groom` policy fragment encodes the DoR output contract + the
@@ -154,11 +154,11 @@ with the criteria mirrored, (d) a contract comment was posted, (e) the label is
 ## Implementation Checklist
 
 - [x] Write `templates/loops/groom/loop.yml` (trigger/transition/backend/gates/blast
-      radius/dry-run) and confirm it validates via `looper loops validate groom`.
+      radius/dry-run) and confirm it validates via `loopdog loops validate groom`.
 - [x] Write `templates/loops/groom/prompt.md` (DoR instructions + 0022 placeholders
       + `{% policy groom %}`).
-- [x] Ship the built-in `groom` policy fragment in `@looper/runtime`.
-- [x] Add the fixture raw issue + scripted DoR backend response in `@looper/testing`.
+- [x] Ship the built-in `groom` policy fragment in `@loopdog/runtime`.
+- [x] Add the fixture raw issue + scripted DoR backend response in `@loopdog/testing`.
 - [x] Write the golden scenario test asserting the DoR output shape, plan binding,
       contract comment, and label advance.
 - [x] Update the loop walkthrough/docs if the built-in groom asset shape changed.
@@ -170,8 +170,8 @@ Tests run via the repo's `vitest` runner; behavioral paths use the M18 fakes
 
 ```bash
 # from repo root
-npm test -w @looper/runtime    # groom loop.yml validates; brief composes with the groom policy
-npm test -w @looper/testing    # golden scenario: raw issue → asserted DoR output shape
+npm test -w @loopdog/runtime    # groom loop.yml validates; brief composes with the groom policy
+npm test -w @loopdog/testing    # golden scenario: raw issue → asserted DoR output shape
 # golden: seed fixture issue → run groom → assert parseable marker block (≥1 test:),
 #         scope + test plan, plan bound, contract comment, label = ready-for-agent
 ```
@@ -189,7 +189,7 @@ npm test -w @looper/testing    # golden scenario: raw issue → asserted DoR out
 - The grooming work cell is DATA: `templates/loops/groom/{loop.yml,prompt.md}`
   (plan-update expectation; the prompt mandates the criteria/scope/test-plan
   blocks, plan creation, the plan-as-contract comment, and the verdict line).
-- Result routing: `looper-verdict: ready` → ready-for-agent;
+- Result routing: `loopdog-verdict: ready` → ready-for-agent;
   `needs-clarification` → the fallback state. The runner's verdict ingest is
   generic (loop-actions.ts).
 - Plan binding/opening happens in the runner's plan-sync (M04), so grooming

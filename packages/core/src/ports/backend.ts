@@ -2,10 +2,10 @@ import type { ItemRef, PullRequestSnapshot } from './types.js';
 
 /**
  * The execution-backend port (tasks 0019/0094): `dispatch(brief) → ingest(result)`.
- * Implemented by `@looper/backends` for Claude (routine /fire), Codex (@codex
- * mention), and the self-hosted runner; faked by `@looper/testing` (0084).
+ * Implemented by `@loopdog/backends` for Claude (routine /fire), Codex (@codex
+ * mention), and the self-hosted runner; faked by `@loopdog/testing` (0084).
  * The controller composes the brief and gates the result; the backend's cloud
- * agent does the model work. Looper makes no direct model API calls here.
+ * agent does the model work. Loopdog makes no direct model API calls here.
  */
 export interface ExecutionBackend {
   readonly id: BackendId;
@@ -55,9 +55,9 @@ export interface WorkBrief {
   briefRef: string;
   /** The fully-composed instruction text (prompt artifact + item context + contract). */
   instructions: string;
-  /** Branch the agent is asked to create — `looper/<loop>/<issue>-<runId>`. */
+  /** Branch the agent is asked to create — `loopdog/<loop>/<issue>-<runId>`. */
   expectedBranch: string;
-  /** Trailer the agent is asked to put in the PR body — `looper-run: <runId>`. */
+  /** Trailer the agent is asked to put in the PR body — `loopdog-run: <runId>`. */
   expectedTrailer: string;
   /** What the work cell is expected to produce. */
   expectation: 'pull-request' | 'comment' | 'plan-update';

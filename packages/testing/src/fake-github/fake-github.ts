@@ -9,7 +9,7 @@ import type {
   LabelSpec,
   PullRequestSnapshot,
   ReviewSnapshot,
-} from '@looper/core';
+} from '@loopdog/core';
 
 /**
  * In-memory `GitHubPort` (task 0083): issues/PRs/labels/comments/checks/files

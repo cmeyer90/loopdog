@@ -22,23 +22,23 @@ smoke/canary & health gate (0047), and feeds deploy result reporting (0049). Lik
 every loop, it is **data, not core code**: a `templates/loops/rollback/` asset
 (`loop.yml` + `prompt.md`) executed by the generic runtime pipeline (M03 · 0012),
 not a new code module. Its deterministic, model-free transition lands in
-`@looper/runtime`; the revert/health commands run through the `ProjectAdapter` port
-(0024) in `@looper/adapters`.
+`@loopdog/runtime`; the revert/health commands run through the `ProjectAdapter` port
+(0024) in `@loopdog/adapters`.
 
 ## Scope
 
 - A built-in `rollback` loop asset under `templates/loops/rollback/` (`loop.yml` +
-  `prompt.md`), with the `looper:state/deploy-failed → rolled-back` transition.
+  `prompt.md`), with the `loopdog:state/deploy-failed → rolled-back` transition.
 - A **deterministic** rollback transition (no model dispatch on the primary path):
   invoke the adapter's revert, then re-run the health/smoke checks (0047) against
   the rolled-back target, and record the outcome.
 - Failure-triggered entry: the deploy gate (0047) parking a release in
-  `looper:state/deploy-failed` is what fires this loop; dual-trigger via the
+  `loopdog:state/deploy-failed` is what fires this loop; dual-trigger via the
   `check_suite`/deploy-status event **and** the cron sweep (0076), since the
   failing transition is a controller→controller handoff `GITHUB_TOKEN` won't
   re-fire.
-- Outcome states: health restored → `looper:state/rolled-back`; rollback itself
-  failed or health still bad → `looper:needs-human` (page the escalation target).
+- Outcome states: health restored → `loopdog:state/rolled-back`; rollback itself
+  failed or health still bad → `loopdog:needs-human` (page the escalation target).
 
 ### Technical detail
 
@@ -78,11 +78,11 @@ and writes a `RollbackResult` into the run record.
 
 ```
 0046 deploy → 0047 gate fails
-   → label item looper:state/deploy-failed   (controller→controller handoff)
+   → label item loopdog:state/deploy-failed   (controller→controller handoff)
    → THIS loop fires (check_suite event OR next cron sweep tick, 0076)
    → claim (0013) → adapter revert (strategy) → re-run 0047 health/smoke
-       ├─ healthy  → looper:state/rolled-back   + report (0049)
-       └─ still bad / revert failed → looper:needs-human (page escalate_to, M19)
+       ├─ healthy  → loopdog:state/rolled-back   + report (0049)
+       └─ still bad / revert failed → loopdog:needs-human (page escalate_to, M19)
 ```
 
 **Run record extension** (the structure 0069/telemetry consume, per 0012):
@@ -107,7 +107,7 @@ the loop fails closed to `needs-human` rather than declaring success.
 generic retry policy — re-attempting a failed rollback risks compounding an outage;
 instead it escalates immediately to `escalate_to`. The circuit breaker still
 applies if the adapter/provider is down. An unrecoverable rollback is never
-silently dropped: it lands in `looper:needs-human` with the full `RollbackResult`
+silently dropped: it lands in `loopdog:needs-human` with the full `RollbackResult`
 recorded.
 
 **Pre-flight gates** still run (0012): `tier: core` keeps rollback high-trust, and
@@ -128,14 +128,14 @@ a stranger cannot trigger a rollback storm.
 
 - [x] A built-in `rollback` loop ships as `templates/loops/rollback/` assets
       (`loop.yml` + `prompt.md`) and validates against the state machine (M03).
-- [x] A 0047 gate failure parks the release in `looper:state/deploy-failed`, and
+- [x] A 0047 gate failure parks the release in `loopdog:state/deploy-failed`, and
       this loop fires from **both** the `check_suite` event and the cron sweep
       (0076) — the controller→controller handoff is never stranded.
 - [x] The rollback transition is deterministic (`backend: none`, no model
       dispatch) and reverts via the configured `strategy` through the adapter (0024).
 - [x] After revert it **re-runs** the 0047 health/smoke checks; only a passing
-      re-verify advances to `looper:state/rolled-back`.
-- [x] A failed revert or a still-unhealthy re-verify routes to `looper:needs-human`
+      re-verify advances to `loopdog:state/rolled-back`.
+- [x] A failed revert or a still-unhealthy re-verify routes to `loopdog:needs-human`
       and pages `escalate_to` (M19) — never a false "rolled-back".
 - [x] The transition is idempotent: re-invoking on an already-reverted target (event
       racing sweep, or duplicate delivery) is a no-op proven by a double-invocation
@@ -146,15 +146,15 @@ a stranger cannot trigger a rollback storm.
 
 - [x] Author `templates/loops/rollback/{loop.yml,prompt.md}` with the
       `deploy-failed → rolled-back` transition and `backend: none`.
-- [x] Implement the deterministic rollback transition in `@looper/runtime`
+- [x] Implement the deterministic rollback transition in `@loopdog/runtime`
       (`pipeline`/`loops-builtin`): read deploy artifacts → adapter revert by
       `strategy` → re-run 0047 checks → write `RollbackResult`.
 - [x] Add the `rollback` strategy switch (`adapter` / `redeploy-previous` /
       `revert-commit`) and the `rollback` env/flag on `CommandContext` for the
       adapter path (coordinate with 0024).
 - [x] Wire the `check_suite`/deploy-status event trigger and confirm the cron sweep
-      (0076) also advances `looper:state/deploy-failed` items.
-- [x] Wire the unrecoverable path to `looper:needs-human` + M19 escalation; honor
+      (0076) also advances `loopdog:state/deploy-failed` items.
+- [x] Wire the unrecoverable path to `loopdog:needs-human` + M19 escalation; honor
       `max_attempts`/`on_unrecoverable`.
 - [x] Extend the run record with the `rollback` block; expose it to 0049.
 

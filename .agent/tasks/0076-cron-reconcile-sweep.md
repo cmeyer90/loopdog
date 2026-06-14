@@ -43,7 +43,7 @@ the counterpart to event triggers (0008). See [architecture](../../docs/architec
   after acting; recurring same-state cron work would require widening 0012's
   idempotency key with a schedule slot and is out of scope here.
 - **Scan order and bounds:** load config, group loops by `transition.from`, and
-  query each distinct non-terminal `looper:state/*` label once. Build `(loop,item)`
+  query each distinct non-terminal `loopdog:state/*` label once. Build `(loop,item)`
   candidates only when the item's state matches the loop's `from` state and the
   loop trigger filter passes (event loops are eligible on every reconcile pass as a
   backstop; cron loops only when due). Process candidates in a stable bounded order:
@@ -54,14 +54,14 @@ the counterpart to event triggers (0008). See [architecture](../../docs/architec
 - **Eligibility:** the sweep pre-filters only durable "not yet" state, then delegates
   final gates to the runner pre-flight (0012, 0050/0075, M17, M19). It skips items
   with no lifecycle label, multiple lifecycle labels, terminal/off-ramp labels
-  (`looper:needs-human`, `looper:blocked`, `looper:abandoned`,
-  `looper:stuck`, `looper:quarantine`), an unresolved approval hold
-  (`looper:needs-approval` without trusted `looper:approved`), an active
+  (`loopdog:needs-human`, `loopdog:blocked`, `loopdog:abandoned`,
+  `loopdog:stuck`, `loopdog:quarantine`), an unresolved approval hold
+  (`loopdog:needs-approval` without trusted `loopdog:approved`), an active
   non-expired claim/lease, or a future timer (`not_before`, `retryAfter`,
   schedule-window `until`, circuit `reopen_after`). When a timer has passed, the
   item is re-evaluated rather than blindly dispatched; the corresponding gate may
   clear the hold or park/defer it again with a fresh reason.
-- **Parked/deferred retry:** `looper:parked` is an operational hold, not a lifecycle
+- **Parked/deferred retry:** `loopdog:parked` is an operational hold, not a lifecycle
   state. Budget/quota/rate/window parks carry `retryAfter`/`until` and are retried
   at or after that time; kill-switch parks have no retry time and stay held until
   the stop signal clears; approval holds stay held until a trusted release; overload
@@ -81,11 +81,11 @@ the counterpart to event triggers (0008). See [architecture](../../docs/architec
   the same item safe; the loser observes the claim/advanced state and no-ops.
 - **The three jobs the sweep owns:**
   1. **Resilience backstop** — recover items a dropped/delayed webhook stranded.
-  2. **Controller→controller handoff** — pick up items whose state looper's own
+  2. **Controller→controller handoff** — pick up items whose state loopdog's own
      `GITHUB_TOKEN` changed (which doesn't re-trigger event workflows). *This is
      why no GitHub App is needed* (0008, M07).
   3. **Time-based transitions** — backoff re-attempts + stuck escalation (M19),
-     lease-expiry reclaim of crashed runs (M03 · 0013), `looper:parked`
+     lease-expiry reclaim of crashed runs (M03 · 0013), `loopdog:parked`
      retry-after holds from budget/quota, quarantine/schedule-window timers — none
      of which any event represents.
 - **Safety/idempotency:** the scan itself is read-mostly and provider-free. A sweep
@@ -165,7 +165,7 @@ the counterpart to event triggers (0008). See [architecture](../../docs/architec
   table order; loops by name; items by oldest-updated then number. Caps
   (`max_candidates_per_tick/state`) defer and REPORT (`deferredByCap`).
 - Holds: parked/approval/stop/quarantine skip with reasons (the runner
-  pre-flight owns clearing once M12/M17 gates land); `looper:approved`
+  pre-flight owns clearing once M12/M17 gates land); `loopdog:approved`
   releases the approval hold (also honored in core's decision checks).
 - Timer maintenance each tick: `clearExpiredClaim` before eligibility, so a
   crashed run's item is reclaimed and advanced in the same tick.
@@ -191,5 +191,5 @@ bounded scan over the loops' from-states, expired-lease reclaim, durable
 pre-filtering with reported skips, cron-due evaluation with coalescing,
 capped + reported candidate processing through the same single-step runner
 (one transition per item per tick), all claim-protected against racing
-events. Exposed via `looper controller sweep` + the reusable-sweep workflow +
+events. Exposed via `loopdog controller sweep` + the reusable-sweep workflow +
 the scaffolded scheduled caller.

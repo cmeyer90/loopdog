@@ -1,10 +1,10 @@
 # Security & Trust Model
 
-Looper's canonical statement of what it can and cannot do to your repo, where the
+Loopdog's canonical statement of what it can and cannot do to your repo, where the
 trust boundaries lie, and the honest residual risks — so you can decide to attach
 it *before* your code, secrets, or subscription quota are ever exposed.
 
-> **The one-paragraph trust model.** Looper is a controller in *your* repo's
+> **The one-paragraph trust model.** Loopdog is a controller in *your* repo's
 > GitHub Actions. It runs on the repo's `GITHUB_TOKEN` (least-privilege, keyless),
 > drives work on *your* Claude/Codex subscription (no model API key on the primary
 > path), and uses **labels as its only state**. It is **safe by default**
@@ -20,27 +20,27 @@ Report vulnerabilities per [`SECURITY.md`](../SECURITY.md) (responsible disclosu
 1. **Human-gated by default** — every loop ships `mode: dry-run` (observe +
    explain); acting is opt-in per loop, and `tier:core` merge stays human-gated
    even after promotion.
-2. **Secrets never enter the looper-controlled model context** — project secrets
+2. **Secrets never enter the loopdog-controlled model context** — project secrets
    marked `sensitive` are stripped before the agent phase (the Codex secret-phase
    model); the controller never puts a token into a prompt.
-3. **Looper cannot edit its own gates** — the CI checks, branch protection, and
+3. **Loopdog cannot edit its own gates** — the CI checks, branch protection, and
    the workflow files that gate it are outside its writable surface (blast-radius
    + `forbidden_paths`); a run cannot weaken the conditions of its own merge.
 
 ## Permission inventory
 
-Every identity Looper touches, its scope, and who grants it. **There is no Looper
+Every identity Loopdog touches, its scope, and who grants it. **There is no Loopdog
 GitHub App, and no model API key on the primary path.**
 
 | Identity | Scope | Grantor | Notes |
 |---|---|---|---|
 | Actions `GITHUB_TOKEN` | write `contents`/`issues`/`pull-requests`, read `checks` — this repo only | GitHub (auto) | the controller's identity; least-privilege manifest; controller writes don't re-trigger workflows |
-| `LOOPER_PAT` (optional) | a PAT you scope | you | only to buy instant controller→controller handoff (else the cron sweep does it) |
+| `LOOPDOG_PAT` (optional) | a PAT you scope | you | only to buy instant controller→controller handoff (else the cron sweep does it) |
 | Codex provider App | the provider's GitHub App scopes | you (install) | the Codex subscription path |
-| Claude routine fire URL + token | a per-routine bearer (Actions secret) | you (import via `looper login`) | the Claude subscription path — **not** an API key |
+| Claude routine fire URL + token | a per-routine bearer (Actions secret) | you (import via `loopdog login`) | the Claude subscription path — **not** an API key |
 | Claude GitHub App (optional) | native trigger scopes | you | only if you want native triggers |
-| OAuth `client_id` | sign-in only | provider | used by `looper login`; nothing is pasted |
-| `LOOPER_MODEL_API_KEY` | a model API key | you | **self-hosted backend only** — the secondary, opt-in, key-holding escape hatch |
+| OAuth `client_id` | sign-in only | provider | used by `loopdog login`; nothing is pasted |
+| `LOOPDOG_MODEL_API_KEY` | a model API key | you | **self-hosted backend only** — the secondary, opt-in, key-holding escape hatch |
 
 ## Blast-radius guarantees
 
@@ -68,7 +68,7 @@ Each control and the milestone/task that owns it:
 | Provider-cloud compromise | code + brief sent to the provider | the [secret-residency boundary](trust-boundary.md) (no `sensitive` secrets in cloud agent context); ZDR org → no cloud routines | code content is necessarily visible to the provider you chose — see residency below |
 | Malicious dependency / supply chain | the build | adapter runs in the sandboxed work cell; CI gates the merge | standard supply-chain risk of your own deps |
 
-## What Looper can / cannot do
+## What Loopdog can / cannot do
 
 **Can:** label + comment on issues/PRs, open branches/PRs, update the durable
 plan, dispatch work to your subscription, merge a non-`core` PR once DoD passes
@@ -92,7 +92,7 @@ holds a model API key).
 ## Open risk: ToS
 
 Whether driving a *subscription* (vs. the metered API) for automation is within a
-provider's Terms of Service is an **open question** Looper does not resolve —
+provider's Terms of Service is an **open question** Loopdog does not resolve —
 tracked in the M00 validation spike (task 0092). Treat it as your decision; the
 self-hosted/API path exists if you need to avoid it.
 

@@ -4,8 +4,8 @@ import type {
   IssueSnapshot,
   LoopDefinition,
   PullRequestSnapshot,
-} from '@looper/core';
-import { evaluateDod } from '@looper/core';
+} from '@loopdog/core';
+import { evaluateDod } from '@loopdog/core';
 
 /**
  * Per-loop-kind behaviors layered on the generic runner (M08-M11):
@@ -16,7 +16,7 @@ import { evaluateDod } from '@looper/core';
 
 // ---- verdicts (0033/0035/0042/0043) ----
 
-const VERDICT_RE = /looper-verdict:\s*([a-z-]+)/i;
+const VERDICT_RE = /loopdog-verdict:\s*([a-z-]+)/i;
 
 export function parseVerdict(body: string): string | null {
   const m = body.match(VERDICT_RE);

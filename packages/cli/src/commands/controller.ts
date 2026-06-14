@@ -1,12 +1,12 @@
 import type { Command } from 'commander';
 import { readFile, appendFile } from 'node:fs/promises';
-import { OctokitGitHub, resolveGitHubAuth, ACTIONS_BOT } from '@looper/github';
-import { TelemetryBranchStore, handleEvent, handleSweep } from '@looper/runtime';
-import type { ExecutionBackend } from '@looper/core';
+import { OctokitGitHub, resolveGitHubAuth, ACTIONS_BOT } from '@loopdog/github';
+import { TelemetryBranchStore, handleEvent, handleSweep } from '@loopdog/runtime';
+import type { ExecutionBackend } from '@loopdog/core';
 import { findTemplatesDir } from '../assets.js';
 
 /**
- * `looper controller event|sweep` — the entrypoint the reusable Actions
+ * `loopdog controller event|sweep` — the entrypoint the reusable Actions
  * workflows invoke (tasks 0008/0076). Deterministic; uses the workflow's
  * GITHUB_TOKEN; one event or one sweep tick per invocation.
  */
@@ -56,14 +56,14 @@ export function registerController(
         );
         const lines = [
           `event: ${opts.eventName} -> matched loops: ${result.matchedLoops.join(', ') || '(none)'}`,
-          ...(result.intake ? ['intake: labeled new issue looper:state/new'] : []),
+          ...(result.intake ? ['intake: labeled new issue loopdog:state/new'] : []),
           ...result.records.map(
             (r) =>
               `  ${r.loop} #${r.item.number}: ${r.outcome.status}${r.outcome.transition ? ` (${r.outcome.transition})` : ''}`,
           ),
         ];
         console.log(lines.join('\n'));
-        await jobSummary(['## looper event', ...lines]);
+        await jobSummary(['## loopdog event', ...lines]);
       },
     );
 
@@ -93,7 +93,7 @@ export function registerController(
         ...summary.skipped.slice(0, 20).map((s) => `  skip #${s.item}: ${s.reason}`),
       ];
       console.log(lines.join('\n'));
-      await jobSummary(['## looper sweep', ...lines]);
+      await jobSummary(['## loopdog sweep', ...lines]);
     });
 }
 

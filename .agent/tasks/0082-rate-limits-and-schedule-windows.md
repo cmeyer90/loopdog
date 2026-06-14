@@ -32,7 +32,7 @@ verdict when both apply (see Decisions).
 - A rate-limiter gate: per-actor-per-day and global-per-hour trigger caps, with
   state derived from GitHub (no DB).
 - A schedule-window gate: allowed weekdays / hours / timezone for a loop.
-- Repo-default (`looper.yml`) + per-loop override; **strictest applicable wins**
+- Repo-default (`loopdog.yml`) + per-loop override; **strictest applicable wins**
   (consistent with 0079).
 - A decision the pre-flight pipeline consumes: `allow` | `defer` (try later via the
   sweep) | `park` (needs-approval) — never silent spend.
@@ -42,10 +42,10 @@ verdict when both apply (see Decisions).
 
 ### Technical detail
 
-Lands as a gate in **`@looper/core`** (`core/src/gates/`), pure and IO-free,
-returning a decision the runner enforces; config schema in **`@looper/config`**;
-the runner wires it in **`@looper/runtime`** (`runtime/src/pipeline/`). Counting
-reads GitHub via the `GitHubPort` (**`@looper/github`**) — no database.
+Lands as a gate in **`@loopdog/core`** (`core/src/gates/`), pure and IO-free,
+returning a decision the runner enforces; config schema in **`@loopdog/config`**;
+the runner wires it in **`@loopdog/runtime`** (`runtime/src/pipeline/`). Counting
+reads GitHub via the `GitHubPort` (**`@loopdog/github`**) — no database.
 
 Config (root default, per-loop overridable; per M17 Guiding Decisions):
 
@@ -71,7 +71,7 @@ type WhenDecision =
   (transitions that spent), not raw events, by querying:
   - `per_actor_per_day`: dispatches attributed to `actor` within a rolling 24h
     window (search the repo's run-record comments / claim markers carrying
-    `looper-run:` + actor, filtered by timestamp).
+    `loopdog-run:` + actor, filtered by timestamp).
   - `global_per_hour`: all effective dispatches repo-wide in the rolling 60m window.
 - Attribution: the triggering actor is the one 0079 resolved; cron-originated
   transitions are tagged `system` and excluded from per-actor counts.
@@ -130,20 +130,20 @@ must not double-count (idempotency key from 0012 makes re-evaluation safe).
 ## Implementation Checklist
 
 - [x] Add `rate_limit` + `schedule_window` to the `authorization` schema in
-      `@looper/config` (zod), with repo-default ∪ per-loop strictest-wins merge.
+      `@loopdog/config` (zod), with repo-default ∪ per-loop strictest-wins merge.
 - [x] Implement the pure window evaluator (days/hours/tz, wrap, DST) in `core/gates`.
 - [x] Implement the GitHub-derived rate counter (per-actor/day, global/hour) over
       run-record/claim markers via `GitHubPort`.
 - [x] Return `WhenDecision` (allow | defer{until} | park) and wire it into the
-      pre-flight pipeline in `@looper/runtime` after 0079/0081, before M12.
+      pre-flight pipeline in `@loopdog/runtime` after 0079/0081, before M12.
 - [x] Coordinate verdicts with M12 (most-restrictive + latest `until`).
 - [x] Ensure `defer` items are re-picked by the sweep (0076) idempotently.
-- [x] Update docs (`looper.yml` reference) for the two knobs.
+- [x] Update docs (`loopdog.yml` reference) for the two knobs.
 
 ## Test Plan
 
 Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
-(`@looper/testing` fake GitHub from [0083](0083-fake-github.md)) — no real quota.
+(`@loopdog/testing` fake GitHub from [0083](0083-fake-github.md)) — no real quota.
 
 ```bash
 # replace with the chosen stack's runner (e.g. pnpm -w test --filter core --filter runtime)

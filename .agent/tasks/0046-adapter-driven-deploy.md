@@ -9,7 +9,7 @@ Make merge mean "deploy started." On the `merged → deploying` transition, the
 deploy loop resolves the project adapter, runs its `deploy()` command against the
 affected target using bring-your-own deploy secrets, and records the deploy
 attempt on the run record — leaving promotion gated on the smoke/health checks
-(0047) and failure handled by the rollback loop (0048). Looper makes no
+(0047) and failure handled by the rollback loop (0048). Loopdog makes no
 assumptions about the target's infrastructure; everything project-specific lives
 behind `ProjectAdapter.deploy()`.
 
@@ -19,7 +19,7 @@ Part of [Milestone 11](../milestones/milestone-11-deploy-and-operational-verific
 (Deploy & Operational Verification) — verification-ladder rung 4 in
 [architecture](../../docs/architecture.md) ("deploy via the project adapter on
 merge"). The milestone's Guiding Decisions require deploy to be adapter-driven,
-use BYO deploy secrets (no looper-baked cloud creds), and feed smoke/health
+use BYO deploy secrets (no loopdog-baked cloud creds), and feed smoke/health
 gating. This task is M11's *driver*: it consumes the `ProjectAdapter` `deploy()`
 contract frozen in [Milestone 06](../milestones/milestone-06-project-adapter-system.md)
 (interface 0024, detect 0025, generic escape hatch 0026, bundled adapters 0027)
@@ -35,12 +35,12 @@ produces.
 - A built-in `deploy` loop (`templates/loops/deploy/loop.yml` + `prompt.md`) whose
   transition is `merged → deploying`, triggered on merge and by the cron sweep; 0047
   owns promotion from `deploying` to `deployed` or `deploy-failed`.
-- The effectful deploy step in `@looper/runtime`: resolve the adapter, compute the
+- The effectful deploy step in `@loopdog/runtime`: resolve the adapter, compute the
   affected target, exec `adapter.deploy()` via the injected `CommandRunner`, and
   record the result on the run record (0012).
 - Deploy-secret sourcing from the BYO backend (M07): names-only into the brief/run
   record; values injected at exec time from the adopter's Actions secrets / OIDC
-  (opt-in `id-token: write` per 0029), never looper-baked.
+  (opt-in `id-token: write` per 0029), never loopdog-baked.
 - Affected-target computation (which service(s) the merged PR touched) and the
   no-op/skip path when the adapter has no `deploy` command.
 - Handoff to the smoke/health gate (0047): leave the item in a `deploying`
@@ -69,7 +69,7 @@ deploy:
   require_smoke: true          # 0047 must pass before promotion to `deployed`
 ```
 
-**Pipeline step** (`@looper/runtime/src/pipeline`, e.g. `deployStep.ts`):
+**Pipeline step** (`@loopdog/runtime/src/pipeline`, e.g. `deployStep.ts`):
 
 ```ts
 interface DeployTarget { id: string; reason: string; } // affected service/env
@@ -82,21 +82,21 @@ interface DeployResult {
 }
 ```
 
-1. **Resolve adapter** — config-pin (`looper.yml` `adapter:` / `loop.yml`) →
+1. **Resolve adapter** — config-pin (`loopdog.yml` `adapter:` / `loop.yml`) →
    `detect()` → `generic`, identical precedence to 0040. Read `capabilities()`:
    if `deploy` is false → `adapter.deploy()` returns `{ skipped: true }` → record
    `status: skipped` and hand to 0047, which records smoke as `not_applicable`
    before promoting to `deployed` (a no-deploy-target project is still a valid
    merge — see edge cases).
 2. **Compute affected target** — derive the deploy target from the merged PR's
-   changed paths against `looper.yml` `deploy.targets[]`
+   changed paths against `loopdog.yml` `deploy.targets[]`
    (`{ id, paths: [...], env }`) so only the affected service deploys ("deploys
    exactly the affected target", DoD). With no `targets` config, default to a
    single whole-repo target. Record the matched target + reason on the run record.
 3. **Inject deploy secrets (BYO)** — pass `CommandContext.env` populated at exec
    time from the adopter's Actions secrets / OIDC. The brief and run record carry
    **names only** (`deploy.env: [DEPLOY_TOKEN, ...]`); values never enter
-   looper-controlled model-visible artifacts (consistent with 0040 / M07's
+   loopdog-controlled model-visible artifacts (consistent with 0040 / M07's
    secret-scrubbing rule). Deploy loops opting into OIDC set `id-token: write` in
    their workflow per 0029 — not granted by default.
 4. **Exec deploy** — call `adapter.deploy(ctx)` through the injected
@@ -107,7 +107,7 @@ interface DeployResult {
    release ref if surfaced (the deterministic handle 0048 needs to revert);
    absent, 0048 falls back to redeploying the previous merged sha.
 6. **Hand off to smoke/health (0047)** — on `status: started`, do **not** label
-   `deployed` yet; set an ops sub-state (`looper:state/deploying`, declared by the
+   `deployed` yet; set an ops sub-state (`loopdog:state/deploying`, declared by the
    loop) and let 0047 run the gate on the next invocation. Only 0047 (or a skipped
    deploy) advances the item to `deployed`. This keeps each invocation single-step
    (0012) and crash-safe: a crash mid-deploy is re-detected by the sweep (0076).
@@ -120,7 +120,7 @@ double-fire exactly as 0012 defends double-dispatch.
 
 **Edge cases.** (a) adapter resolves to `generic` with no `deploy` command →
 `skipped`, promote with `deploy: none`; (b) the merge event fires but
-`GITHUB_TOKEN`-authored merges may not re-trigger looper — the **cron sweep
+`GITHUB_TOKEN`-authored merges may not re-trigger loopdog — the **cron sweep
 (0076)** picks up `merged` items lacking a deploy run; (c) deploy command times
 out → treated as `failed` → rollback (0048); (d) multiple targets affected →
 deploy each, aggregate results, any failure fails the transition; (e) a re-merge
@@ -148,7 +148,7 @@ deploy each, aggregate results, any failure fails the transition; (e) a re-merge
       `deploy.targets[]`; with no config, a single whole-repo target deploys.
 - [x] Deploy secrets are sourced from the BYO backend at exec time; only env var
       **names** appear in the brief/run record/plan — no secret values, no
-      looper-baked cloud creds.
+      loopdog-baked cloud creds.
 - [x] An adapter with no `deploy` command yields `skipped` and hands to 0047 to
       record `deploy: none` / `smoke: not_applicable` before `deployed`, not a failure.
 - [x] A failed `deploy()` records `status: failed` and hands to the rollback loop
@@ -161,12 +161,12 @@ deploy each, aggregate results, any failure fails the transition; (e) a re-merge
 ## Implementation Checklist
 
 - [x] Author `templates/loops/deploy/loop.yml` + `prompt.md` and register it as a
-      built-in loop in `@looper/runtime/src/loops-builtin`.
+      built-in loop in `@loopdog/runtime/src/loops-builtin`.
 - [x] Implement `resolveDeployTarget(pr, config)` (changed-paths → `deploy.targets[]`).
-- [x] Implement the deploy step in `@looper/runtime/src/pipeline`: resolve adapter,
+- [x] Implement the deploy step in `@loopdog/runtime/src/pipeline`: resolve adapter,
       inject names-only env, exec `adapter.deploy()`, build `DeployResult`.
 - [x] Record `DeployResult` + rollback handle on the run record (0012); add the
-      `looper:state/deploying` sub-state and the `require_smoke` handoff to 0047.
+      `loopdog:state/deploying` sub-state and the `require_smoke` handoff to 0047.
 - [x] Implement the idempotency short-circuit keyed on merge sha + `deployId`.
 - [x] Wire skip/fail/timeout paths (skip → promote; fail/timeout → rollback 0048).
 - [x] Update docs if loop authoring/deploy config (`deploy.targets`, `deploy.env`)
@@ -175,7 +175,7 @@ deploy each, aggregate results, any failure fails the transition; (e) a re-merge
 ## Test Plan
 
 Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
-(`@looper/testing` fake-github + a fake `ProjectAdapter` with a fake
+(`@loopdog/testing` fake-github + a fake `ProjectAdapter` with a fake
 `CommandRunner`) — no real provider quota, no real deploys, no child processes.
 
 ```bash
@@ -199,9 +199,9 @@ Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
 ## Decisions
 
 - Deploy = the merge predicate loop (pull_request.closed + merged: true)
-  relabeling merged → deploying, plus the `looper-deploy.yml` workflow
+  relabeling merged → deploying, plus the `loopdog-deploy.yml` workflow
   template running the ADAPTER's deploy command in the adopter's CI with
-  their own secrets (bring-your-own; no looper-baked creds). The workflow
+  their own secrets (bring-your-own; no loopdog-baked creds). The workflow
   reports the `deploy` check the smoke loop gates on.
 
 ## Risks / Rollback

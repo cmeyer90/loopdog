@@ -36,7 +36,7 @@ export function projectIndexes(
   const planIndex = [
     '# Task Index',
     '',
-    'Derived from the task files by looper — do not edit by hand.',
+    'Derived from the task files by loopdog — do not edit by hand.',
     '',
     `- **Next task id:** \`${nextId}\``,
     `- **Total tasks:** ${tasks.length}`,
@@ -52,7 +52,7 @@ export function projectIndexes(
   const milestonesIndex = [
     '# Milestones',
     '',
-    'Derived from the milestone files by looper — do not edit by hand.',
+    'Derived from the milestone files by loopdog — do not edit by hand.',
     '',
     '| Milestone | Status | Title |',
     '|---:|---|---|',
@@ -96,7 +96,7 @@ export async function rebuildIndexes(files: RepoPlanStoreFiles): Promise<{
   for (const [path, content] of targets) {
     const existing = await files.read(path);
     if (existing?.content === content) continue;
-    await files.write(path, content, 'looper: rebuild plan indexes');
+    await files.write(path, content, 'loopdog: rebuild plan indexes');
     wrote.push(path);
   }
   return { wrote, skipped: projected.skipped };

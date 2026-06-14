@@ -1,11 +1,11 @@
-import type { RunRecord } from '@looper/core';
+import type { RunRecord } from '@loopdog/core';
 import {
   CLAIM_LABEL_PREFIX,
   LEASE_LABEL_PREFIX,
   LOCK_LABEL_PREFIX,
   STATE_LABEL_PREFIX,
   stateOfLabels,
-} from '@looper/core';
+} from '@loopdog/core';
 import type { FakeGitHub } from '../fake-github/fake-github.js';
 
 /**
@@ -101,7 +101,7 @@ export const idempotentIngest: Invariant = ({ records }) => {
 
 /**
  * Claim exclusivity: at most one live claim/lease holder per item at any step.
- * Reads the labels directly — two distinct `looper:claimed-by/*` (or lock)
+ * Reads the labels directly — two distinct `loopdog:claimed-by/*` (or lock)
  * markers on one item is a violation.
  */
 export const claimExclusivity: Invariant = ({ gh }) => {

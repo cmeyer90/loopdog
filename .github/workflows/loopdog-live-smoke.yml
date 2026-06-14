@@ -4,10 +4,10 @@
 # provider API/capability/correlation drift the fakes can only approximate.
 #
 # Gated to manual dispatch + nightly cron — it NEVER gates a PR merge. On
-# failure it opens/updates a tracking issue (dogfooding looper's escalation),
+# failure it opens/updates a tracking issue (dogfooding loopdog's escalation),
 # but does not block. Concurrency-guarded so nightly + manual never overlap and
 # double-spend the provider rate cap.
-name: looper-live-smoke
+name: loopdog-live-smoke
 on:
   workflow_dispatch:
     inputs:
@@ -23,7 +23,7 @@ permissions:
   issues: write # to open/update the drift tracking issue (non-blocking)
 
 concurrency:
-  group: looper-live-smoke # one live run at a time — never double-spend quota
+  group: loopdog-live-smoke # one live run at a time — never double-spend quota
   cancel-in-progress: false
 
 jobs:
@@ -33,10 +33,10 @@ jobs:
     # Never part of any required-check set; failures are advisory drift signals.
     continue-on-error: true
     env:
-      LOOPER_TIER: '5'
-      LOOPER_LIVE_SMOKE_REPO: ${{ vars.LOOPER_LIVE_SMOKE_REPO }}
-      LOOPER_LIVE_SMOKE_TOKEN: ${{ secrets.LOOPER_LIVE_SMOKE_TOKEN }}
-      LOOPER_LIVE_SMOKE_PROVIDER: ${{ github.event.inputs.provider || 'claude' }}
+      LOOPDOG_TIER: '5'
+      LOOPDOG_LIVE_SMOKE_REPO: ${{ vars.LOOPDOG_LIVE_SMOKE_REPO }}
+      LOOPDOG_LIVE_SMOKE_TOKEN: ${{ secrets.LOOPDOG_LIVE_SMOKE_TOKEN }}
+      LOOPDOG_LIVE_SMOKE_PROVIDER: ${{ github.event.inputs.provider || 'claude' }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4

@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import type { ExecutionBackend, WorkBrief } from '@looper/core';
+import type { ExecutionBackend, WorkBrief } from '@loopdog/core';
 import { FakeGitHub } from '../fake-github/fake-github.js';
 
 /**
@@ -26,8 +26,8 @@ function brief(): WorkBrief {
     item,
     briefRef: 'implement/prompt.md@abc1234',
     instructions: 'Implement the thing.',
-    expectedBranch: 'looper/implement/1-run-implement-1-a0-deadbeef',
-    expectedTrailer: 'looper-run: run-implement-1-a0-deadbeef',
+    expectedBranch: 'loopdog/implement/1-run-implement-1-a0-deadbeef',
+    expectedTrailer: 'loopdog-run: run-implement-1-a0-deadbeef',
     expectation: 'pull-request',
   };
 }
@@ -49,8 +49,8 @@ export function runBackendConformance(opts: BackendConformanceOpts): void {
       gh.seedIssue({ ref: item });
       const handle = await opts.makeBackend(gh).dispatch(brief());
       expect(handle.runId).toBe('run-implement-1-a0-deadbeef');
-      expect(handle.expectedBranch).toContain('looper/implement/1-');
-      expect(handle.expectedTrailer).toContain('looper-run:');
+      expect(handle.expectedBranch).toContain('loopdog/implement/1-');
+      expect(handle.expectedTrailer).toContain('loopdog-run:');
       expect(handle.expectation).toBe('pull-request');
       expect(handle.signal).toBeDefined();
     });

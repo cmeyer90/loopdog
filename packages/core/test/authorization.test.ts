@@ -5,8 +5,8 @@ import {
   resolveAuthorizationPolicy,
   scheduleWindowGate,
   triggerSourceAllowed,
-} from '@looper/core';
-import type { AuthorizationConfig, RunRecord, TriggerActor } from '@looper/core';
+} from '@loopdog/core';
+import type { AuthorizationConfig, RunRecord, TriggerActor } from '@loopdog/core';
 
 const base: AuthorizationConfig = { actors: 'collaborators', onUnauthorized: 'park' };
 

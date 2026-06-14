@@ -34,31 +34,31 @@ behavior beyond reading the resolved plan.
 
 ## Scope
 
-- A `routing:` config block in `looper.yml` (validated in `@looper/config`) plus a
+- A `routing:` config block in `loopdog.yml` (validated in `@loopdog/config`) plus a
   `routing:` override stanza permitted in a per-loop `loop.yml` (strictest/most
   specific wins, same merge precedence as budgets in 0050).
 - A pure **`resolveRoutingPlan(loop, tier, config, outcomes?) → RoutingPlan`** in
-  `@looper/core` that turns the knobs into a concrete, deterministic plan:
+  `@loopdog/core` that turns the knobs into a concrete, deterministic plan:
   implementer backend, whether/which reviewer, whether to ensemble, escalation
   policy — with costs annotated.
 - A small **`quality_floor` / `cost_ceiling`** preset vocabulary so adopters pick
   an intent (`economy` | `balanced` | `quality`) without hand-wiring every flag.
 - Reconciliation rules when knobs conflict with budget/quota verdicts (0050/0075)
   and with the mechanism defaults (0054/0055/0056).
-- Surfacing the resolved plan + its rationale in the run record so `looper status`
+- Surfacing the resolved plan + its rationale in the run record so `loopdog status`
   / run reporting (M16 · 0052) can show *why* a given backend/review path ran.
 
 ### Technical detail
 
-**Lands in:** config schema in `@looper/config` (`config/src/schema/`); the pure
-resolver + `RoutingPlan` type in `@looper/core` (`core/src/routing/`, a new focused
+**Lands in:** config schema in `@loopdog/config` (`config/src/schema/`); the pure
+resolver + `RoutingPlan` type in `@loopdog/core` (`core/src/routing/`, a new focused
 folder — not a dumping ground); the call site is the runtime pipeline
 (`runtime/src/pipeline/`) where it composes the brief and picks the backend, after
 the pre-flight gate (0050/0075) and before dispatch (M05 · 0073). No new package,
 no new IO port — outcomes come from the telemetry sink (0053), spend from the
 run-record ledger (0012).
 
-**Config (`looper.yml`), validated by zod:**
+**Config (`loopdog.yml`), validated by zod:**
 
 ```yaml
 routing:
@@ -80,7 +80,7 @@ routing:
     prefer_quota_backend: codex   # tie-break toward the backend with quota headroom
 ```
 
-Per-loop override (`.looper/loops/<name>/loop.yml`) may carry a `routing:` stanza
+Per-loop override (`.loopdog/loops/<name>/loop.yml`) may carry a `routing:` stanza
 with the **same shape**; the resolver deep-merges `loop` over repo `per_tier[tier]`
 over `preset` defaults. A `loop.yml`'s explicit `backend:` (0023) is honored as the
 implementer unless `routing.implementer` is set, in which case routing wins and the
@@ -114,7 +114,7 @@ interface RoutingPlan {
    implementer (this is the input 0054 consumes for its pairing policy);
    `same_provider`/`<name>` set explicitly; `skip` ⇒ no review dispatch.
 4. Resolve `ensemble`: `always` ⇒ attempts=2 + judge; `opt_in` ⇒ attempts=2 only
-   if the item carries `looper:ensemble` (operator opt-in) **and** budget allows;
+   if the item carries `loopdog:ensemble` (operator opt-in) **and** budget allows;
    `false`/`never` ⇒ attempts=1. Judge backend defaults to a third/neutral backend
    when available, else the reviewer.
 5. Compute `estimatedDispatches` = implement(×attempts) + review(0|1) +
@@ -166,7 +166,7 @@ config validation **error** (fail at load, not at dispatch).
 
 ## Acceptance Criteria
 
-- [x] A `routing:` block in `looper.yml` (and a per-loop `routing:` override)
+- [x] A `routing:` block in `loopdog.yml` (and a per-loop `routing:` override)
       validates via zod; an unknown backend name is a load-time error.
 - [x] `resolveRoutingPlan` is pure and deterministic: same inputs (config, tier,
       outcomes) → identical `RoutingPlan`, proven by a table-driven unit test.
@@ -186,8 +186,8 @@ config validation **error** (fail at load, not at dispatch).
 
 ## Implementation Checklist
 
-- [x] Add the `routing:` schema (+ `preset` expansion, defaults) to `@looper/config`.
-- [x] Define `RoutingPlan` + `resolveRoutingPlan` in `@looper/core` (`core/src/routing/`).
+- [x] Add the `routing:` schema (+ `preset` expansion, defaults) to `@loopdog/config`.
+- [x] Define `RoutingPlan` + `resolveRoutingPlan` in `@loopdog/core` (`core/src/routing/`).
 - [x] Implement symbolic-backend resolution (telemetry-driven + static fallback).
 - [x] Implement the cost-ceiling clamp + value-ordered shedding.
 - [x] Wire the resolver into the runtime pipeline before dispatch; pass
@@ -244,5 +244,5 @@ pins give per-loop hard overrides without code.
 
 ## Final Summary
 
-Adopters tune the cost/quality trade per loop entirely in looper.yml —
+Adopters tune the cost/quality trade per loop entirely in loopdog.yml —
 preference ordering, sample floors, and pins — consumed by routeBackend.

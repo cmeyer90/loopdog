@@ -12,9 +12,9 @@ loops offline, deterministically, with no network and no quota.
 ## Background
 
 Part of [Milestone 18](../milestones/milestone-18-test-and-simulation-harness.md);
-the keystone enabler. Because `GitHubPort` is an interface in `@looper/core`, a fake
+the keystone enabler. Because `GitHubPort` is an interface in `@loopdog/core`, a fake
 is a drop-in the runner can't tell from the real Octokit wrapper. Lives in the
-dev-only `@looper/testing` package. See [codebase](../../docs/codebase.md) "Testing
+dev-only `@loopdog/testing` package. See [codebase](../../docs/codebase.md) "Testing
 strategy."
 
 ## Scope
@@ -32,7 +32,7 @@ strategy."
 - State is a plain object graph; methods are synchronous over it (wrapped to the
   port's async signature). No clock/network — time is injected (M18 · 0086).
 - **Event fidelity matters most:** the fake reproduces *which* mutations emit
-  workflow-triggering events and which don't (e.g. a label set by the `looper`
+  workflow-triggering events and which don't (e.g. a label set by the `loopdog`
   token does not enqueue a triggering event; a PR opened by the "provider app"
   identity does). This is what lets scenario tests prove the events-vs-sweep
   behavior (M02 · 0076) without real GitHub.

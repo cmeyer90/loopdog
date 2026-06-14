@@ -5,7 +5,7 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Land the actual `@looper/core` **port interfaces** (the contracts every package
+Land the actual `@loopdog/core` **port interfaces** (the contracts every package
 codes against) as real TypeScript, and decide **where run records persist** — the
 missing keystone between "scaffold stubs" (0001) and "implement behavior" (0011+).
 
@@ -16,11 +16,11 @@ build-order step 1 ([codebase](../../docs/codebase.md)). The plan review found t
 five ports are *named everywhere but defined nowhere as signatures* — a day-one
 blocker. 0001 lands stubs; the consumer tasks (0011/0013/0019/0073) assume the types
 already exist. This task fills that crack. (The run-record **store** is owned by
-0053 — the orphan `looper/telemetry` branch — and this task defers to it.)
+0053 — the orphan `loopdog/telemetry` branch — and this task defers to it.)
 
 ## Scope
 
-- Define the five port interfaces in `@looper/core` as concrete TS, even if methods
+- Define the five port interfaces in `@loopdog/core` as concrete TS, even if methods
   initially `throw not-implemented`:
   - **`GitHubPort`** — enumerate the full method surface: issues/PRs/comments/labels/
     assignees/checks/reviews read+write, plus event types. (0013 claiming and 0073
@@ -29,10 +29,10 @@ already exist. This task fills that crack. (The run-record **store** is owned by
   - **`PlanStore`**, **`ProjectAdapter`**, **`SecretBackend`** — method signatures
     + return types (not word-lists).
   - Declare the **`RepoFs`** type (the read-only repo view injected into
-    `ProjectAdapter.detect()`) among the `@looper/core` port types.
+    `ProjectAdapter.detect()`) among the `@loopdog/core` port types.
 - The **run-record store** is owned by
   [0053](0053-per-provider-outcome-telemetry.md): run records
-  persist to a dedicated orphan git branch `looper/telemetry` as append-only
+  persist to a dedicated orphan git branch `loopdog/telemetry` as append-only
   day-bucketed NDJSON (`runs/YYYY-MM-DD.ndjson`), written via the contents API. This
   task **defers** to 0053 for the store; it does not define its own.
 - Define the run-record TS type (from 0012's schema).
@@ -43,22 +43,22 @@ already exist. This task fills that crack. (The run-record **store** is owned by
 
 ## Acceptance Criteria
 
-- [x] All five port interfaces exist as real TS in `@looper/core`, importable by
+- [x] All five port interfaces exist as real TS in `@loopdog/core`, importable by
       consumers; `GitHubPort`'s method surface is fully enumerated (six composed
       capability interfaces: Issues/Labels/Pulls/Checks/RepoFiles/Identity);
       `RepoFs` is declared in `ports/project-adapter.ts`.
-- [x] The run-record store is owned by 0053 (orphan `looper/telemetry` branch);
+- [x] The run-record store is owned by 0053 (orphan `loopdog/telemetry` branch);
       core only defines the type + `runRecordPath()`; the store impl lives in
-      `@looper/runtime` telemetry (`TelemetryBranchStore`).
+      `@loopdog/runtime` telemetry (`TelemetryBranchStore`).
 - [x] The run-record type is defined and matches 0012's schema.
-- [x] `@looper/core` stays IO-free (interfaces + pure functions; zero deps).
+- [x] `@loopdog/core` stays IO-free (interfaces + pure functions; zero deps).
 
 ## Implementation Checklist
 
 - [x] Write the five interfaces + the `RepoFs` type + the run-record type in
-      `@looper/core` (`src/ports/`, `src/run-record/`).
+      `@loopdog/core` (`src/ports/`, `src/run-record/`).
 - [x] Enumerate `GitHubPort` methods + the normalized `TriggerEvent` type.
-- [x] Defer the run-record store to 0053 (orphan `looper/telemetry` branch).
+- [x] Defer the run-record store to 0053 (orphan `loopdog/telemetry` branch).
 - [x] Confirm consumers compile against the interfaces (claims 0013, runner
       0012, fake GitHub 0083, Octokit adapter, fake backend 0084 all do).
 
@@ -73,7 +73,7 @@ already exist. This task fills that crack. (The run-record **store** is owned by
 - 2026-06-09: `npm run build` green with both implementations of `GitHubPort`
   (OctokitGitHub + FakeGitHub) and one of `ExecutionBackend` (FakeBackend)
   compiling against the ports — the interfaces are consumer-proven.
-- 2026-06-09: boundary check confirms `@looper/core` imports nothing.
+- 2026-06-09: boundary check confirms `@loopdog/core` imports nothing.
 
 ## Decisions
 
@@ -90,7 +90,7 @@ already exist. This task fills that crack. (The run-record **store** is owned by
 - `SecretBackend` = `{residency, available, resolve}` + the pure `scrubSecrets`
   leak guard (0031) exported beside it.
 - Store deferred to 0053 as specced; `TelemetryBranchStore` (runtime) writes
-  day-bucketed NDJSON to `looper/telemetry` via `RepoFilesPort` with CAS retry.
+  day-bucketed NDJSON to `loopdog/telemetry` via `RepoFilesPort` with CAS retry.
 
 ## Risks / Rollback
 
@@ -100,7 +100,7 @@ claim/runner logic is testable.
 
 ## Final Summary
 
-All five ports live in `@looper/core/src/ports/` as real, consumer-proven TS:
+All five ports live in `@loopdog/core/src/ports/` as real, consumer-proven TS:
 `GitHubPort` (six composed capability interfaces, fully enumerated),
 `ExecutionBackend` (`capabilities/dispatch/ingest` with the 0093 dual-signal
 correlation types), `ProjectAdapter` (+`RepoFs`), `PlanStore` (typed plan

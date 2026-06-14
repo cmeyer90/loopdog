@@ -5,9 +5,9 @@ import type {
   ExecutionBackend,
   IngestResult,
   WorkBrief,
-} from '@looper/core';
-import { FakeGitHub, runLiveSmoke, cleanupScratch } from '@looper/testing';
-import { stateLabel } from '@looper/core';
+} from '@loopdog/core';
+import { FakeGitHub, runLiveSmoke, cleanupScratch } from '@loopdog/testing';
+import { stateLabel } from '@loopdog/core';
 
 /**
  * Live-smoke harness logic (task 0087) — verified HERMETICALLY (tiers 1–4) with
@@ -39,8 +39,8 @@ function brief(): WorkBrief {
     item,
     backend: 'claude',
     expects: 'pull-request',
-    expectedBranch: 'looper/implement/1-run',
-    expectedTrailer: 'looper-run: run-implement-1-a0-deadbeef',
+    expectedBranch: 'loopdog/implement/1-run',
+    expectedTrailer: 'loopdog-run: run-implement-1-a0-deadbeef',
     expectation: 'pull-request',
     briefRef: 'implement/prompt.md@abc',
     prompt: 'do the thing',
@@ -50,7 +50,7 @@ function brief(): WorkBrief {
 const expected = {
   capabilities: CAPS,
   api: { triggerMode: 'api_fire' },
-  correlation: { branchPrefix: 'looper/implement', trailerKey: 'looper-run', linksIssue: true },
+  correlation: { branchPrefix: 'loopdog/implement', trailerKey: 'loopdog-run', linksIssue: true },
 };
 
 /** A scripted backend whose dispatch/ingest behavior the test chooses. */
@@ -85,7 +85,7 @@ describe('live-smoke harness (0087, hermetic logic check)', () => {
     const gh = new FakeGitHub();
     await gh.ensureBranch(repo, 'main');
     gh.seedIssue({ ref: item, labels: [stateLabel('in-progress')] });
-    const pr = gh.seedPull({ ref: { ...repo, number: 7 }, headRef: 'looper/implement/1-run' });
+    const pr = gh.seedPull({ ref: { ...repo, number: 7 }, headRef: 'loopdog/implement/1-run' });
     const backend = stubBackend({
       ingest: () => ({ status: 'completed', pr, matchedBy: 'branch-name' }),
     });
@@ -147,7 +147,7 @@ describe('live-smoke harness (0087, hermetic logic check)', () => {
     const gh = new FakeGitHub();
     await gh.ensureBranch(repo, 'main');
     gh.seedIssue({ ref: item, labels: [stateLabel('in-progress')] });
-    const pr = gh.seedPull({ ref: { ...repo, number: 7 }, headRef: 'looper/implement/1-run' });
+    const pr = gh.seedPull({ ref: { ...repo, number: 7 }, headRef: 'loopdog/implement/1-run' });
     const backend = stubBackend({
       ingest: () => ({ status: 'completed', pr, matchedBy: 'branch-name' }),
     });
@@ -164,18 +164,18 @@ describe('live-smoke harness (0087, hermetic logic check)', () => {
     expect(result.drift?.drifted).toBe(true);
   });
 
-  it('cleanupScratch removes looper labels and runs the operator closer', async () => {
+  it('cleanupScratch removes loopdog labels and runs the operator closer', async () => {
     const gh = new FakeGitHub();
     gh.seedIssue({
       ref: item,
-      labels: [stateLabel('in-progress'), 'looper:claimed-by/x', 'keep-me'],
+      labels: [stateLabel('in-progress'), 'loopdog:claimed-by/x', 'keep-me'],
     });
     let closed = false;
     await cleanupScratch(gh, item, async () => {
       closed = true;
     });
     const labels = await gh.getItemLabels(item);
-    expect(labels).toEqual(['keep-me']); // looper:* removed, foreign label kept
+    expect(labels).toEqual(['keep-me']); // loopdog:* removed, foreign label kept
     expect(closed).toBe(true);
   });
 });

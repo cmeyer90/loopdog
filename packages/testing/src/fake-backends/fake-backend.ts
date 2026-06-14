@@ -4,7 +4,7 @@ import type {
   ExecutionBackend,
   IngestResult,
   WorkBrief,
-} from '@looper/core';
+} from '@loopdog/core';
 import type { FakeGitHub } from '../fake-github/fake-github.js';
 
 /**
@@ -32,7 +32,7 @@ export class FakeBackend implements ExecutionBackend {
    * the handle; the trailer comment/PR is still created by the backend.
    */
   simulate?: (gh: FakeGitHub, handle: DispatchHandle) => Promise<void>;
-  /** Verdict line appended to comment-shaped results (e.g. 'looper-verdict: ready'). */
+  /** Verdict line appended to comment-shaped results (e.g. 'loopdog-verdict: ready'). */
   resultVerdict?: string;
   private sessions = 0;
   private polls = new Map<string, number>();
@@ -109,7 +109,7 @@ export class FakeBackend implements ExecutionBackend {
         this.gh.seedPull({
           ref: { ...repoRef, number: 9001 + allPrs.length },
           headRef,
-          title: `looper run ${handle.runId}`,
+          title: `loopdog run ${handle.runId}`,
           body,
           author: { login: 'fake-provider[bot]', type: 'Bot' },
         });

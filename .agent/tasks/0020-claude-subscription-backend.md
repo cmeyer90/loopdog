@@ -24,7 +24,7 @@ backend. See [architecture](../../docs/architecture.md) "Dispatch surfaces" and
 M00 resolved the bootstrap direction from public docs: V1 uses **manual routine
 import**. Users create the Claude routine, select its repo/environment, add an API
 trigger, and import the `/fire` URL + bearer token as GitHub Actions secret refs.
-Looper does not create Claude routines, generate/revoke routine API tokens, or set
+Loopdog does not create Claude routines, generate/revoke routine API tokens, or set
 Claude cloud environment variables programmatically in V1.
 
 ## Scope
@@ -36,7 +36,7 @@ Claude cloud environment variables programmatically in V1.
 - Dispatch: `/fire` the routine with the composed brief as run context.
 - Verify/document the routine sandbox expectations (setup script, env var names,
   network access) so tests can run (M07 · 0030); values are configured in Claude's
-  cloud environment by the user, not injected by Looper at dispatch.
+  cloud environment by the user, not injected by Loopdog at dispatch.
 - Ingest the resulting PR/comments and return an IngestResult (correlation via
   0073).
 - Surface capabilities; handle the ZDR-excluded case by directing to self-hosted.
@@ -48,13 +48,13 @@ Claude cloud environment variables programmatically in V1.
   key. Store the `/fire` URL as a secret ref too unless a later security review
   decides routine IDs are safe in config. Routine calls send the dated beta header
   (`experimental-cc-routine-2026-04-01`); pin + surface it as a known breakage point.
-- **Provisioning/import**: `looper connect claude` imports one user-created routine
+- **Provisioning/import**: `loopdog connect claude` imports one user-created routine
   per enabled Claude-backed loop. The operator creates/edits the routine in Claude
   web UI, selects the repo and cloud environment, adds an API trigger, copies the
-  fire URL and one-time bearer token, and lets Looper store them as secret refs.
+  fire URL and one-time bearer token, and lets Loopdog store them as secret refs.
   Prompt changes update the composed `text` sent to `/fire`; changing the saved
   routine prompt, repo, environment, branch permissions, or token requires a
-  user-managed Claude UI edit and/or `looper connect claude --reimport`.
+  user-managed Claude UI edit and/or `loopdog connect claude --reimport`.
 - **Dispatch**: `POST /fire` with `{ text: <composed brief> }`; capture the
   returned session id + URL into the DispatchHandle (the CLI `runs show` session
   link). `capabilities = { trigger_modes:[api_fire], provider_native_triggers:
@@ -109,7 +109,7 @@ Claude cloud environment variables programmatically in V1.
 
 - 2026-06-09: backend suite green: /fire carries the bearer token + pinned
   beta header and the brief as {text}; the session id/URL lands in the handle;
-  missing import fails with the `looper connect claude` remediation; 429
+  missing import fails with the `loopdog connect claude` remediation; 429
   surfaces as quota-backoff (never retry-storming); zdrCompatible=false;
   ingest correlates via the shared 0073 matcher. No ANTHROPIC_API_KEY or
   claude-code-action anywhere (grep-clean).
@@ -118,7 +118,7 @@ Claude cloud environment variables programmatically in V1.
 ## Decisions
 
 - V1 ships ONE imported routine (fire URL + token secret refs
-  LOOPER_CLAUDE_FIRE_URL/TOKEN) rather than routine-per-loop: the brief
+  LOOPDOG_CLAUDE_FIRE_URL/TOKEN) rather than routine-per-loop: the brief
   composed per loop is the differentiator, and one import keeps onboarding to
   a single web-UI walk. Recorded simplification of the spec's
   routine-per-loop model; revisit when live trials (0093) show per-loop
@@ -126,7 +126,7 @@ Claude cloud environment variables programmatically in V1.
 - Brief payload: `{ text: <composed brief> }`; beta header pinned to
   `experimental-cc-routine-2026-04-01` and exported as a constant (the known
   breakage point).
-- Token storage/rotation: Actions secrets imported by `looper connect claude`,
+- Token storage/rotation: Actions secrets imported by `loopdog connect claude`,
   rotation = regenerate in Claude + `--rotate` re-import.
 - Quota: Claude exposes no remaining-quota API — budgeting models the daily
   cap from run-record timestamps (M12 · 0075); capabilities carry the honest

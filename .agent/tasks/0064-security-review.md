@@ -5,7 +5,7 @@ Branch: task/0064-security-review
 
 ## Goal
 
-Run an independent, documented security review of looper before `1.0.0`,
+Run an independent, documented security review of loopdog before `1.0.0`,
 covering the three highest-risk surfaces — GitHub permissions/identity, secret
 handling across the two planes, and the prompt/trigger injection surface — and
 either resolve each finding or record an accepted-risk decision with a mitigation.
@@ -21,7 +21,7 @@ across [architecture](../../docs/architecture.md) "Identity & secrets,"
 dogfood (0063) being live so the review runs against a real attached repo, not a
 hypothetical one. Findings feed the release gate (0066). The non-negotiables it
 must defend (architecture "V1 scope"): secrets never in model-visible context
-looper controls; looper never able to edit the checks that gate it; untrusted
+loopdog controls; loopdog never able to edit the checks that gate it; untrusted
 triggers parked before they reach an acting work cell.
 
 ## Scope
@@ -31,7 +31,7 @@ triggers parked before they reach an acting work cell.
   storage.
 - Audit **secret handling** across both planes (M07): provider-cloud env/secrets
   (0030), self-hosted injection + leak guards (0031), and the scrubbing of
-  secrets from anything model-visible looper composes (briefs, comments, logs,
+  secrets from anything model-visible loopdog composes (briefs, comments, logs,
   run records).
 - Audit the **injection surface**: untrusted GitHub content (issue/comment bodies)
   flowing into composed briefs, and the authorization/approval gates (M17 · 0079,
@@ -45,7 +45,7 @@ triggers parked before they reach an acting work cell.
 `docs/security-review.md` (a release artifact, linked from the trust docs M14 ·
 0058). Any concrete fixes land in the owning package (`github`, `backends`,
 `runtime`, or `cli`) as small follow-up edits; regression tests for confirmed
-injection/leak findings land as scenario/simulation cases in `@looper/testing`.
+injection/leak findings land as scenario/simulation cases in `@loopdog/testing`.
 
 **Threat model — actors & assets.** Actors: anonymous public-repo user (opens
 issues/comments), malicious dependency/PR author, compromised provider job.
@@ -54,17 +54,17 @@ Assets: the maintainer's subscription quota (drainable), repo write access (the
 asset to the gate that protects it.
 
 **Surface 1 — GitHub identity & permissions.** Verify every reusable workflow in
-`templates/workflows/looper-*.yml` declares a least-privilege `permissions:`
+`templates/workflows/loopdog-*.yml` declares a least-privilege `permissions:`
 block (e.g. `contents: write`, `issues: write`, `pull-requests: write`,
-`checks: read` — never `write` on the checks that gate looper, per the ladder
+`checks: read` — never `write` on the checks that gate loopdog, per the ladder
 rung-2 invariant). Confirm `GITHUB_TOKEN` cannot re-trigger workflows (the sweep
 0076 carries handoffs — confirm no path depends on it re-triggering). For the
 optional PAT (architecture "Identity & secrets"): confirm it is read from a repo
 secret, never logged, never placed in a brief, and documented as fine-grained +
 minimally scoped. For CLI auth (0029): confirm device-flow tokens go to the OS
-keychain, not a dotfile, and `looper login` never prints them.
+keychain, not a dotfile, and `loopdog login` never prints them.
 
-**Surface 2 — secrets (two-plane).** The invariant from architecture: looper never
+**Surface 2 — secrets (two-plane).** The invariant from architecture: loopdog never
 serializes a long-lived credential into prompts, plans, comments, run records,
 logs, or other model/GitHub-visible artifacts it controls. Verify: (a) no project
 secret is ever interpolated into a composed brief, PR/issue comment, plan file,
@@ -74,14 +74,14 @@ self-hosted leak guards (0031) redact secrets from work-cell output before inges
 (c) the provider-cloud trust boundary (0032) is stated honestly — secrets reside
 in Anthropic/OpenAI infra on the primary path, which the review documents rather
 than "fixes." Add a redaction unit test fixture: inject a known sentinel secret
-and assert it appears in zero looper-controlled model-visible or persisted output.
+and assert it appears in zero loopdog-controlled model-visible or persisted output.
 
 **Surface 3 — injection / authorization.** On a public repo anyone can post an
 issue/comment, so untrusted text reaches the brief composer and a stranger could
 drive an acting loop on the maintainer's quota. Verify the authorization gate
 (M17 · 0079) runs in the runner pre-flight before any claim/dispatch, defaults to
 `collaborators`, and that an untrusted trigger is **acknowledged but parked**
-(`looper:needs-approval`, no dispatch, no spend) until a trusted human releases it
+(`loopdog:needs-approval`, no dispatch, no spend) until a trusted human releases it
 (0080) — a self-approval by the untrusted actor must not count. Verify the brief
 composer treats issue/comment bodies as **data, not instructions** (e.g.
 delimited/quoted, with a system preamble that the cloud agent must follow the
@@ -97,10 +97,10 @@ maintainer read. Each finding gets: severity (low/med/high/critical), surface,
 disposition (`fixed` / `accepted-risk` / `deferred-post-V1` with rationale), and a
 link to the fix PR or the follow-up task id.
 
-**Edge cases to probe explicitly:** a comment containing `looper:approved` text
+**Edge cases to probe explicitly:** a comment containing `loopdog:approved` text
 (must not self-approve); an issue body containing fake acceptance-criteria markers
-or a `looper-run:` trailer (must not spoof correlation 0073); a PR that edits
-`.looper/loops/*` or required-check config in the same change it asks to merge
+or a `loopdog-run:` trailer (must not spoof correlation 0073); a PR that edits
+`.loopdog/loops/*` or required-check config in the same change it asks to merge
 (must not let a loop weaken its own gates); a secret echoed by a failing test in
 work-cell logs (must be redacted before ingest).
 
@@ -110,7 +110,7 @@ work-cell logs (must be redacted before ingest).
   task audits and hardens what exists; it does not design new gates.
 - Penetration-testing the providers' clouds — the trust boundary is documented
   (0032), not re-engineered.
-- The post-V1 looper GitHub App, any hosted backend, or any API-key-on-primary-path
+- The post-V1 loopdog GitHub App, any hosted backend, or any API-key-on-primary-path
   change — out of V1 by definition.
 
 ## Acceptance Criteria
@@ -118,7 +118,7 @@ work-cell logs (must be redacted before ingest).
 - [x] `docs/security-review.md` exists with a threat model and a findings table
       (severity · surface · disposition · link) covering all three surfaces.
 - [x] Every reusable workflow declares a least-privilege `permissions:` block and
-      grants no write to the checks that gate looper.
+      grants no write to the checks that gate loopdog.
 - [x] A redaction test injects a sentinel secret and proves it appears in zero
       model-visible or persisted output (brief, comment, plan, run record, log).
 - [x] The authorization gate parks an untrusted trigger before any dispatch, and
@@ -139,7 +139,7 @@ work-cell logs (must be redacted before ingest).
 - [x] Audit Surface 3 (injection/auth): pre-flight gate ordering, parking,
       data-not-instructions composition, correlation-spoofing.
 - [x] Add regression tests for each confirmed finding (redaction sentinel,
-      self-approval, untrusted-body-as-data) in `@looper/testing`.
+      self-approval, untrusted-body-as-data) in `@loopdog/testing`.
 - [x] Land in-scope fixes; spawn follow-up tasks for deferred items.
 - [x] Fill the findings table with dispositions and link the report from the trust docs.
 

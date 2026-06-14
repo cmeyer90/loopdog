@@ -1,18 +1,18 @@
 import type { Command } from 'commander';
 import { readFile, writeFile } from 'node:fs/promises';
-import type { RunRecord } from '@looper/core';
-import { OctokitGitHub, resolveGitHubAuth } from '@looper/github';
-import { TelemetryBranchStore, projectBenchmark, renderBenchmarkMarkdown } from '@looper/runtime';
+import type { RunRecord } from '@loopdog/core';
+import { OctokitGitHub, resolveGitHubAuth } from '@loopdog/github';
+import { TelemetryBranchStore, projectBenchmark, renderBenchmarkMarkdown } from '@loopdog/runtime';
 
 /**
- * `looper bench` (task 0065): fold the run-record telemetry ledger into a
+ * `loopdog bench` (task 0065): fold the run-record telemetry ledger into a
  * per-(loop, backend) cost/latency/success report — read-only, never dispatches
  * or mutates GitHub. Renders Markdown (default) or JSON to stdout or `--out`;
  * when `--out docs/benchmarks.md`, it replaces the table between the
- * `looper:benchmarks` markers without clobbering the surrounding prose.
+ * `loopdog:benchmarks` markers without clobbering the surrounding prose.
  */
-const OPEN = '<!-- looper:benchmarks -->';
-const CLOSE = '<!-- /looper:benchmarks -->';
+const OPEN = '<!-- loopdog:benchmarks -->';
+const CLOSE = '<!-- /loopdog:benchmarks -->';
 
 export function registerBench(program: Command): void {
   program
@@ -90,7 +90,7 @@ async function resolveRepo(repoArg: string | undefined): Promise<{ owner: string
     if (!owner || !repo) throw new Error(`--repo must be owner/name, got '${repoArg}'`);
     return { owner, repo };
   }
-  const { parseRepoFromRemoteUrl } = await import('@looper/github');
+  const { parseRepoFromRemoteUrl } = await import('@loopdog/github');
   const { execFile } = await import('node:child_process');
   const { promisify } = await import('node:util');
   const { stdout } = await promisify(execFile)('git', ['remote', 'get-url', 'origin']);

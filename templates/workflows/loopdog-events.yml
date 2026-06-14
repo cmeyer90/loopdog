@@ -1,9 +1,9 @@
-# Looper event trigger — thin caller scaffolded by `looper init` (task 0008).
-# The `on:` types are PINNED to looper's canonical event/action matrix; new
-# GitHub actions are ignored until looper intentionally extends the matrix.
-# Logic lives in looper's versioned reusable workflow — update by bumping the
+# Loopdog event trigger — thin caller scaffolded by `loopdog init` (task 0008).
+# The `on:` types are PINNED to loopdog's canonical event/action matrix; new
+# GitHub actions are ignored until loopdog intentionally extends the matrix.
+# Logic lives in loopdog's versioned reusable workflow — update by bumping the
 # ref below, never by editing logic here.
-name: looper-events
+name: loopdog-events
 on:
   issues:
     types: [opened, edited, reopened, labeled, unlabeled]
@@ -40,8 +40,8 @@ permissions:
   pull-requests: write
 
 jobs:
-  looper:
-    # LOOPER_VERSION_REF: pinned by `looper init` to the installed CLI version.
+  loopdog:
+    # LOOPDOG_VERSION_REF: pinned by `loopdog init` to the installed CLI version.
     uses: cmeyer90/loopdog/.github/workflows/reusable-events.yml@v0.1.0
     with:
-      looper-version: 0.1.0
+      loopdog-version: 0.1.0

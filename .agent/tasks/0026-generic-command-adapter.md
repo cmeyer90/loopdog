@@ -8,7 +8,7 @@ Branch: claude/laughing-johnson-8a7944
 Ship a config-driven `generic` project adapter that implements the full
 `detect / build / test / lint / run / deploy` contract by running user-declared
 shell commands — the escape hatch that guarantees **no GitHub project is
-unsupported** by looper on day one, even when no bundled adapter (0027) matches.
+unsupported** by loopdog on day one, even when no bundled adapter (0027) matches.
 
 ## Background
 
@@ -16,7 +16,7 @@ Part of [Milestone 06](../milestones/milestone-06-project-adapter-system.md) —
 the project-adapter plugin system. See [architecture](../../docs/architecture.md)
 "Generic-ness, in three plugin systems" (item 2: a small adapter interface +
 "auto-detection + a generic command escape hatch so no project is unsupported")
-and [codebase](../../docs/codebase.md) — package `@looper/adapters`
+and [codebase](../../docs/codebase.md) — package `@loopdog/adapters`
 (`adapters/src/{interface,detect,generic,node,python}/`).
 
 This adapter consumes the interface defined in **0024** (the
@@ -31,19 +31,19 @@ adopter's CI; the `test:` acceptance criteria are still the trustworthy gate
 
 - A `GenericCommandAdapter` implementing the `ProjectAdapter` port (0024) whose six
   operations are driven entirely by config — no stack assumptions.
-- A config schema (`@looper/config`) for the per-operation command spec, with
+- A config schema (`@loopdog/config`) for the per-operation command spec, with
   sensible behavior when an operation is unconfigured (skip vs. fail).
 - Deterministic, capability-honest reporting: each op returns a structured result
   (exit code, captured stdout/stderr tail, duration) the gates/telemetry consume.
 - Registration as the named fallback adapter so 0025 can select it explicitly and
-  `looper init` can scaffold a starter block.
+  `loopdog init` can scaffold a starter block.
 
 ### Technical detail
 
-**Lands in:** `@looper/adapters` (`adapters/src/generic/`) implementing the port
-from `@looper/core` (0024); schema in `@looper/config` (`config/src/schema/`).
+**Lands in:** `@loopdog/adapters` (`adapters/src/generic/`) implementing the port
+from `@loopdog/core` (0024); schema in `@loopdog/config` (`config/src/schema/`).
 
-**Config shape** (root `looper.yml`; the scalar `adapter: generic` selects this
+**Config shape** (root `loopdog.yml`; the scalar `adapter: generic` selects this
 adapter explicitly — per-loop override allowed later, out of scope here):
 
 ```yaml
@@ -93,7 +93,7 @@ tail, enforce `timeoutSec` with a kill (SIGTERM → SIGKILL grace). **No secret
 leakage:** the resolved command and `outputTail` are redacted against known secret
 patterns/values before they enter the run record (defense for the
 project-secret plane; secrets live in the provider cloud / adopter runner, not
-in looper-controlled, model-visible text).
+in loopdog-controlled, model-visible text).
 
 **`run` vs the rest:** `build/test/lint/deploy` are run-to-completion; `run`
 (serve/smoke entrypoint) is started and, for the deploy-smoke gate, health-checked
@@ -113,7 +113,7 @@ treated as unset (`{ skipped: true }`); (e) non-zero exit always ⇒ `{ ok: fals
 - Stack-specific bundled adapters — Node/Python defaults (0027).
 - The authoring guide and conformance test kit (0028).
 - Per-loop adapter overrides and the deploy-smoke health-check loop (M11).
-- Any secret *provisioning* — looper only redacts, never injects, secrets here.
+- Any secret *provisioning* — loopdog only redacts, never injects, secrets here.
 
 ## Acceptance Criteria
 
@@ -136,20 +136,20 @@ treated as unset (`{ skipped: true }`); (e) non-zero exit always ⇒ `{ ok: fals
 
 ## Implementation Checklist
 
-- [x] Add the `generic.commands` schema + validation in `@looper/config`.
-- [x] Implement `GenericCommandAdapter` in `@looper/adapters/src/generic/`.
+- [x] Add the `generic.commands` schema + validation in `@loopdog/config`.
+- [x] Implement `GenericCommandAdapter` in `@loopdog/adapters/src/generic/`.
 - [x] Implement the `spawn` runner: string-via-shell / array-exec, tail
       ring-buffer, timeout + SIGTERM→SIGKILL kill, duration capture.
 - [x] Implement output/command redaction against the secret list.
 - [x] Register `generic` in the adapter registry as the named fallback (for 0025).
-- [x] Add a starter `adapter: generic` + `generic:` block to the `looper init`
+- [x] Add a starter `adapter: generic` + `generic:` block to the `loopdog init`
       template (`templates/`).
 - [x] Add component-level conformance tests using the M18 fakes (no real quota).
 - [x] Update docs if the config surface changed.
 
 ## Test Plan
 
-Tests via `vitest` (component tier), using the `@looper/testing` fakes — commands
+Tests via `vitest` (component tier), using the `@loopdog/testing` fakes — commands
 run against scripted local fixtures (a `true`/`false`/`sleep` stub script), never
 real provider quota or network.
 

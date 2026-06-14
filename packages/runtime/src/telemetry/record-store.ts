@@ -1,5 +1,5 @@
-import type { GitHubPort, RepoRef, RunRecord } from '@looper/core';
-import { runRecordPath } from '@looper/core';
+import type { GitHubPort, RepoRef, RunRecord } from '@loopdog/core';
+import { runRecordPath } from '@loopdog/core';
 
 /** Where run records go (0053 owns the store decision; 0012 emits into it). */
 export interface RunRecordStore {
@@ -8,12 +8,12 @@ export interface RunRecordStore {
   readDay(date: string): Promise<RunRecord[]>;
 }
 
-export const TELEMETRY_BRANCH = 'looper/telemetry';
+export const TELEMETRY_BRANCH = 'loopdog/telemetry';
 
 /**
  * The production store (0053): append-only, day-bucketed NDJSON
  * (`runs/YYYY-MM-DD.ndjson`) on the dedicated orphan branch
- * `looper/telemetry`, written via the contents API with optimistic
+ * `loopdog/telemetry`, written via the contents API with optimistic
  * concurrency (re-read + retry on a lost write race).
  */
 export class TelemetryBranchStore implements RunRecordStore {
@@ -45,7 +45,7 @@ export class TelemetryBranchStore implements RunRecordStore {
           TELEMETRY_BRANCH,
           path,
           content,
-          `looper: run record ${record.runId}`,
+          `loopdog: run record ${record.runId}`,
           existing?.sha,
         );
         return;

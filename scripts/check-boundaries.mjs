@@ -1,6 +1,6 @@
 // Enforces the package dependency direction from docs/codebase.md.
 // Fails (exit 1) on: an import edge not in the allowed table, or any deep
-// import into another package's internals ('@looper/<name>/...').
+// import into another package's internals ('@loopdog/<name>/...').
 import { readdirSync, readFileSync, statSync } from 'node:fs';
 import { join } from 'node:path';
 
@@ -42,14 +42,15 @@ for (const pkg of Object.keys(ALLOWED)) {
   }
   for (const file of files) {
     const text = readFileSync(file, 'utf8');
-    const importRe = /from\s+['"](@looper\/[^'"]+)['"]|import\(\s*['"](@looper\/[^'"]+)['"]\s*\)/g;
+    const importRe =
+      /from\s+['"](@loopdog\/[^'"]+)['"]|import\(\s*['"](@loopdog\/[^'"]+)['"]\s*\)/g;
     for (const m of text.matchAll(importRe)) {
       const spec = m[1] ?? m[2];
       const rel = file.slice(root.length);
       const parts = spec.split('/');
       const target = parts[1];
       if (parts.length > 2) {
-        violations.push(`${rel}: deep import '${spec}' (use the '@looper/${target}' barrel)`);
+        violations.push(`${rel}: deep import '${spec}' (use the '@loopdog/${target}' barrel)`);
         continue;
       }
       if (target === pkg) {

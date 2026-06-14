@@ -15,11 +15,11 @@ table and in `milestones.md`.
 |---:|---|---|---|
 | 0001 | verified | task/0001-stack-and-repo-layout | Stack & Repo Layout |
 | 0002 | verified | task/0002-license-and-community-files | License & Community Files |
-| 0003 | verified | task/0003-own-ci-pipeline | Looper's Own CI |
+| 0003 | verified | task/0003-own-ci-pipeline | Loopdog's Own CI |
 | 0004 | implemented | task/0004-branch-protection-and-codeowners | Branch Protection & CODEOWNERS |
 | 0005 | verified | task/0005-release-and-versioning | Release & Versioning |
 | 0006 | verified | task/0006-config-schema-and-validation | Config Schema & Validation |
-| 0007 | verified | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding |
+| 0007 | verified | task/0007-init-cli-and-scaffolding | `loopdog init` CLI & Scaffolding |
 | 0008 | verified | task/0008-event-driven-triggers | Event-Driven Triggers |
 | 0009 | verified | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults |
 | 0010 | implemented | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select |
@@ -80,17 +80,17 @@ table and in `milestones.md`.
 | 0065 | implemented | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks |
 | 0066 | implemented | task/0066-release-1-0-0 | Release 1.0.0 |
 | 0067 | verified | task/0067-upgrade-and-migration-path | Upgrade & Migration Path |
-| 0068 | verified | task/0068-cli-loop-introspection | Loop Introspection (`looper loops list` / `looper loops show`) |
-| 0069 | verified | task/0069-cli-run-history-and-tracing | Run History & Tracing (`looper runs list` / `looper runs show`) |
-| 0070 | verified | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`) |
-| 0071 | verified | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`looper status` + control verbs) |
-| 0072 | verified | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) |
+| 0068 | verified | task/0068-cli-loop-introspection | Loop Introspection (`loopdog loops list` / `loopdog loops show`) |
+| 0069 | verified | task/0069-cli-run-history-and-tracing | Run History & Tracing (`loopdog runs list` / `loopdog runs show`) |
+| 0070 | verified | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`loopdog run` / `loopdog tail` / `loopdog watch`) |
+| 0071 | verified | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`loopdog status` + control verbs) |
+| 0072 | verified | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`loopdog prompts show/diff/edit/history`) |
 | 0073 | verified | task/0073-dispatch-and-result-ingestion | Dispatch & Result Ingestion (correlation) |
 | 0074 | verified | task/0074-self-hosted-api-backend | Self-Hosted / API Backend (secondary) |
 | 0075 | verified | task/0075-subscription-quota-management | Subscription Quota & Rate-Limit Management |
 | 0076 | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
-| 0077 | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
-| 0078 | verified | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) |
+| 0077 | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `loopdog login` |
+| 0078 | verified | task/0078-custom-loop-authoring | Custom Loop Authoring (`loopdog loops new` questionnaire) |
 | 0079 | verified | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) |
 | 0080 | verified | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
 | 0081 | verified | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |

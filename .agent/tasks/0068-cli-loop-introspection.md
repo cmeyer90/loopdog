@@ -1,12 +1,12 @@
-# 0068 Loop Introspection (`looper loops list` / `looper loops show`)
+# 0068 Loop Introspection (`loopdog loops list` / `loopdog loops show`)
 
 Status: verified  
 Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Make every configured loop legible from the CLI: `looper loops list` for the
-fleet, and `looper loops show <loop>` for one loop's config, backend, trigger,
+Make every configured loop legible from the CLI: `loopdog loops list` for the
+fleet, and `loopdog loops show <loop>` for one loop's config, backend, trigger,
 transition, gates, the **exact brief it uses**, and the **steps it drives**.
 
 ## Background
@@ -21,17 +21,17 @@ are specified and built here and degrade gracefully without telemetry.
 
 ## Scope
 
-- `looper loops list` — one row per loop: mode, backend, trigger, the state it
+- `loopdog loops list` — one row per loop: mode, backend, trigger, the state it
   acts on, 24h run count, last-run age. Flags `--enabled`, `--backend <p>`,
   `--state <s>`, `--json`.
-- `looper loops show <loop>` — full detail (see Command Surface). Flags `--brief`
+- `loopdog loops show <loop>` — full detail (see Command Surface). Flags `--brief`
   (dump the full versioned brief), `--steps` (just the step list), `--json`.
 - Render purely from existing sources of truth; no new datastore.
 
 ### Command Surface (acceptance reference)
 
 ```
-$ looper loops list
+$ loopdog loops list
 LOOP        MODE     BACKEND  TRIGGER       ACTS-ON          24H  LAST
 groom       act      claude   event+sweep   needs-grooming    12  3m ago
 implement   act      claude   event         ready-for-agent    4  18m ago
@@ -40,13 +40,13 @@ merge       suggest  —        check_suite   verified           3  1h ago
 deploy      act      claude   merge         merged             1  1h ago
 dep-update  act      claude   cron:weekly   scheduled          0  6d ago
 
-$ looper loops show implement
+$ loopdog loops show implement
 Loop: implement                                   mode: act   enabled: true
   Backend:    claude (subscription)                              # M05
   Trigger:    issue labeled `ready-for-agent` (event) + sweep    # M02
   Transition: ready-for-agent → in-progress → in-review          # M03
   Gates:      DoR required · blast-radius max_files=20 max_diff=400
-  Brief:      .looper/loops/implement/prompt.md  (v7, edited 2d ago by @dana)
+  Brief:      .loopdog/loops/implement/prompt.md  (v7, edited 2d ago by @dana)
   Risk tiers: safe → eligible · core → human-gated (CODEOWNERS)
   Budget:     OK · claude routines 3/40 today                    # M12
 
@@ -57,7 +57,7 @@ Loop: implement                                   mode: act   enabled: true
     4. agent: implement · run tests · open PR           [work cell]
     5. ingest PR · update plan · label in-review        [controller]
 
-  Recent: run_91c ✓  run_88a ✓  run_82f ✗(tests)   → looper runs list --loop implement
+  Recent: run_91c ✓  run_88a ✓  run_82f ✗(tests)   → loopdog runs list --loop implement
 ```
 
 ## Out Of Scope
@@ -67,12 +67,12 @@ Loop: implement                                   mode: act   enabled: true
 
 ## Acceptance Criteria
 
-- [x] `looper loops list` shows all loops with mode, backend, trigger, acts-on
+- [x] `loopdog loops list` shows all loops with mode, backend, trigger, acts-on
       state, 24h runs, last-run age; `--json` mirrors the columns.
-- [x] `looper loops show <loop>` shows backend, trigger, transition, gates, brief
+- [x] `loopdog loops show <loop>` shows backend, trigger, transition, gates, brief
       (name + version + last edit), risk tiers, budget/quota, and the ordered
       steps the loop drives.
-- [x] `looper loops show <loop> --brief` prints the exact versioned brief.
+- [x] `loopdog loops show <loop> --brief` prints the exact versioned brief.
 - [x] Unknown loop exits `2` with a helpful message; `--json` is stable.
 - [x] Renders with telemetry absent (shows config + steps, omits run stats).
 
@@ -87,7 +87,7 @@ Loop: implement                                   mode: act   enabled: true
 
 ```bash
 # replace with the chosen stack's test runner
-# looper loops list --json | jq . ; looper loops show implement --brief
+# loopdog loops list --json | jq . ; loopdog loops show implement --brief
 ```
 
 ## Verification Log
@@ -95,12 +95,12 @@ Loop: implement                                   mode: act   enabled: true
 - 2026-06-09: CLI suite green (188 tests repo-wide): loops list/list --json/
   show/show-missing-exit-2, loops new (cron + custom-state declares,
   validated), pause/resume + tier:core-merge refusal, budget set. Manual
-  smoke on the scaffolded repo: `looper loops list` renders all 10 built-ins;
+  smoke on the scaffolded repo: `loopdog loops list` renders all 10 built-ins;
   `--help` lists loops/runs/status/run/tail/stop/pause/budget.
 
 ## Decisions
 
-`looper loops list` (table + --json) and `looper loops show <loop>`
+`loopdog loops list` (table + --json) and `loopdog loops show <loop>`
 (config, resolved prompt SOURCE — builtin/repo/overlay — the transition step
 trace, and the first 20 prompt lines with a pointer to `prompts show`). All
 read from config + the prompt source; no new datastore. Shared CLI conventions
@@ -114,6 +114,6 @@ hand-maintained list.
 
 ## Final Summary
 
-`looper loops list/show` answer what loops exist, how each is prompted, and
+`loopdog loops list/show` answer what loops exist, how each is prompted, and
 what its specific steps are — straight from config + the layered prompt
 source, with stable --json output.

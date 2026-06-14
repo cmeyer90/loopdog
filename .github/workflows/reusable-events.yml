@@ -1,16 +1,16 @@
-# Looper's reusable EVENT workflow (task 0008). Adopters reference this from
-# the thin caller `looper init` scaffolds — they never copy the logic.
+# Loopdog's reusable EVENT workflow (task 0008). Adopters reference this from
+# the thin caller `loopdog init` scaffolds — they never copy the logic.
 #
 # GitHub Actions IS the webhook receiver: the caller's `on:` block (pinned to
 # the canonical event/action matrix) delivers events natively; this workflow
 # runs the deterministic controller for the one affected item under the
 # adopter's own GITHUB_TOKEN. Controller-written changes do not re-trigger
 # events — the sweep (reusable-sweep.yml) carries those handoffs.
-name: looper-reusable-events
+name: loopdog-reusable-events
 on:
   workflow_call:
     inputs:
-      looper-version:
+      loopdog-version:
         description: '@loopdog/cli version to run'
         type: string
         default: latest
@@ -31,11 +31,11 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: run looper controller (event)
+      - name: run loopdog controller (event)
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          npx --yes @loopdog/cli@${{ inputs.looper-version }} controller event \
+          npx --yes @loopdog/cli@${{ inputs.loopdog-version }} controller event \
             --event-name "${{ github.event_name }}" \
             --event-path "$GITHUB_EVENT_PATH" \
             --repo "${{ github.repository }}"

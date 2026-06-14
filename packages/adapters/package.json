@@ -1,7 +1,7 @@
 {
-  "name": "@looper/adapters",
+  "name": "@loopdog/adapters",
   "version": "0.1.0",
-  "description": "Looper adapters package",
+  "description": "Loopdog adapters package",
   "license": "Apache-2.0",
   "type": "module",
   "private": true,
@@ -20,6 +20,6 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@looper/core": "0.1.0"
+    "@loopdog/core": "0.1.0"
   }
 }

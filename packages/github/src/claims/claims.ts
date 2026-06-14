@@ -1,4 +1,4 @@
-import type { GitHubPort, ItemRef } from '@looper/core';
+import type { GitHubPort, ItemRef } from '@loopdog/core';
 import {
   DEFAULT_LEASE_TTL_MINUTES,
   claimLabel,
@@ -10,7 +10,7 @@ import {
   parseClaims,
   parseLeaseExpiry,
   resolveClaimRace,
-} from '@looper/core';
+} from '@loopdog/core';
 
 /**
  * Atomic claiming over GitHub labels (task 0013). GitHub has no transactions,
@@ -102,7 +102,7 @@ export async function renewLease(
 ): Promise<string> {
   const now = opts.now ?? new Date();
   const labels = await gh.getItemLabels(item);
-  const old = labels.find((l) => l.startsWith('looper:lease/'));
+  const old = labels.find((l) => l.startsWith('loopdog:lease/'));
   const until = leaseExpiry(now, opts.ttlMinutes ?? DEFAULT_LEASE_TTL_MINUTES);
   await gh.addLabels(item, [leaseLabel(until)]);
   if (old) await gh.removeLabel(item, old);
@@ -118,9 +118,9 @@ export async function releaseClaim(
   const labels = await gh.getItemLabels(item);
   for (const label of labels) {
     if (
-      label.startsWith('looper:claimed-by/') ||
-      label.startsWith('looper:lease/') ||
-      label.startsWith('looper:lock/')
+      label.startsWith('loopdog:claimed-by/') ||
+      label.startsWith('loopdog:lease/') ||
+      label.startsWith('loopdog:lock/')
     ) {
       await gh.removeLabel(item, label);
     }

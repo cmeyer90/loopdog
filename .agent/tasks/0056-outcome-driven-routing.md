@@ -21,8 +21,8 @@ of that resolution and feeds its decision back through the same
 `selectBackend` → `resolveAuth` → `dispatch` pipeline. It consumes the
 per-provider outcome telemetry (M12 · 0053) and is bounded by the cost/quality
 knobs (0057). It must not contradict static config (an explicit per-loop
-`backend` override always wins). Lands in `@looper/backends` (the router, beside
-the selection resolver) and `@looper/config` (the `routing` schema). See
+`backend` override always wins). Lands in `@loopdog/backends` (the router, beside
+the selection resolver) and `@loopdog/config` (the `routing` schema). See
 [architecture](../../docs/architecture.md) "Generic-ness, in three plugin
 systems" (point 3, providers selectable per loop) and "Observability, cost &
 safety" ("Per-provider outcome telemetry feeds routing").
@@ -43,7 +43,7 @@ safety" ("Per-provider outcome telemetry feeds routing").
 
 ### Technical detail
 
-**Where it sits.** New module `@looper/backends/src/routing` (pure, IO-free —
+**Where it sits.** New module `@loopdog/backends/src/routing` (pure, IO-free —
 the outcome snapshot is passed in). The runner pre-flight order becomes:
 gates/authz/budget (0012) → **route (0056, optional)** → `selectBackend` (0023)
 → `resolveAuth` (0023) → `dispatch`. The router produces a *candidate
@@ -59,7 +59,7 @@ Default key = `"<loop>:<stage>"` so routing is per-loop-and-stage unless the
 adopter declares a coarser/finer `task_type`.
 
 ```ts
-// @looper/backends/src/routing
+// @loopdog/backends/src/routing
 type TaskType = string;                 // e.g. "implement:core", "review", "dep-update"
 type BackendName = "claude" | "codex" | "self-hosted";
 
@@ -102,10 +102,10 @@ function route(
   `reason: "pinned"` — an operator escape hatch that still flows through the
   decision record.
 
-**Config schema** (`@looper/config`, validated in 0006; both levels optional):
+**Config schema** (`@loopdog/config`, validated in 0006; both levels optional):
 
 ```yaml
-# looper.yml (global) — and the same block under .looper/loops/<name>/loop.yml
+# loopdog.yml (global) — and the same block under .loopdog/loops/<name>/loop.yml
 routing:
   enabled: true            # default false (safe-by-default; opt-in)
   min_samples: 20          # per (taskType, backend) within the window
@@ -128,7 +128,7 @@ config (0057) re-weights. If 0053 isn't yet available, the router degrades to
 `reason: "insufficient-samples"` on an empty snapshot — never blocking dispatch.
 
 **Run-record integration (0012).** The chosen `RoutingDecision` is stored on the
-run record so `looper runs show` (M16 · 0069) renders "routed to codex
+run record so `loopdog runs show` (M16 · 0069) renders "routed to codex
 (taskType review: 0.91 vs claude 0.78, n=34)" — auditable, not magical.
 
 **Edge cases.** Empty/insufficient snapshot → null (static selection). A
@@ -169,13 +169,13 @@ configure; it only reorders allowed candidates.
 
 ## Implementation Checklist
 
-- [x] Add the `routing` block to the `looper.yml` and `loop.yml` zod schemas
-      (`@looper/config`) with validation (pin → configured backend; numeric ranges).
-- [x] Implement the task-type derivation (`@looper/backends/src/routing`).
+- [x] Add the `routing` block to the `loopdog.yml` and `loop.yml` zod schemas
+      (`@loopdog/config`) with validation (pin → configured backend; numeric ranges).
+- [x] Implement the task-type derivation (`@loopdog/backends/src/routing`).
 - [x] Implement the pure `route` ranker (sample/margin/recency guards, tie-breaks).
 - [x] Define the `OutcomeStat`/`RoutingDecision` types and the consumption contract
       against M12 · 0053's telemetry shape.
-- [x] Wire the router into the runner pre-flight (`@looper/runtime`) ahead of
+- [x] Wire the router into the runner pre-flight (`@loopdog/runtime`) ahead of
       `selectBackend`, with auth-fallback to static selection; record the decision
       on the run record (0012).
 - [x] Tests for ranking, guards, overrides, and degradation using the M18 fakes.
@@ -183,7 +183,7 @@ configure; it only reorders allowed candidates.
 ## Test Plan
 
 Tests run via the repo's `vitest` runner; behavioral cases use the
-`@looper/testing` fakes (fake outcome snapshots, fake backends/registry, fake
+`@loopdog/testing` fakes (fake outcome snapshots, fake backends/registry, fake
 GitHub) — **no real provider quota, no live telemetry**.
 
 ```bash

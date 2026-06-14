@@ -7,7 +7,7 @@ import type {
   RepoRef,
   RunRecord,
   TriggerEvent,
-} from '@looper/core';
+} from '@loopdog/core';
 import {
   NEEDS_APPROVAL_LABEL,
   backendDispatchesInWindow,
@@ -24,15 +24,15 @@ import {
   toBreakerPolicy,
   toCeiling,
   triggerSourceAllowed,
-} from '@looper/core';
+} from '@loopdog/core';
 import { breakerStateFromLedger, inFlightFor } from './resilience.js';
-import type { AuthorizationConfig, QuotaModel, TriggerActor } from '@looper/core';
+import type { AuthorizationConfig, QuotaModel, TriggerActor } from '@loopdog/core';
 import type { RunRecordStore } from '../telemetry/record-store.js';
 
 /**
  * The effectful pre-flight (M12): composes kill-switch → budget → quota into
  * `PreflightCheck`s the runner evaluates before any claim/dispatch — in
- * cheap→expensive order, first denial wins. Denials PARK (looper:parked with
+ * cheap→expensive order, first denial wins. Denials PARK (loopdog:parked with
  * a retryAfter the sweep honors), never fail.
  */
 
@@ -88,7 +88,7 @@ export function createPreflight(deps: PreflightDeps) {
     const rootAuth = deps.config.authorization;
     if (
       rootAuth &&
-      !ctx.item.labels.includes(ctx.loop.authorization?.approvalLabel ?? 'looper:approved')
+      !ctx.item.labels.includes(ctx.loop.authorization?.approvalLabel ?? 'loopdog:approved')
     ) {
       const policy = resolveAuthorizationPolicy(rootAuth, ctx.loop.authorization);
       const actor = triggerActor(ctx.trigger);
@@ -179,7 +179,7 @@ export function createPreflight(deps: PreflightDeps) {
     }
 
     // 1. kill switch (cheapest): repo variable (authoritative) — the
-    //    looper:stop label on the ITEM is already a standard hold.
+    //    loopdog:stop label on the ITEM is already a standard hold.
     const env = deps.env ?? process.env;
     const kill = killSwitchGate({
       variableSet: Boolean(env[deps.config.kill_switch.variable]),

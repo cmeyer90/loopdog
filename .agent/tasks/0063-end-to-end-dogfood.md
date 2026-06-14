@@ -5,8 +5,8 @@ Branch: task/0063-end-to-end-dogfood
 
 ## Goal
 
-Prove looper works end-to-end on at least one real **external** GitHub repo that
-looper's authors don't control, on **real Claude and Codex subscriptions**,
+Prove loopdog works end-to-end on at least one real **external** GitHub repo that
+loopdog's authors don't control, on **real Claude and Codex subscriptions**,
 driving real issues through groom → implement → review → merge (→ deploy where
 applicable). This is the integration gate for V1: the thing every prior milestone
 exists to enable, run against reality instead of fakes.
@@ -46,38 +46,38 @@ automated smokes: it lands as a **report artifact + fixes**, not a package.
 
 **Lands in:** primarily a **report artifact** under `docs/dogfood/` (e.g.
 `docs/dogfood/0063-report.md`) plus whatever **fixes** the run forces across
-`@looper/runtime`, `@looper/backends`, `@looper/github`, `@looper/config`,
-`@looper/adapters`. No new package; this is integration + evidence. Reusable
-issue/loop fixtures distilled from the run may seed `@looper/testing` scenarios
+`@loopdog/runtime`, `@loopdog/backends`, `@loopdog/github`, `@loopdog/config`,
+`@loopdog/adapters`. No new package; this is integration + evidence. Reusable
+issue/loop fixtures distilled from the run may seed `@loopdog/testing` scenarios
 (tier 3) so regressions are caught offline thereafter.
 
 **Repo selection criteria** (record the choice in Decisions): a real, non-trivial,
 **externally-owned** Node or Python repo with green CI, branch protection +
 required checks (so ladder rung 2 is real), an issue backlog, and at least one
 deployable surface for the deploy loop where feasible. If a truly external repo
-can't be secured for the deploy path, a looper-owned scratch repo is the fallback
+can't be secured for the deploy path, a loopdog-owned scratch repo is the fallback
 for deploy **only** — but at least one external repo must carry groom→merge. State
 the ToS posture (the architecture flags programmatic subscription driving as an
 open question) before running at volume.
 
 **Run matrix** — at minimum exercise, on the live system:
 - **Grooming/clarification (M08):** ≥1 vague issue groomed into a
-  `<!-- looper:acceptance-criteria -->` block with `test:`/`manual:` tags + a
+  `<!-- loopdog:acceptance-criteria -->` block with `test:`/`manual:` tags + a
   durable plan posted as contract; ≥1 issue that triggers event-driven
   clarification (a real human reply advances it).
 - **Implementation (M09):** issues dispatched to **both** Claude (`/fire` routine,
   beta) and Codex (`@codex` mention) so cross-provider works in anger;
   correlation (M05 · 0073) recognizes each provider-opened PR via branch
-  `looper/<loop>/<issue>-<run_id>` + the `looper-run:` trailer + issue ref.
+  `loopdog/<loop>/<issue>-<run_id>` + the `loopdog-run:` trailer + issue ref.
 - **Review/merge (M10):** cross-provider review (Codex reviews a Claude PR and
   vice-versa) + intent-diff (0043) against the criteria; `test:` criteria
-  validated by the **adopter's CI** (rung 2, the gate looper can't edit); merge
+  validated by the **adopter's CI** (rung 2, the gate loopdog can't edit); merge
   **human-gated** behind every-criterion + CI + review.
 - **Deploy (M11):** where a deployable surface exists, deploy + smoke on merge,
   with rollback armed.
 
-**Observation harness:** drive and watch via the CLI (M16) — `looper runs` for
-per-issue traces (0069), `looper status` for fleet state (0071), `looper prompts`
+**Observation harness:** drive and watch via the CLI (M16) — `loopdog runs` for
+per-issue traces (0069), `loopdog status` for fleet state (0071), `loopdog prompts`
 for what was actually dispatched (0072). The run record schema (0012) is the
 ground truth; the report is assembled from real run records, not prose.
 
@@ -101,7 +101,7 @@ no-App tradeoff. An optional PAT may be tested for instant handoff and noted.
 the sweep recover it?); an event↔sweep race on one item (no double-dispatch); a
 provider returning no PR within the dispatch timeout (sweep escalates, item not
 stranded); an untrusted/stranger issue or comment (parked at
-`looper:needs-approval`, no spend); a scope-exceeding implementation (halts +
+`loopdog:needs-approval`, no spend); a scope-exceeding implementation (halts +
 escalates per blast-radius, 0038); a deliberately under-groomed issue (DoR gate
 0014 refuses to start).
 
@@ -121,7 +121,7 @@ escalates per blast-radius, 0038); a deliberately under-groomed issue (DoR gate
 > (`docs/dogfood/0063-report.md`) and the offline structural proxy are delivered;
 > the live-run ACs below await an operator. (Same posture as the M00 live spikes.)
 
-- [~] Looper attached to ≥1 real externally-owned repo with real Claude + Codex
+- [~] Loopdog attached to ≥1 real externally-owned repo with real Claude + Codex
       (routine import + Codex App) via the documented flow — OPERATOR (the flow is
       documented in `docs/quickstart.md`/`install.md`).
 - [~] ≥1 real issue driven groom → implement → review → merge, human-gated — OPERATOR.
@@ -154,11 +154,11 @@ it seeds. Live verification happens on the external repo (real subscriptions); t
 repo's own suite must never touch real quota.
 
 ```bash
-# offline regression seeded by the run (vitest; @looper/testing fakes, no quota):
-pnpm --filter @looper/testing test          # scenario/sim cases distilled from the run
+# offline regression seeded by the run (vitest; @loopdog/testing fakes, no quota):
+pnpm --filter @loopdog/testing test          # scenario/sim cases distilled from the run
 # live dogfood (manual, observed — NOT a CI gate; real subscriptions):
-looper runs --repo <dogfood-repo> --since <start>     # per-issue traces from run records
-looper status --repo <dogfood-repo>                   # fleet state during the run
+loopdog runs --repo <dogfood-repo> --since <start>     # per-issue traces from run records
+loopdog status --repo <dogfood-repo>                   # fleet state during the run
 ```
 
 ## Verification Log
@@ -192,11 +192,11 @@ looper status --repo <dogfood-repo>                   # fleet state during the r
   the batch small; merge human-gated means a bad PR costs review time, not prod.
 - **Provider API drift** (routines are beta) may break dispatch/ingest mid-run —
   the circuit breaker (M19) should pause, not burn; record drift for 0064/0066.
-- **No external repo securable** — fall back to a looper-owned scratch repo for
+- **No external repo securable** — fall back to a loopdog-owned scratch repo for
   deploy only, but at least one external repo must carry groom→merge; if even that
   fails, this task is **NO-GO for V1** and that's the finding to report.
 - Rollback is trivial: the dogfood touches a foreign repo via human-gated merges;
-  nothing here ships looper code by itself beyond the report + any fix PRs.
+  nothing here ships loopdog code by itself beyond the report + any fix PRs.
 
 ## Final Summary
 

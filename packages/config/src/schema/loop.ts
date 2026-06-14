@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { authorizationSchema, resilienceSchema } from './root.js';
 
-/** Schema for a per-loop `.looper/loops/<name>/loop.yml` (task 0006). */
+/** Schema for a per-loop `.loopdog/loops/<name>/loop.yml` (task 0006). */
 
 const triggerSchema = z
   .object({

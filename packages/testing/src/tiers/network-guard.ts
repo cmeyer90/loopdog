@@ -74,7 +74,7 @@ export const FORBIDDEN_SECRET_ENV = [
   'CLAUDE_CODE_OAUTH_TOKEN',
   'OPENAI_API_KEY',
   'CODEX_API_KEY',
-  'LOOPER_PROVIDER_TOKEN',
+  'LOOPDOG_PROVIDER_TOKEN',
 ];
 
 export interface SecretAbsenceResult {

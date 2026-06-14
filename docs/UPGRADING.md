@@ -1,33 +1,33 @@
-# Upgrading Looper
+# Upgrading Loopdog
 
-Looper's attached `.looper/` tree carries a config **`version`**. The controller
-refuses to run config it doesn't understand, and `looper upgrade` lifts an older
+Loopdog's attached `.loopdog/` tree carries a config **`version`**. The controller
+refuses to run config it doesn't understand, and `loopdog upgrade` lifts an older
 tree forward by applying ordered, idempotent migrations.
 
 ## The version contract
 
-- `CONFIG_VERSION` — the version this Looper understands (currently **1**).
-- `MIN_MIGRATABLE_FROM` — the oldest on-disk version `looper upgrade` can migrate
+- `CONFIG_VERSION` — the version this Loopdog understands (currently **1**).
+- `MIN_MIGRATABLE_FROM` — the oldest on-disk version `loopdog upgrade` can migrate
   from (currently **1**).
 - The runtime classifies an on-disk `version`:
 
   | On-disk | Status | Behavior |
   |---|---|---|
   | `== CONFIG_VERSION` | current | runs normally |
-  | in `[MIN_MIGRATABLE_FROM, CONFIG_VERSION)` | behind | runs with an upgrade nudge; `looper upgrade` migrates it |
-  | `> CONFIG_VERSION` | ahead | **refused** — upgrade Looper, don't downgrade the config |
-  | `< MIN_MIGRATABLE_FROM` | too-old | **refused** — re-scaffold with `looper init` |
+  | in `[MIN_MIGRATABLE_FROM, CONFIG_VERSION)` | behind | runs with an upgrade nudge; `loopdog upgrade` migrates it |
+  | `> CONFIG_VERSION` | ahead | **refused** — upgrade Loopdog, don't downgrade the config |
+  | `< MIN_MIGRATABLE_FROM` | too-old | **refused** — re-scaffold with `loopdog init` |
 
-## `looper upgrade`
+## `loopdog upgrade`
 
 ```bash
-looper upgrade --dry-run     # preview the migrations + a per-file changed/conflict table; writes nothing
-looper upgrade               # apply; review + commit the diff
+loopdog upgrade --dry-run     # preview the migrations + a per-file changed/conflict table; writes nothing
+loopdog upgrade               # apply; review + commit the diff
 ```
 
 - **Idempotent** — re-running on an already-current tree is a no-op ("up to date").
 - **Never silently overwrites** an adopter-edited file — a conflicting migration
-  writes a `.looper-new` sidecar and reports it for manual merge.
+  writes a `.loopdog-new` sidecar and reports it for manual merge.
 - **Refuses** a downgrade (newer on-disk) or a too-old tree with an actionable
   message.
 

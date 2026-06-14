@@ -2,13 +2,13 @@
 
 ## Scope
 
-Reviewed Looper's architecture, codebase layout, active milestone index, all
+Reviewed Loopdog's architecture, codebase layout, active milestone index, all
 milestone planned-task tables, all 94 active task files, and the prior
 cross-task consistency report.
 
 ## Product Understanding
 
-Looper is a generic, open-source autonomous-SDLC controller for GitHub
+Loopdog is a generic, open-source autonomous-SDLC controller for GitHub
 repositories. The controller is deterministic and runs in the adopter's GitHub
 Actions or CLI. It uses GitHub issues, labels, comments, PRs, and checks as the
 state machine, store, and dispatch bus. Model work runs in provider cloud agents
@@ -26,7 +26,7 @@ repo are the memory and contract for each item.
 - Fixed the broken 0094 link to the canonical run-record store task, 0053.
 - Normalized task titles between `plan-index.md`, per-milestone task tables, and
   the master milestone map.
-- Clarified budget/quota parking as an operational `looper:parked` hold label
+- Clarified budget/quota parking as an operational `loopdog:parked` hold label
   that preserves the lifecycle state label.
 - Clarified deploy state flow: 0046 drives `merged -> deploying`, 0047 promotes
   `deploying -> deployed` or `deploying -> deploy-failed`, and 0048 drives
@@ -56,7 +56,7 @@ planned behind that gate.
 - 2026-06-09: Markdown relative-link script - passed. 0 broken relative links
   under `.agent` and `docs`.
 - 2026-06-09: targeted active-contract greps - passed. Prior adapter/config/backend
-  conflicts remain reconciled in active task specs; no stale `looper:state/parked`,
+  conflicts remain reconciled in active task specs; no stale `loopdog:state/parked`,
   `merged -> deployed` deploy-loop transition, or broken 0053 link remains in the
   active contracts. The older consistency report intentionally retains the
   historical conflict text as an audit trail.

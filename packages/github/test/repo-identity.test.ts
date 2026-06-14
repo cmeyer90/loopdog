@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { handoffMode, isForkPullRequest, resolveRepoIdentity } from '@looper/github';
+import { handoffMode, isForkPullRequest, resolveRepoIdentity } from '@loopdog/github';
 
 describe('repo identity (0029)', () => {
   it('resolves source precedence: PAT > GITHUB_TOKEN > CLI token', () => {
     const pat = resolveRepoIdentity({
-      env: { LOOPER_PAT: 'pat-1', GITHUB_TOKEN: 'gha-1' } as NodeJS.ProcessEnv,
+      env: { LOOPDOG_PAT: 'pat-1', GITHUB_TOKEN: 'gha-1' } as NodeJS.ProcessEnv,
     });
     expect(pat).toMatchObject({ source: 'pat', writable: true, reTriggersWorkflows: true });
 
@@ -22,7 +22,7 @@ describe('repo identity (0029)', () => {
     });
     expect(cli).toMatchObject({ source: 'cli-gh', reTriggersWorkflows: true });
 
-    expect(() => resolveRepoIdentity({ env: {} as NodeJS.ProcessEnv })).toThrow(/looper login/);
+    expect(() => resolveRepoIdentity({ env: {} as NodeJS.ProcessEnv })).toThrow(/loopdog login/);
   });
 
   it('handoff matrix: only actions-token edges need the sweep', () => {
@@ -42,7 +42,7 @@ describe('repo identity (0029)', () => {
     expect(readonly.writable).toBe(false);
 
     const withPat = resolveRepoIdentity({
-      env: { LOOPER_PAT: 'pat-1' } as NodeJS.ProcessEnv,
+      env: { LOOPDOG_PAT: 'pat-1' } as NodeJS.ProcessEnv,
       eventPayload: forkPayload,
     });
     expect(withPat.writable).toBe(true);

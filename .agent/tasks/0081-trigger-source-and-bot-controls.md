@@ -37,10 +37,10 @@ and "Triggering: events for latency, cron for resilience."
 
 ### Technical detail
 
-Lands in **`@looper/core`** (the decision logic + types, IO-free) with config
-schema in **`@looper/config`**; the runner wires it in **`@looper/runtime`**
+Lands in **`@loopdog/core`** (the decision logic + types, IO-free) with config
+schema in **`@loopdog/config`**; the runner wires it in **`@loopdog/runtime`**
 pre-flight (`runtime/src/pipeline`). Bot identity lookups (when needed) go
-through `GitHubPort` in **`@looper/github`**.
+through `GitHubPort` in **`@loopdog/github`**.
 
 The loop's `loop.yml` already declares its own `trigger:` (cron | github_event +
 the event kind). This task adds an optional **authorization-scoped source filter**
@@ -48,7 +48,7 @@ so a loop can additionally constrain *which delivered events it acts on* and
 *which bots may drive it*, independent of the natural `trigger:`:
 
 ```yaml
-# .looper/loops/<name>/loop.yml  (authorization stanza, per-loop override of looper.yml)
+# .loopdog/loops/<name>/loop.yml  (authorization stanza, per-loop override of loopdog.yml)
 authorization:
   trigger_sources:                 # selectors from 0008's event/action matrix
     - issue_comment.created
@@ -150,9 +150,9 @@ via the sweep (0076), so its bot disposition must allow the system identity.
 ## Implementation Checklist
 
 - [x] Add the `trigger_sources` + `bots.{allow,deny}` schema (root + per-loop) in
-      `@looper/config` with zod validation against 0008's canonical event/action
+      `@loopdog/config` with zod validation against 0008's canonical event/action
       matrix.
-- [x] Implement source-filter + bot-disposition logic in `@looper/core`
+- [x] Implement source-filter + bot-disposition logic in `@loopdog/core`
       (IO-free), returning `TriggerSourceDecision`.
 - [x] Implement bot detection via login suffix / `GitHubPort` actor type.
 - [x] Wire the decision into the runtime pre-flight order (after 0079, before 0080).

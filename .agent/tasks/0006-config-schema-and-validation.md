@@ -5,8 +5,8 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Define and validate looper's config: a root `looper.yml` for global defaults plus
-**one file per loop** under `.looper/loops/<name>/loop.yml`, with loop discovery
+Define and validate loopdog's config: a root `loopdog.yml` for global defaults plus
+**one file per loop** under `.loopdog/loops/<name>/loop.yml`, with loop discovery
 and clear validation errors.
 
 ## Background
@@ -14,25 +14,25 @@ and clear validation errors.
 Part of [Milestone 02](../milestones/milestone-02-attachment-and-configuration-model.md).
 Config is the contract everything reads — the runner (M03), backends (M05), gates
 (M03 · 0014), and the CLI (M16). One-file-per-loop avoids a monolithic
-`looper.yml`. See [architecture](../../docs/architecture.md) "Generic-ness, in
+`loopdog.yml`. See [architecture](../../docs/architecture.md) "Generic-ness, in
 three plugin systems."
 
 ## Scope
 
-- Root `looper.yml` schema (global defaults).
-- Per-loop `.looper/loops/<name>/loop.yml` schema + co-located `prompt.md`.
+- Root `loopdog.yml` schema (global defaults).
+- Per-loop `.loopdog/loops/<name>/loop.yml` schema + co-located `prompt.md`.
 - Loop discovery (glob) and root-default → per-loop override precedence.
-- A validator (`looper config validate`) with actionable errors.
+- A validator (`loopdog config validate`) with actionable errors.
 
 ### Technical detail
 
 Root config:
 
 ```yaml
-# .looper/looper.yml
+# .loopdog/loopdog.yml
 version: 1
 backends: { default: claude }         # default execution backend
-plan_store: ".looper/plans"
+plan_store: ".loopdog/plans"
 sweep: { interval: "*/5 * * * *" }    # cron reconcile-sweep cadence (0076)
 risk_tiers:
   safe: ["docs/**", "**/*.test.*"]
@@ -42,7 +42,7 @@ budgets:                               # global spend ceiling (M12)
   global: { max_dispatches: 0, max_usd: 0 }
   per_loop: { max_dispatches: 0, max_usd: 0 }
   on_exceeded: park                    # park | needs-human
-kill_switch: { variable: LOOPER_KILL, label: "looper:kill" }   # top-level (M12)
+kill_switch: { variable: LOOPDOG_KILL, label: "loopdog:kill" }   # top-level (M12)
 quota: { window: monthly, on_exceeded: defer }   # subscription quota: defer | park
 authorization: { actors: collaborators, on_unauthorized: park }   # M17 (per-loop overridable)
 resilience: { retries: { max: 2 }, max_attempts_per_item: 3 }     # M19 (per-loop overridable)
@@ -52,10 +52,10 @@ defaults:                              # inherited by every loop unless overridd
   mode: dry-run
 ```
 
-Per-loop config (discovered via glob `.looper/loops/*/loop.yml`):
+Per-loop config (discovered via glob `.loopdog/loops/*/loop.yml`):
 
 ```yaml
-# .looper/loops/<name>/loop.yml
+# .loopdog/loops/<name>/loop.yml
 name: <name>                          # must equal the folder
 trigger:                              # exactly one kind
   github_event: pull_request          # event name from 0008's matrix
@@ -91,13 +91,13 @@ blocks validate against the M17/M19 schemas. Precedence: per-loop value > root
 
 ## Acceptance Criteria
 
-- [x] Documented schemas for root `looper.yml` and per-loop `loop.yml`.
+- [x] Documented schemas for root `loopdog.yml` and per-loop `loop.yml`.
 - [x] Loops are discovered by glob; each is self-contained in its folder.
 - [x] Root `defaults` are inherited and per-loop values override them.
 - [x] `github_event` + `action` + predicates are validated against 0008's
       event/action matrix, including the `pull_request.closed` merge predicate and
       item-label-vs-label-definition distinction.
-- [x] `looper config validate` reports per-field errors with file + path; an
+- [x] `loopdog config validate` reports per-field errors with file + path; an
       invalid trigger/transition/backend/tier fails validation.
 - [x] No loop config is read from a single monolithic file.
 
@@ -106,13 +106,13 @@ blocks validate against the M17/M19 schemas. Precedence: per-loop value > root
 - [x] Define the root + per-loop schemas (e.g. JSON Schema) and types.
 - [x] Implement discovery + the default→override merge.
 - [x] Implement the validator with actionable errors.
-- [x] Wire validation into `looper init`, `looper loops validate`, and CI.
+- [x] Wire validation into `loopdog init`, `loopdog loops validate`, and CI.
 
 ## Test Plan
 
 ```bash
 # replace with the chosen stack's runner
-# looper config validate on a fixture tree (valid + each invalid case)
+# loopdog config validate on a fixture tree (valid + each invalid case)
 # invalid event/action combos fail: label.labeled, pull_request.closed without an explicit merge predicate for deploy, unsupported push
 ```
 
@@ -122,17 +122,17 @@ blocks validate against the M17/M19 schemas. Precedence: per-loop value > root
   merge + per-loop override; matrix rejections (label.labeled, push); illegal
   transition with table reason; declares extension; folder-name/prompt/one-trigger
   rules; cron validation; missing-root fail-closed.
-- 2026-06-09: `looper config validate` exercised end-to-end on a scaffolded
+- 2026-06-09: `loopdog config validate` exercised end-to-end on a scaffolded
   temp repo — per-field errors with file+path; warnings non-fatal.
 
 ## Decisions
 
-- Schema mechanism: **zod (code-first)** in `@looper/config` (`schema/root.ts`,
+- Schema mechanism: **zod (code-first)** in `@loopdog/config` (`schema/root.ts`,
   `schema/loop.ts`) — typed inference into core's `LoopDefinition`, defaults in
   one place; no separate JSON Schema files to drift.
 - Precedence implemented as specced: per-loop > root `defaults` > built-in
   zod defaults, with `mergeDefined` so an absent per-loop key never clobbers.
-- The 0008 event/action matrix lives in **`@looper/core`**
+- The 0008 event/action matrix lives in **`@loopdog/core`**
   (`transitions/event-matrix.ts`) — config may not depend on github, and core
   is the shared domain; github's parser and config's validator both import it
   (single source, no drift).
@@ -151,9 +151,9 @@ an upgrade path (M15 · 0067). Fail validation closed.
 
 ## Final Summary
 
-`@looper/config` discovers (`.looper/looper.yml` + one folder per loop —
+`@loopdog/config` discovers (`.loopdog/loopdog.yml` + one folder per loop —
 never a monolith), zod-validates both schemas, cross-validates against the
 core event matrix + transition table (+ cron, prompt presence, folder-name,
 duplicates, one-trigger-kind), and resolves into core `LoopDefinition`s with
 documented precedence. Per-field errors carry file+path. Exposed as
-`loadConfig()` and `looper config validate`.
+`loadConfig()` and `loopdog config validate`.

@@ -7,8 +7,8 @@ import type {
   DetectResult,
   ProjectAdapter,
   RepoFs,
-} from '@looper/core';
-import { skippedResult } from '@looper/core';
+} from '@loopdog/core';
+import { skippedResult } from '@loopdog/core';
 
 /**
  * The generic command adapter (task 0026): the config-driven escape hatch that

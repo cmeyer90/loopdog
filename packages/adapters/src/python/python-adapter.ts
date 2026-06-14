@@ -7,8 +7,8 @@ import type {
   DetectResult,
   ProjectAdapter,
   RepoFs,
-} from '@looper/core';
-import { skippedResult } from '@looper/core';
+} from '@loopdog/core';
+import { skippedResult } from '@loopdog/core';
 
 /**
  * The Python adapter (task 0027): detects via pyproject.toml (primary) or

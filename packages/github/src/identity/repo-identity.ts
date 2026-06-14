@@ -1,5 +1,5 @@
 /**
- * Looper's repo identity (task 0029): WHO looper acts as on GitHub, resolved
+ * Loopdog's repo identity (task 0029): WHO loopdog acts as on GitHub, resolved
  * from the runtime environment. Preference: explicit PAT (instant handoff) →
  * Actions GITHUB_TOKEN (the keyless default) → the CLI's stored token.
  * The token value is carried but never logged/serialized.
@@ -30,9 +30,9 @@ export interface IdentityContext {
 export function resolveRepoIdentity(ctx: IdentityContext = {}): RepoIdentity {
   const env = ctx.env ?? process.env;
 
-  if (env['LOOPER_PAT']) {
+  if (env['LOOPDOG_PAT']) {
     return {
-      token: env['LOOPER_PAT'],
+      token: env['LOOPDOG_PAT'],
       source: 'pat',
       login: env['GITHUB_ACTOR'] ?? 'pat-user',
       isBot: false,
@@ -64,8 +64,8 @@ export function resolveRepoIdentity(ctx: IdentityContext = {}): RepoIdentity {
   }
 
   throw new Error(
-    'no GitHub identity: set GITHUB_TOKEN (CI), LOOPER_PAT, or login locally ' +
-      '(`gh auth login` / `looper login`)',
+    'no GitHub identity: set GITHUB_TOKEN (CI), LOOPDOG_PAT, or login locally ' +
+      '(`gh auth login` / `loopdog login`)',
   );
 }
 

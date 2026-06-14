@@ -19,7 +19,7 @@ merge authority is gated on rungs 2–4 — never on the agent's self-tests (run
 See [architecture](../../docs/architecture.md) "The verification ladder (trust)"
 and "How we know the request was satisfied." The rung-2 floor is the adopter's
 required checks + branch protection — trustworthy *regardless of where the work
-cell ran* — which is why looper reads check status from GitHub rather than
+cell ran* — which is why loopdog reads check status from GitHub rather than
 trusting any provider-reported pass. This task produces the ladder definition +
 evaluator that 0014's DoD predicate consumes; it does not itself perform review
 (0042/0043), deploy smoke (M11 · 0047), or merge (0045).
@@ -29,17 +29,17 @@ evaluator that 0014's DoD predicate consumes; it does not itself perform review
 - A typed ladder model in `core`: rungs, their sources, and how a rung resolves
   to pass / fail / pending / not-applicable from GitHub state.
 - Binding rung 2 to the adopter's *required* status checks (discovered from
-  branch-protection / rulesets), not a looper-invented list.
+  branch-protection / rulesets), not a loopdog-invented list.
 - A pure `evaluateLadder()` that the DoD gate (0014) calls, returning a structured
   result the merge loop and CLI can render.
 - Per-loop ladder config in `loop.yml` (which rungs are required for this loop).
 
 ### Technical detail
 
-**Package:** the ladder model + evaluator are pure domain → `@looper/core`
+**Package:** the ladder model + evaluator are pure domain → `@loopdog/core`
 (`core/src/gates/ladder.ts`, exported from `index.ts`). Required-check discovery
-and check-run/review status reads are IO → `@looper/github`
-(`github/src/checks/`). The ladder config schema lands in `@looper/config`. The
+and check-run/review status reads are IO → `@loopdog/github`
+(`github/src/checks/`). The ladder config schema lands in `@loopdog/config`. The
 DoD gate in 0014 (already in `core/src/gates/`) calls `evaluateLadder` and treats
 "all required rungs pass" as the merge predicate.
 
@@ -76,11 +76,11 @@ interface LadderResult {
   (`GET /repos/{o}/{r}/branches/{b}/protection/required_status_checks` and the
   rulesets API; fall back to "all checks must pass" when protection is
   unreadable). `pass` iff every required context concluded `success`; `pending`
-  if any is queued/running; `fail` on any failure/timeout. Looper does NOT invent
+  if any is queued/running; `fail` on any failure/timeout. Loopdog does NOT invent
   checks — it reads the adopter's. CODEOWNERS/branch-protection enforcement is the
-  repo's, not looper's.
+  repo's, not loopdog's.
 - **Rung 3 `review`** — cross-provider review approval, produced by 0042/0043.
-  Resolve from PR review state (an approval whose author is the looper-dispatched
+  Resolve from PR review state (an approval whose author is the loopdog-dispatched
   reviewer) + the run record's review-cell outcome. This task defines the slot and
   reads the status; the review itself is 0042/0043.
 - **Rung 4 `deploy_smoke`** — `not_applicable` unless the loop deploys; otherwise
@@ -89,7 +89,7 @@ interface LadderResult {
 - **Rung 5 `human`** — dogfooding backstop; informational, gated by CODEOWNERS at
   the GitHub layer, surfaced but not part of `mergeable`.
 
-**Per-loop config (`loop.yml`, schema in `@looper/config`):**
+**Per-loop config (`loop.yml`, schema in `@loopdog/config`):**
 
 ```yaml
 gates:
@@ -122,9 +122,9 @@ risk-tier policy (0045) may *tighten* requirements but never drops rung 2.
 ## Acceptance Criteria
 
 - [x] A typed ladder model (`RungResult`/`LadderResult`) is defined in
-      `@looper/core` and exported.
+      `@loopdog/core` and exported.
 - [x] Rung 2 binds to the adopter's **required** check contexts discovered from
-      branch protection/rulesets, not a looper-defined list.
+      branch protection/rulesets, not a loopdog-defined list.
 - [x] `evaluateLadder()` returns `mergeable: true` only when every *required* rung
       is `pass`, and lists `blockedBy` otherwise.
 - [x] `self_test` and `human` can never be marked required (config validation
@@ -141,8 +141,8 @@ risk-tier policy (0045) may *tighten* requirements but never drops rung 2.
 - [x] Define the ladder types + `evaluateLadder()` in `core/src/gates/ladder.ts`;
       export from `core/index.ts`.
 - [x] Add required-check discovery + check-run/status/review reads in
-      `@looper/github` (`github/src/checks/`).
-- [x] Add the `gates.ladder` schema + validation to `@looper/config` (reject
+      `@loopdog/github` (`github/src/checks/`).
+- [x] Add the `gates.ladder` schema + validation to `@loopdog/config` (reject
       `self_test`/`human` in `require`).
 - [x] Wire 0014's DoD predicate to call `evaluateLadder`; remove any ad-hoc check
       lookups it had.
@@ -152,7 +152,7 @@ risk-tier policy (0045) may *tighten* requirements but never drops rung 2.
 ## Test Plan
 
 Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
-(in-memory GitHub from `@looper/testing`) — no real provider quota.
+(in-memory GitHub from `@loopdog/testing`) — no real provider quota.
 
 ```bash
 # replace with the repo's vitest invocation

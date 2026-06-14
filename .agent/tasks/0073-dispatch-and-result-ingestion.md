@@ -13,7 +13,7 @@ dispatch→ingest split work without double-dispatching or losing work.
 
 Part of [Milestone 05](../milestones/milestone-05-model-provider-abstraction.md);
 shared by all backends (0019). This is the **riskiest new primitive**: dispatch is
-async and the provider opens the PR out-of-band, so looper must recognize "this PR
+async and the provider opens the PR out-of-band, so loopdog must recognize "this PR
 is the result of run X on issue #N" from a GitHub event, exactly once. See
 [architecture](../../docs/architecture.md) "Execution model."
 
@@ -28,8 +28,8 @@ is the result of run X on issue #N" from a GitHub event, exactly once. See
 **Correlation — defense in depth (don't rely on one signal):**
 
 1. **Branch convention**: brief instructs the agent to branch
-   `looper/<loop>/<issue>-<run_id>` → the PR head branch encodes the run.
-2. **PR body marker**: brief requires a trailer `looper-run: <run_id>` in the PR
+   `loopdog/<loop>/<issue>-<run_id>` → the PR head branch encodes the run.
+2. **PR body marker**: brief requires a trailer `loopdog-run: <run_id>` in the PR
    body → a parseable, branch-independent backup.
 3. **Issue linkage**: PR references `#<issue>` (closes/relates) → ties to the item.
 
@@ -93,8 +93,8 @@ ingests the existing PR instead of firing again.
 
 ## Decisions
 
-- Conventions per spec: branch `looper/<loop>/<issue>-<run_id>`; PR trailer
-  `looper-run: <run_id>`; issue-ref fallback requires bot author AND
+- Conventions per spec: branch `loopdog/<loop>/<issue>-<run_id>`; PR trailer
+  `loopdog-run: <run_id>`; issue-ref fallback requires bot author AND
   created-after-dispatch (60s clock skew allowed) — guards against matching a
   human's PR that merely mentions the issue.
 - Match precedence: branch (exact, cheap) → trailer → issue-ref; `matchedBy`
@@ -116,7 +116,7 @@ land before any loop runs in `act` mode. Spike it against a real provider early.
 
 ## Final Summary
 
-`@looper/backends/correlation`: the shared three-signal matcher
+`@loopdog/backends/correlation`: the shared three-signal matcher
 (branch/trailer/issue-ref with bot+time guards), exact-branch fast path,
 `ingestViaCorrelation` used by all three backends, `matchedBy` telemetry, and
 the runner/sweep idempotency + timeout integration. The riskiest primitive is

@@ -5,7 +5,7 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Define looper's state machine as GitHub labels: a default state set, the legal
+Define loopdog's state machine as GitHub labels: a default state set, the legal
 transition table, and how custom loops extend it — applied idempotently to any
 repo.
 
@@ -26,7 +26,7 @@ state machine."
 
 ### Technical detail
 
-Default states (label namespace `looper:state/*` to avoid collisions with the
+Default states (label namespace `loopdog:state/*` to avoid collisions with the
 adopter's own labels):
 
 ```
@@ -40,12 +40,12 @@ reconciled with the same label machinery. V1 ships the deploy extension states
 `deploying`, `deploy-failed`, and `rolled-back`; custom loops use the same
 declaration path for their own states.
 
-Reserved off-ramp labels (terminal/holding): `looper:blocked`, `looper:needs-human`,
-`looper:stuck`, `looper:abandoned`. Plus operational labels: `looper:stop`
-(kill switch), `looper:claimed-by/<run>` (claim marker, task 0013),
-`looper:needs-approval` + `looper:approved` (authorization hold/release, M17),
-`looper:parked` (budget/quota/kill-switch hold that preserves the lifecycle state),
-and `looper:quarantine` (exhausted-failure hold, M19).
+Reserved off-ramp labels (terminal/holding): `loopdog:blocked`, `loopdog:needs-human`,
+`loopdog:stuck`, `loopdog:abandoned`. Plus operational labels: `loopdog:stop`
+(kill switch), `loopdog:claimed-by/<run>` (claim marker, task 0013),
+`loopdog:needs-approval` + `loopdog:approved` (authorization hold/release, M17),
+`loopdog:parked` (budget/quota/kill-switch hold that preserves the lifecycle state),
+and `loopdog:quarantine` (exhausted-failure hold, M19).
 
 Transition table (config, with the default shipped):
 
@@ -71,7 +71,7 @@ transitions:
 ```
 
 A loop's `transition: { from, to }` (its `loop.yml`) must match an edge here, or
-`looper loops validate` rejects it. Custom loops may add edges/states; adding a
+`loopdog loops validate` rejects it. Custom loops may add edges/states; adding a
 state requires it be declared so labels get created.
 
 ## Out Of Scope
@@ -85,12 +85,12 @@ state requires it be declared so labels get created.
       (`core/src/state-machine/states.ts` — the spec from this task encoded).
 - [x] A transition-table format with the default table shipped and overridable
       (`TransitionTable` + `DEFAULT_TRANSITION_TABLE` + `extendTable`).
-- [x] `looper` creates missing state labels on a repo idempotently and never
+- [x] `loopdog` creates missing state labels on a repo idempotently and never
       modifies labels it didn't create (`planLabelReconciliation` pure planner +
-      `reconcileLabels` IO in `@looper/github`; double-run test proves no-diff).
+      `reconcileLabels` IO in `@loopdog/github`; double-run test proves no-diff).
 - [x] An illegal `from→to` edge is rejected at validate time (`validateEdge` /
       `validateLoopTransition` — the entrypoint config validation and
-      `looper loops validate` call); the runner also escalates rather than runs.
+      `loopdog loops validate` call); the runner also escalates rather than runs.
 - [x] Custom loops can declare new states/edges (`extendTable`); declared
       states get labels via the same reconciliation.
 
@@ -116,15 +116,15 @@ state requires it be declared so labels get created.
 - 2026-06-09: `npm test` — transition-table suite green: every default edge
   legal; undeclared edges rejected with reasons; unknown states named; off-ramps
   implicitly legal from any state; extension idempotent.
-- 2026-06-09: label-reconciliation tests green: empty repo → full looper label
+- 2026-06-09: label-reconciliation tests green: empty repo → full loopdog label
   set created; second run plans nothing; adopter labels (and adopter-recolored
-  looper labels) never touched.
+  loopdog labels) never touched.
 
 ## Decisions
 
-- Namespace exactly as specced: `looper:state/<name>` for lifecycle states;
-  `looper:` prefix for off-ramps/operational; claim/lease/lock prefixes
-  `looper:claimed-by/`, `looper:lease/`, `looper:lock/`.
+- Namespace exactly as specced: `loopdog:state/<name>` for lifecycle states;
+  `loopdog:` prefix for off-ramps/operational; claim/lease/lock prefixes
+  `loopdog:claimed-by/`, `loopdog:lease/`, `loopdog:lock/`.
 - Off-ramp edges are **implicit** (any state → blocked/needs-human/stuck/
   abandoned is always legal) — enumerating them would bloat the table.
 - A loop's declared transition validates as a direct edge OR (for dispatching
@@ -132,18 +132,18 @@ state requires it be declared so labels get created.
   `implement: ready-for-agent → in-review` is legal while raw `validateEdge`
   still rejects the chord.
 - Reconciliation never updates/deletes — create-missing only. Adopter-modified
-  looper label colors are left alone (the name is the contract, not the color).
+  loopdog label colors are left alone (the name is the contract, not the color).
 
 ## Risks / Rollback
 
-Label collisions with the adopter's existing labels — the `looper:` namespace
+Label collisions with the adopter's existing labels — the `loopdog:` namespace
 plus never-clobber reconciliation is the mitigation.
 
 ## Final Summary
 
 The state machine is encoded as data + pure functions in
-`@looper/core/state-machine/` (default states incl. deploy extension states,
+`@loopdog/core/state-machine/` (default states incl. deploy extension states,
 off-ramps, operational labels, the default transition table, edge + loop-path
 validation, extension merging, and the never-clobber label planner) with the
-IO application in `@looper/github/labels/`. Fully unit-tested including
+IO application in `@loopdog/github/labels/`. Fully unit-tested including
 idempotence and custom-loop extension.

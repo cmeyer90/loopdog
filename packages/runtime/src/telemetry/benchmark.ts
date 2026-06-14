@@ -1,4 +1,4 @@
-import type { RunRecord } from '@looper/core';
+import type { RunRecord } from '@loopdog/core';
 
 /**
  * Per-loop, per-provider benchmarks (task 0065): fold the run-record ledger into

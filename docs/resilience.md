@@ -1,12 +1,12 @@
 # Resilience & Failure Policy
 
-Looper degrades **under the maintainer's control**. Every failed or pre-empted
+Loopdog degrades **under the maintainer's control**. Every failed or pre-empted
 transition is classified into one of five failure classes, each mapping to one
 deterministic response. The knobs that tune the responses live in a
-`resilience:` block in `looper.yml` (repo-wide) and may be overridden per loop.
+`resilience:` block in `loopdog.yml` (repo-wide) and may be overridden per loop.
 
 > Implemented across M19 (tasks 0088–0091): the pure taxonomy + retry/backoff +
-> ceiling + breaker live in `@looper/core/src/resilience/`; the runtime wires
+> ceiling + breaker live in `@loopdog/core/src/resilience/`; the runtime wires
 > them into the transition runner and pre-flight.
 
 ## The failure taxonomy
@@ -19,8 +19,8 @@ class. `responseFor` maps each class to exactly one response.
 |---|---|---|---|
 | `budget` | a spend gate (budget/quota) denied | **pause** — park, never spend; the sweep retries when the window resets | no |
 | `overload` | the concurrency ceiling (`max_in_flight`) is already met | **defer** — leave the item untouched; the sweep retries when headroom frees | no |
-| `terminal` | an *unrecoverable* provider/protocol error | **escalate** — route to `looper:needs-human` | yes |
-| `poisoned` | the item has failed every attempt (`attempts ≥ max_attempts_per_item`) | **quarantine** — `looper:quarantine` + `needs-human`, failure recorded, `escalate_to` pinged; human-releasable with `looper retry` | yes |
+| `terminal` | an *unrecoverable* provider/protocol error | **escalate** — route to `loopdog:needs-human` | yes |
+| `poisoned` | the item has failed every attempt (`attempts ≥ max_attempts_per_item`) | **quarantine** — `loopdog:quarantine` + `needs-human`, failure recorded, `escalate_to` pinged; human-releasable with `loopdog retry` | yes |
 | `transient` | anything else — including an absent/recoverable error with attempts remaining (**fail-open**) | **retry** — back off (`resilience.retries`) and re-arm via the sweep | yes |
 
 **Why fail-open?** An unknown error with attempts left is treated as `transient`
@@ -28,7 +28,7 @@ class. `responseFor` maps each class to exactly one response.
 false escalation. Only an explicitly *unrecoverable* error is `terminal`.
 
 **Attempt-increment contract.** `retry`/`escalate`/`quarantine` follow a real
-failure, so they increment the item attempt counter (`looper:attempts/N`).
+failure, so they increment the item attempt counter (`loopdog:attempts/N`).
 `defer` (overload) and `pause` (budget) are *not the item's fault* — they consume
 no attempt, so the item is re-tried cleanly once headroom/budget returns.
 
@@ -54,7 +54,7 @@ are **strictest-wins** on the safety caps (a loop may only be made *safer*).
 `backoff` is one of `exponential` (`base·2^(n-1)`), `linear` (`base·n`), or
 `constant` (`base`), each capped at `cap` and applied with **full jitter** (a
 uniform draw in `[0, ceiling]`) so retries don't thundering-herd. Re-attempts are
-always **sweep-driven** — looper never busy-waits in process.
+always **sweep-driven** — loopdog never busy-waits in process.
 
 ### Circuit breaker
 
@@ -76,10 +76,10 @@ clamped to never outlive the claim lease.
 
 ## Operating it
 
-- `looper status` surfaces quarantined / escalated / approval-held items under
+- `loopdog status` surfaces quarantined / escalated / approval-held items under
   **ATTENTION**.
-- `looper retry <item>` releases a quarantined item: it clears `looper:quarantine`
-  + `looper:needs-human` + the attempt/backoff counters so the sweep re-attempts
+- `loopdog retry <item>` releases a quarantined item: it clears `loopdog:quarantine`
+  + `loopdog:needs-human` + the attempt/backoff counters so the sweep re-attempts
   cleanly (do it once the underlying cause is fixed).
 - Nothing is ever silently dropped — a poisoned item always lands in quarantine
   with its failure recorded in the run record.

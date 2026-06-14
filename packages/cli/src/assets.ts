@@ -16,13 +16,13 @@ export async function findTemplatesDir(): Promise<string> {
   ];
   for (const dir of candidates) {
     try {
-      await access(join(dir, 'looper.yml'));
+      await access(join(dir, 'loopdog.yml'));
       return dir;
     } catch {
       // try next
     }
   }
   throw new Error(
-    'looper templates not found — this is a packaging bug (expected dist/templates in the published package)',
+    'loopdog templates not found — this is a packaging bug (expected dist/templates in the published package)',
   );
 }

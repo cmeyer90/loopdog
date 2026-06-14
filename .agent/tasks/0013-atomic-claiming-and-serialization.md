@@ -27,20 +27,20 @@ claiming."
 
 **Atomic claim via GitHub optimistic concurrency.** GitHub has no transactions, so
 use a single atomic-enough operation as the compare-and-set. Approach: add a
-unique claim label `looper:claimed-by/<run_id>` *and* assign the bot, then
+unique claim label `loopdog:claimed-by/<run_id>` *and* assign the bot, then
 **re-read** the item; if more than one claim marker is present (lost race), the
 lower `run_id` wins and the loser releases and aborts. The assignment + single
 claim label is the CAS; the re-read resolves the rare double-add.
 
 **Lease/TTL.** The claim carries a timestamp (in the run record + a
-`looper:lease/<iso8601>` marker). The cron sweep treats a claim older than the
+`loopdog:lease/<iso8601>` marker). The cron sweep treats a claim older than the
 lease (e.g. 30 min, configurable) as **expired** and may reclaim the item —
 covering crashed/timed-out runs. Provider work that legitimately runs long renews
 the lease on ingest progress.
 
 **Per-area serialization.** A loop config may declare `serialize_by` (e.g. a path
 glob or service). The runner takes an advisory lock label
-`looper:lock/<area>` before claiming; if held by a live (non-expired) run, the
+`loopdog:lock/<area>` before claiming; if held by a live (non-expired) run, the
 item is deferred to the next sweep rather than dispatched. This prevents two PRs
 mutating the same area into a merge conflict.
 
@@ -69,7 +69,7 @@ the sweep removes expired ones.
       in `core/transitions/claim-protocol.ts`; IO in `github/claims/claims.ts`).
 - [x] Implement lease stamping, expiry, and renewal-on-progress (`renewLease`).
 - [x] Implement `serialize_by` advisory area locks (lock label on the working
-      item; "held" = any other live-leased item carries `looper:lock/<area>`).
+      item; "held" = any other live-leased item carries `loopdog:lock/<area>`).
 - [x] Implement release on terminal outcome (`releaseClaim`) + sweep cleanup of
       expired markers (`clearExpiredClaim`).
 
@@ -126,5 +126,5 @@ deterministic tie-break, invocation-unique claimant tokens (the fix for the
 same-runId double-dispatch race the tests caught), winner-only lease stamping
 (crash self-healing), renewal, advisory `serialize_by` area locks, full
 release, and sweep reclaim of expired markers. Pure protocol in core, IO in
-`@looper/github`, proven against the fake with race/recovery/serialization
+`@loopdog/github`, proven against the fake with race/recovery/serialization
 tests.

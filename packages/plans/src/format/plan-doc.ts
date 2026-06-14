@@ -1,4 +1,4 @@
-import type { PlanStatus } from '@looper/core';
+import type { PlanStatus } from '@loopdog/core';
 
 /**
  * The portable plan format (task 0015): parse/serialize for the markdown

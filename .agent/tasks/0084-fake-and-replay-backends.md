@@ -14,10 +14,10 @@ offline, deterministically, and with **zero subscription quota** spent.
 Part of [Milestone 18](../milestones/milestone-18-test-and-simulation-harness.md)
 (tier-2 component conformance + the backend half of tier-3 scenarios). Pairs with
 the fake GitHub (0083): the fake GitHub provides the bus, these provide the
-provider side. Because `Backend` is a port interface in `@looper/core`
+provider side. Because `Backend` is a port interface in `@loopdog/core`
 (0019 — `capabilities`/`dispatch`/`ingest`), a fake is a drop-in the runner (M03 ·
 0012) can't tell from the real `claude`/`codex` impls (0020/0021). Lands in the
-dev-only `@looper/testing` package (`testing/src/fake-backends/`). See
+dev-only `@loopdog/testing` package (`testing/src/fake-backends/`). See
 [codebase](../../docs/codebase.md) "Testing strategy" and
 [architecture](../../docs/architecture.md) "Execution model."
 
@@ -34,7 +34,7 @@ dev-only `@looper/testing` package (`testing/src/fake-backends/`). See
 
 ### Technical detail
 
-**Package / files** (`@looper/testing`, dev-only):
+**Package / files** (`@loopdog/testing`, dev-only):
 `testing/src/fake-backends/{scripted,replay,conformance,index}.ts` + cassette
 fixtures under `testing/fixtures/cassettes/<provider>/<name>.json`.
 
@@ -56,10 +56,10 @@ type DispatchOutcome =
 `dispatch(brief, ctx)` returns a `DispatchHandle` carrying the `run_id` correlation
 (0073). By default the fake **defers** the PR: it enqueues the synthetic PR onto the
 fake GitHub's event queue (0083), authored by the **"provider app" identity** (not
-the `looper` token) so the resulting `pull_request` event actually re-triggers — this
+the `loopdog` token) so the resulting `pull_request` event actually re-triggers — this
 is what makes the async split real in tests. The synthetic PR is built to satisfy
-all three correlation signals by default: head branch `looper/<loop>/<issue>-<run_id>`,
-a `looper-run: <run_id>` body trailer, and a `#<issue>` ref — but `BackendScript` can
+all three correlation signals by default: head branch `loopdog/<loop>/<issue>-<run_id>`,
+a `loopdog-run: <run_id>` body trailer, and a `#<issue>` ref — but `BackendScript` can
 omit/corrupt any one to test the defense-in-depth match precedence (0073). `ingest`
 is the **real** correlation+result logic (delegated to / shared with 0073), not a
 stub — the fake only fabricates inputs, never short-circuits the matcher.
@@ -70,7 +70,7 @@ branches (0019) are exercised: `claudeLike` (`trigger_modes:[api_fire]`, sandbox
 `secret_phase:setup-only`, `network:off`, `opens_pr:true`), `selfHostedLike`.
 
 **Replay backend** — `record | replay | live` mode via env (e.g.
-`LOOPER_CASSETTE=replay`, default in CI). A **cassette** is a deterministic JSON
+`LOOPDOG_CASSETTE=replay`, default in CI). A **cassette** is a deterministic JSON
 recording of one dispatch→ingest exchange: the dispatch input fingerprint (a stable
 hash of the brief contract + capabilities — NOT raw secrets/tokens), the provider
 reference returned, and the sequence of GitHub artifacts (PR + comments + checks)
@@ -147,7 +147,7 @@ use these M18 fakes only — **no real quota, no network**.
 
 ```bash
 # scripted: dispatch → synthetic PR event → real ingest correlates + advances once
-# replay:   LOOPER_CASSETTE=replay drives a recorded exchange deterministically
+# replay:   LOOPDOG_CASSETTE=replay drives a recorded exchange deterministically
 # conformance: runBackendConformance passes for scripted, replay, and real backends
 # edges: no-result → sweep timeout; duplicate event → idempotent; foreign PR → null;
 #        missing cassette → hard error; cassette scrub rejects residual secrets

@@ -9,7 +9,7 @@ import type {
   LabelSpec,
   PullRequestSnapshot,
   ReviewSnapshot,
-} from '@looper/core';
+} from '@loopdog/core';
 import { ACTIONS_BOT } from '../identity/identity.js';
 
 /** The git empty-tree object — lets us create a parentless (orphan) commit. */
@@ -17,8 +17,8 @@ const EMPTY_TREE_SHA = '4b825dc642cb6eb9a060e54bf8d69288fbee4904';
 
 /**
  * The production `GitHubPort` (task 0094): a thin Octokit wrapper over the
- * Actions `GITHUB_TOKEN` (or any token). All looper GitHub IO flows through
- * here; behavior matches the `@looper/testing` fake (component conformance).
+ * Actions `GITHUB_TOKEN` (or any token). All loopdog GitHub IO flows through
+ * here; behavior matches the `@loopdog/testing` fake (component conformance).
  */
 export class OctokitGitHub implements GitHubPort {
   private readonly octokit: Octokit;
@@ -299,7 +299,7 @@ export class OctokitGitHub implements GitHubPort {
     if (opts?.orphan) {
       const { data: commit } = await this.octokit.rest.git.createCommit({
         ...repo,
-        message: `looper: initialize ${branch}`,
+        message: `loopdog: initialize ${branch}`,
         tree: EMPTY_TREE_SHA,
         parents: [],
       });

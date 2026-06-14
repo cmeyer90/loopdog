@@ -7,7 +7,7 @@ import { stateLabel, stateOfLabels } from '../state-machine/states.js';
 
 /**
  * Pure transition-decision logic (task 0012's deterministic heart). The
- * effectful pipeline in `@looper/runtime` builds the check list (budget,
+ * effectful pipeline in `@loopdog/runtime` builds the check list (budget,
  * authorization, resilience are composed in as pre-flight checks) and acts on
  * the decision; everything here is side-effect-free and unit-testable.
  */
@@ -89,11 +89,11 @@ export function standardChecks(
   });
 
   const holds = item.labels.filter((l) => {
-    if (l === 'looper:needs-approval') {
-      // The approval hold is released by a trusted `looper:approved` (M17).
-      return !item.labels.includes('looper:approved');
+    if (l === 'loopdog:needs-approval') {
+      // The approval hold is released by a trusted `loopdog:approved` (M17).
+      return !item.labels.includes('loopdog:approved');
     }
-    return ['looper:stop', 'looper:parked', 'looper:quarantine'].includes(l);
+    return ['loopdog:stop', 'loopdog:parked', 'loopdog:quarantine'].includes(l);
   });
   checks.push({
     name: 'operational-holds',
@@ -104,7 +104,7 @@ export function standardChecks(
   });
 
   const offRamps = item.labels.filter((l) =>
-    ['looper:blocked', 'looper:needs-human', 'looper:stuck', 'looper:abandoned'].includes(l),
+    ['loopdog:blocked', 'loopdog:needs-human', 'loopdog:stuck', 'loopdog:abandoned'].includes(l),
   );
   checks.push({
     name: 'off-ramps',

@@ -4,9 +4,9 @@ import type {
   PullRequestSnapshot,
   RunRecord,
   RunStep,
-} from '@looper/core';
-import { stateLabel } from '@looper/core';
-import { releaseClaim } from '@looper/github';
+} from '@loopdog/core';
+import { stateLabel } from '@loopdog/core';
+import { releaseClaim } from '@loopdog/github';
 import { composeWorkBrief, promptSourceFromReader } from './brief.js';
 import {
   findPendingDispatches,
@@ -20,11 +20,11 @@ import type { RunnerDeps } from './transition-runner.js';
 /**
  * Ensemble & judge (M13 · 0055, tier:core only): dispatch the SAME brief to
  * two distinct providers, then dispatch a judge that compares the two PRs
- * against the acceptance criteria and picks a winner (`looper-winner: #N`).
+ * against the acceptance criteria and picks a winner (`loopdog-winner: #N`).
  * The loser is labeled abandoned with an explanation; the winner advances.
  */
 
-const WINNER_RE = /looper-winner:\s*#?(\d+)/i;
+const WINNER_RE = /loopdog-winner:\s*#?(\d+)/i;
 
 export function parseWinner(body: string): number | null {
   const m = body.match(WINNER_RE);
@@ -108,7 +108,7 @@ export async function ensembleIngest(
         deps,
         item,
         gate,
-        'ensemble judge returned no looper-winner verdict (fail closed)',
+        'ensemble judge returned no loopdog-winner verdict (fail closed)',
       );
       return record({
         status: 'escalated',
@@ -123,7 +123,7 @@ export async function ensembleIngest(
     await gate.mutate('label', `state -> ${loop.transition.to}`, async () => {
       const labels = await deps.gh.getItemLabels(item.ref);
       await deps.gh.addLabels(item.ref, [stateLabel(loop.transition.to)]);
-      const current = labels.find((l) => l.startsWith('looper:state/'));
+      const current = labels.find((l) => l.startsWith('loopdog:state/'));
       if (current && current !== stateLabel(loop.transition.to)) {
         await deps.gh.removeLabel(item.ref, current);
       }
@@ -135,7 +135,7 @@ export async function ensembleIngest(
     }
     for (const loser of losers) {
       await gate.mutate('label', `retire loser PR #${loser.ref.number}`, () =>
-        deps.gh.addLabels(loser.ref, ['looper:abandoned']),
+        deps.gh.addLabels(loser.ref, ['loopdog:abandoned']),
       );
       await gate.comment('loser notice', () =>
         deps.gh.createComment(
@@ -207,12 +207,12 @@ export async function ensembleIngest(
       'discipline, test quality, and maintainability. Pick exactly ONE winner.',
       '',
       'End your comparison comment with EXACTLY one line:',
-      `looper-winner: #<pr-number>`,
+      `loopdog-winner: #<pr-number>`,
       '',
-      `looper-run: ${runId}-judge`,
+      `loopdog-run: ${runId}-judge`,
     ].join('\n'),
-    expectedBranch: `looper/${loop.name}/${item.ref.number}-${runId}-judge`,
-    expectedTrailer: `looper-run: ${runId}-judge`,
+    expectedBranch: `loopdog/${loop.name}/${item.ref.number}-${runId}-judge`,
+    expectedTrailer: `loopdog-run: ${runId}-judge`,
     expectation: 'comment' as const,
   };
   const judgeHandle = await gate.dispatch(`ensemble judge via ${judgeBackendId}`, () =>
@@ -251,11 +251,11 @@ async function escalate(
   gate: EffectGate,
   reason: string,
 ): Promise<void> {
-  await gate.mutate('label', 'add looper:needs-human', () =>
-    deps.gh.addLabels(item.ref, ['looper:needs-human']),
+  await gate.mutate('label', 'add loopdog:needs-human', () =>
+    deps.gh.addLabels(item.ref, ['loopdog:needs-human']),
   );
   await gate.comment('ensemble escalation', () =>
-    deps.gh.createComment(item.ref, `🚨 looper ensemble: ${reason}`),
+    deps.gh.createComment(item.ref, `🚨 loopdog ensemble: ${reason}`),
   );
   await gate.mutate('claim', 'release', () =>
     releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
