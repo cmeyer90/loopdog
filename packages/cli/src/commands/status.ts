@@ -1,5 +1,6 @@
 import type { Command } from 'commander';
-import { readFile, writeFile } from 'node:fs/promises';
+import { createRequire } from 'node:module';
+import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadConfig } from '@loopdog/config';
 import {
@@ -13,6 +14,10 @@ import { TelemetryBranchStore } from '@loopdog/runtime';
 import { OctokitGitHub, parseRepoFromRemoteUrl, resolveGitHubAuth } from '@loopdog/github';
 import type { GitHubPort, RepoRef, RunRecord } from '@loopdog/core';
 import { buildLoopRows, renderStatus, type StatusView } from '../render/status-view.js';
+import { assessControllerDrift, type ControllerDrift } from './controller-version.js';
+
+const require = createRequire(import.meta.url);
+const { version: CLI_VERSION } = require('../../package.json') as { version: string };
 
 /**
  * `loopdog status` + control verbs (task 0071): the fleet overview (pipeline
@@ -85,6 +90,10 @@ export function registerStatus(program: Command): void {
         (r) => r.outcome.status === 'failed' || r.outcome.status === 'escalated',
       ).length;
 
+      // Controller version-pin drift (task 0101): read locally + best-effort, so
+      // it works even when the GitHub fetch above degraded to config-only.
+      const drift = await readControllerDrift(opts.path);
+
       const view: StatusView = {
         repo: repoLabel,
         killSwitch,
@@ -94,6 +103,7 @@ export function registerStatus(program: Command): void {
         throughput: { runs24h: records.length, done, failed },
         live,
         liveError,
+        controller: drift,
       };
 
       if (opts.json) {
@@ -108,6 +118,7 @@ export function registerStatus(program: Command): void {
               attention: attentionCounts,
               loops: view.loops,
               throughput: view.throughput,
+              ...(drift ? { controller: drift } : {}),
             },
             null,
             2,
@@ -291,6 +302,25 @@ async function resolveRepo(repoArg?: string): Promise<RepoRef> {
   const parsed = parseRepoFromRemoteUrl(stdout.trim());
   if (!parsed) throw new Error('cannot infer repo; pass --repo owner/name');
   return parsed;
+}
+
+/**
+ * Read the local caller workflows' controller pins and assess drift vs this CLI.
+ * Best-effort + local: returns undefined (render nothing) when there are no
+ * caller workflows or nothing to flag, so `status` never fails over a nudge.
+ */
+async function readControllerDrift(repoDir: string): Promise<ControllerDrift | undefined> {
+  try {
+    const wfDir = join(repoDir, '.github', 'workflows');
+    const names = (await readdir(wfDir)).filter(
+      (n) => n.startsWith('loopdog-') && /\.ya?ml$/.test(n),
+    );
+    const contents = await Promise.all(names.map((n) => readFile(join(wfDir, n), 'utf8')));
+    const drift = assessControllerDrift(contents, CLI_VERSION);
+    return drift.status === 'none' ? undefined : drift;
+  } catch {
+    return undefined; // no .github/workflows, unreadable, etc. — silent
+  }
 }
 
 async function loadRecentRecords(

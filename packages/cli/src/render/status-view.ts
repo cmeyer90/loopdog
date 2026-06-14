@@ -1,5 +1,6 @@
 import { DEFAULT_STATES, DEPLOY_STATES } from '@loopdog/core';
 import type { LoopDefinition } from '@loopdog/core';
+import type { ControllerDrift } from '../commands/controller-version.js';
 import { bold, cyan, dim, green, magenta, red, yellow } from './colors.js';
 
 /**
@@ -35,6 +36,8 @@ export interface StatusView {
   /** False when live GitHub counts could not be fetched (config-only render). */
   live: boolean;
   liveError?: string | undefined;
+  /** Controller version-pin drift vs the installed CLI; omitted when nothing to say. */
+  controller?: ControllerDrift | undefined;
 }
 
 const LIFECYCLE: readonly string[] = [...DEFAULT_STATES, ...DEPLOY_STATES];
@@ -110,6 +113,31 @@ function truncate(text: string, max: number): string {
   return text.length <= max ? text : text.slice(0, max - 1) + '…';
 }
 
+/**
+ * One-line controller-pin nudge. `behind` is the actionable case (exact pin older
+ * than the CLI → run `loopdog upgrade`); `ahead` means the local CLI is older than
+ * what's deployed (update the CLI). Floating/current/none render nothing — status
+ * stays uncluttered when there's nothing to do.
+ */
+function renderControllerDrift(drift: ControllerDrift | undefined): string | undefined {
+  if (!drift) return undefined;
+  if (drift.status === 'behind') {
+    return (
+      yellow('⚠ controller pinned ') +
+      yellow(bold(`v${drift.pinned}`)) +
+      yellow(` · CLI v${drift.cli} — run `) +
+      yellow(bold('loopdog upgrade')) +
+      yellow(' to re-sync')
+    );
+  }
+  if (drift.status === 'ahead') {
+    return dim(
+      `controller pinned v${drift.pinned} · local CLI v${drift.cli} is older — update the CLI`,
+    );
+  }
+  return undefined;
+}
+
 const MAX_FLOW = 54;
 
 export function renderStatus(view: StatusView): string {
@@ -131,6 +159,8 @@ export function renderStatus(view: StatusView): string {
     view.killSwitch ? red(bold('■ KILL-SWITCH ON')) : dim('kill-switch off'),
   ].filter(Boolean);
   out.push(summary.join(dim(' · ')));
+  const controllerLine = renderControllerDrift(view.controller);
+  if (controllerLine) out.push(controllerLine);
   out.push('');
 
   if (view.loops.length === 0) {
