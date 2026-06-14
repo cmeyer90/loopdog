@@ -8,8 +8,8 @@ Every planned task now has a full, handoff-ready spec under `tasks/`. The
 per-milestone grouping + sequencing lives in each milestone's **Planned Tasks**
 table and in `milestones.md`.
 
-- **Next task id:** `0096`
-- **Total tasks:** 95
+- **Next task id:** `0097`
+- **Total tasks:** 96
 
 | ID | Status | Branch | Title |
 |---:|---|---|---|
@@ -108,3 +108,4 @@ table and in `milestones.md`.
 | 0093 | blocked | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike |
 | 0094 | verified | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |
 | 0095 | implemented | claude/amazing-goldberg-0926da | CLI `ldg` Shorthand & 0.2.0 Publish |
+| 0096 | implemented | claude/amazing-goldberg-0926da | Auto-cut Workflow-Ref Tags & Quiet 404s |

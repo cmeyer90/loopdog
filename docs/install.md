@@ -25,14 +25,16 @@ quickstart; the trust model is in [Security & Trust](security.md).
 ## Pinning the workflows
 
 The scaffolded workflow callers reference Loopdog's reusable workflows by tag.
-Pin either:
+The release pipeline auto-maintains both an exact `vX.Y.Z` tag and a floating
+major `vX` on every publish, so pin either:
 
-- **`@v1`** — a floating tag that tracks the latest `1.x` (gets fixes); or
-- **`@v1.0.0`** — an exact pin (fully reproducible, no auto-updates).
+- **`@v0`** — a floating tag that tracks the latest `0.x` (gets fixes); it
+  graduates to `@v1` once 1.0.0 is cut; or
+- **`@v0.3.0`** — an exact pin (fully reproducible, no auto-updates).
 
 ```yaml
 # .github/workflows/loopdog-events.yml (scaffolded)
-uses: <org>/loopdog/.github/workflows/reusable-events.yml@v1   # or @v1.0.0
+uses: <org>/loopdog/.github/workflows/reusable-events.yml@v0   # or @v0.3.0
 ```
 
 ## Upgrading
