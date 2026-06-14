@@ -33,7 +33,7 @@ export function buildProgram(backends: ReadonlyMap<string, ExecutionBackend> = n
     .version(version, '-V, --version', 'output the loopdog version');
 
   registerLogin(program);
-  registerInit(program, version);
+  registerInit(program);
   registerConnect(program);
   registerConfig(program);
   registerPrompts(program);

@@ -1,6 +1,6 @@
 {
   "name": "loopdog-monorepo",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "private": true,
   "description": "Loopdog — a generic, open-source autonomous-SDLC engine you attach to any GitHub repository.",
   "license": "Apache-2.0",

@@ -44,11 +44,12 @@ permissions:
 
 jobs:
   loopdog:
-    # Pinned by `loopdog init`: the `@v<major>` ref tracks loopdog's reusable
-    # workflow; `loopdog-version` pins the exact @loopdog/cli the controller runs.
+    # Floating major tag: the release pipeline moves `@v0` to the latest 0.x on
+    # every publish, so this always resolves and picks up fixes. For a fully
+    # reproducible pin, swap to an exact tag (e.g. `@v0.3.0`).
     uses: cmeyer90/loopdog/.github/workflows/reusable-events.yml@v0
     with:
-      loopdog-version: 0.2.0
+      loopdog-version: '0' # latest 0.x of @loopdog/cli (tracks the @v0 workflow)
     # Forward the provider secrets the controller needs to dispatch in `act`
     # mode. Unset secrets pass through as empty — dry-run/suggest loops and the
     # deterministic triage loop never read them. Stored by `loopdog connect`.

@@ -24,9 +24,29 @@ export class OctokitGitHub implements GitHubPort {
   private readonly octokit: Octokit;
 
   constructor(opts: { token: string; baseUrl?: string }) {
+    // Octokit logs every request; non-2xx responses land on warn/error. A 404 is
+    // almost always expected here — the run-record store probes for the
+    // `loopdog/telemetry` branch and per-day buckets that don't exist until the
+    // first run, and every call site already treats "absent" as empty (returns
+    // null/[]/idempotent return). Drop those request-log lines so a fresh/idle
+    // repo doesn't spew 404s. A genuinely unhandled 404 still throws a
+    // RequestError with full context, so nothing real is hidden.
+    const quiet =
+      (sink: (...args: unknown[]) => void) =>
+      (message: string, info?: object): void => {
+        if (/ - 404\b/.test(message)) return;
+        if (info === undefined) sink(message);
+        else sink(message, info);
+      };
     this.octokit = new Octokit({
       auth: opts.token,
       ...(opts.baseUrl ? { baseUrl: opts.baseUrl } : {}),
+      log: {
+        debug: () => {},
+        info: () => {},
+        warn: quiet(console.warn),
+        error: quiet(console.error),
+      },
     });
   }
 

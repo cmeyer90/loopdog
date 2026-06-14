@@ -22,7 +22,7 @@ export interface ScaffoldPlan {
   loops: Array<{ name: string; transition: string; trigger: string; mode: string }>;
 }
 
-export function registerInit(program: Command, cliVersion = '0.0.0'): void {
+export function registerInit(program: Command): void {
   program
     .command('init')
     .description('attach loopdog to this repository (scaffold config + loops + workflows)')
@@ -58,12 +58,7 @@ export function registerInit(program: Command, cliVersion = '0.0.0'): void {
         if (file.action !== 'create') continue;
         const target = join(opts.path, file.path);
         await mkdir(join(target, '..'), { recursive: true });
-        const contents = pinLoopdogVersion(
-          file.path,
-          await readFile(file.source, 'utf8'),
-          cliVersion,
-        );
-        await writeFile(target, contents);
+        await writeFile(target, await readFile(file.source, 'utf8'));
         wrote++;
       }
       console.log(`\nwrote ${wrote} file(s); skipped ${plan.files.length - wrote}.`);
@@ -149,21 +144,6 @@ export async function buildScaffoldPlan(
     });
   }
   return { files, loops };
-}
-
-/**
- * Pin the loopdog reusable-workflow callers to the installed CLI version: the
- * `uses: …@v<major>` ref tracks loopdog's reusable workflow on its major track,
- * and `loopdog-version:` pins the exact `@loopdog/cli` the controller runs. The
- * shipped templates carry a valid default; this keeps a fresh install in step
- * with whatever CLI version scaffolded it. Non-workflow files pass through.
- */
-export function pinLoopdogVersion(relPath: string, content: string, cliVersion: string): string {
-  if (!/[\\/]loopdog-(events|sweep)\.yml$/.test(relPath)) return content;
-  const major = cliVersion.split('.')[0] || '0';
-  return content
-    .replace(/(uses:\s*cmeyer90\/loopdog\/\S+@)v[\w.]+/g, `$1v${major}`)
-    .replace(/(loopdog-version:\s*)\S+/g, `$1${cliVersion}`);
 }
 
 function renderPlan(plan: ScaffoldPlan): void {

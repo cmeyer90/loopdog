@@ -16,11 +16,10 @@ permissions:
 
 jobs:
   loopdog:
-    # Pinned by `loopdog init`: the `@v<major>` ref tracks loopdog's reusable
-    # workflow; `loopdog-version` pins the exact @loopdog/cli the controller runs.
+    # Floating major tag (see loopdog-events.yml): `@v0` tracks the latest 0.x.
     uses: cmeyer90/loopdog/.github/workflows/reusable-sweep.yml@v0
     with:
-      loopdog-version: 0.2.0
+      loopdog-version: '0' # latest 0.x of @loopdog/cli (tracks the @v0 workflow)
     # The sweep carries controller->controller handoffs, so it is the path that
     # actually dispatches most loops — it needs the provider secrets too.
     secrets:

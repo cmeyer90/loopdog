@@ -15,9 +15,6 @@ Fix the zero-infra Actions install path, surfaced by an end-to-end dogfood:
   rejected by GitHub and broke the caller at startup. The reusable event/sweep
   workflows now forward these to the controller as env so `act`-mode dispatch
   actually authenticates.
-- **`loopdog init` pins the scaffolded workflows** to the installed CLI version
-  (the `@v<major>` reusable-workflow ref + exact `loopdog-version`) instead of a
-  nonexistent `@v0.1.0` tag.
 - **Comment/plan-update results now ingest on the subscription path.** A Claude
   routine posts as the *user*, not a bot, so the old correlation (which required
   a `Bot` author) never matched groom/review results and they timed out. Ingest
