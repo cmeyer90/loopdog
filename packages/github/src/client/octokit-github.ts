@@ -9,6 +9,8 @@ import type {
   LabelSpec,
   PullRequestSnapshot,
   ReviewSnapshot,
+  WorkflowRunState,
+  WorkflowSummary,
 } from '@loopdog/core';
 import { ACTIONS_BOT } from '../identity/identity.js';
 
@@ -412,6 +414,35 @@ export class OctokitGitHub implements GitHubPort {
       ref,
       inputs,
     });
+  }
+
+  // ---- WorkflowsPort ----
+
+  async listWorkflows(repo: { owner: string; repo: string }): Promise<WorkflowSummary[]> {
+    const rows = await this.octokit.paginate(this.octokit.rest.actions.listRepoWorkflows, {
+      ...repo,
+      per_page: 100,
+    });
+    return rows.map((w) => ({
+      id: w.id,
+      name: w.name,
+      path: w.path,
+      state: w.state as WorkflowRunState,
+    }));
+  }
+
+  async enableWorkflow(
+    repo: { owner: string; repo: string },
+    workflow: string | number,
+  ): Promise<void> {
+    await this.octokit.rest.actions.enableWorkflow({ ...repo, workflow_id: workflow });
+  }
+
+  async disableWorkflow(
+    repo: { owner: string; repo: string },
+    workflow: string | number,
+  ): Promise<void> {
+    await this.octokit.rest.actions.disableWorkflow({ ...repo, workflow_id: workflow });
   }
 
   // ---- IdentityPort ----

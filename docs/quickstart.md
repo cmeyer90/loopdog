@@ -52,6 +52,18 @@ loopdog promote groom --to act
 implement loop will later satisfy. That's the "first groom" milestone the
 [example attachment](examples.md) proves end-to-end offline.
 
+**Nothing happened?** The controller only runs while its Actions workflows are
+enabled. `loopdog-events` does intake (it labels a fresh issue `loopdog:state/new`
+and triages it) and `loopdog-sweep` is the cron that carries items forward — if
+either is disabled (turned off by hand, or GitHub's 60-day auto-disable of a
+scheduled workflow), opening an issue does nothing and `loopdog status` shows an
+empty pipeline. Check and fix it from the CLI:
+
+```bash
+loopdog workflows            # list loopdog's workflows + whether each is enabled
+loopdog workflows enable     # turn them all back on (your own `ci` is untouched)
+```
+
 ## What's safe here
 
 - **Dry-run by default.** Every loop starts comment-only; you promote per loop.

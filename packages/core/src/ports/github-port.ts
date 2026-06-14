@@ -18,7 +18,14 @@ import type {
  * implement exactly what they use.
  */
 export interface GitHubPort
-  extends IssuesPort, LabelsPort, PullsPort, ChecksPort, RepoFilesPort, IdentityPort {}
+  extends
+    IssuesPort,
+    LabelsPort,
+    PullsPort,
+    ChecksPort,
+    RepoFilesPort,
+    IdentityPort,
+    WorkflowsPort {}
 
 export interface IssuesPort {
   getIssue(ref: ItemRef): Promise<IssueSnapshot>;
@@ -100,6 +107,44 @@ export interface RepoFilesPort {
     expectedSha?: string,
   ): Promise<{ sha: string }>;
   listDir(repo: { owner: string; repo: string }, branch: string, path: string): Promise<string[]>;
+}
+
+/**
+ * A GitHub Actions workflow's lifecycle state. `active` runs on its triggers;
+ * the `disabled_*` states do not — `disabled_manually` (a human/`gh` turned it
+ * off), `disabled_inactivity` (GitHub auto-disables a *scheduled* workflow after
+ * 60 days of repo inactivity), `disabled_fork` (workflows don't run on forks).
+ */
+export type WorkflowRunState =
+  | 'active'
+  | 'deleted'
+  | 'disabled_fork'
+  | 'disabled_inactivity'
+  | 'disabled_manually';
+
+export interface WorkflowSummary {
+  /** Numeric workflow id (stable; the unambiguous handle for enable/disable). */
+  id: number;
+  /** Display name from the workflow's `name:` field. */
+  name: string;
+  /** Repo-relative path, e.g. `.github/workflows/loopdog-events.yml`. */
+  path: string;
+  state: WorkflowRunState;
+}
+
+/**
+ * Manage GitHub Actions workflow run-state (task 0099). Operator surface: the
+ * controller drives work because `loopdog-events`/`loopdog-sweep` fire it, so a
+ * disabled workflow silently stalls the pipeline. Enable/disable need a token
+ * with `actions:write` (the operator's `gh` auth), never the runtime token.
+ */
+export interface WorkflowsPort {
+  /** Every workflow registered on the repo (active + disabled). */
+  listWorkflows(repo: { owner: string; repo: string }): Promise<WorkflowSummary[]>;
+  /** Enable a workflow by numeric id or filename (e.g. `loopdog-events.yml`). Idempotent. */
+  enableWorkflow(repo: { owner: string; repo: string }, workflow: string | number): Promise<void>;
+  /** Disable a workflow by numeric id or filename. Idempotent. */
+  disableWorkflow(repo: { owner: string; repo: string }, workflow: string | number): Promise<void>;
 }
 
 export interface IdentityPort {

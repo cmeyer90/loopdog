@@ -28,6 +28,9 @@ export type {
   LabelsPort,
   PullsPort,
   RepoFilesPort,
+  WorkflowRunState,
+  WorkflowSummary,
+  WorkflowsPort,
 } from './ports/github-port.js';
 export type {
   BackendCapabilities,

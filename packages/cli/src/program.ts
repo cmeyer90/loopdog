@@ -12,6 +12,7 @@ import { registerLoops } from './commands/loops.js';
 import { registerRuns } from './commands/runs.js';
 import { registerStatus } from './commands/status.js';
 import { registerRun } from './commands/run.js';
+import { registerWorkflows } from './commands/workflows.js';
 import { registerBench } from './commands/bench.js';
 import { registerUpgrade } from './commands/upgrade.js';
 
@@ -42,6 +43,7 @@ export function buildProgram(backends: ReadonlyMap<string, ExecutionBackend> = n
   registerRuns(program);
   registerStatus(program);
   registerRun(program);
+  registerWorkflows(program);
   registerBench(program);
   registerUpgrade(program);
   registerController(program, backends);

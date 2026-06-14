@@ -9,6 +9,8 @@ import type {
   LabelSpec,
   PullRequestSnapshot,
   ReviewSnapshot,
+  WorkflowRunState,
+  WorkflowSummary,
 } from '@loopdog/core';
 
 /**
@@ -428,6 +430,67 @@ export class FakeGitHub implements GitHubPort {
       inputs: { ...inputs },
     });
     this.mutations.push(`dispatchWorkflow ${repo.owner}/${repo.repo} ${workflowFile}`);
+  }
+
+  // ---- WorkflowsPort ----
+
+  /** Registered workflows, keyed by `owner/repo` then numeric id. */
+  private workflows = new Map<string, Map<number, WorkflowSummary>>();
+  private workflowIdCounter = 0;
+
+  /** Seed a workflow registration (test setup). Defaults to `active`. */
+  seedWorkflow(
+    repo: { owner: string; repo: string },
+    partial: { name: string; path?: string; state?: WorkflowRunState; id?: number },
+  ): WorkflowSummary {
+    const id = partial.id ?? ++this.workflowIdCounter;
+    const wf: WorkflowSummary = {
+      id,
+      name: partial.name,
+      path: partial.path ?? `.github/workflows/${partial.name}.yml`,
+      state: partial.state ?? 'active',
+    };
+    const byId = this.workflows.get(repoKey({ ...repo, number: 0 })) ?? new Map();
+    byId.set(id, wf);
+    this.workflows.set(repoKey({ ...repo, number: 0 }), byId);
+    return wf;
+  }
+
+  async listWorkflows(repo: { owner: string; repo: string }): Promise<WorkflowSummary[]> {
+    this.beforeOp('listWorkflows');
+    const byId = this.workflows.get(repoKey({ ...repo, number: 0 }));
+    return [...(byId?.values() ?? [])].map((w) => structuredClone(w)).sort((a, b) => a.id - b.id);
+  }
+
+  async enableWorkflow(
+    repo: { owner: string; repo: string },
+    workflow: string | number,
+  ): Promise<void> {
+    this.setWorkflowState(repo, workflow, 'active');
+  }
+
+  async disableWorkflow(
+    repo: { owner: string; repo: string },
+    workflow: string | number,
+  ): Promise<void> {
+    this.setWorkflowState(repo, workflow, 'disabled_manually');
+  }
+
+  private setWorkflowState(
+    repo: { owner: string; repo: string },
+    workflow: string | number,
+    state: WorkflowRunState,
+  ): void {
+    this.beforeOp(state === 'active' ? 'enableWorkflow' : 'disableWorkflow');
+    const byId = this.workflows.get(repoKey({ ...repo, number: 0 }));
+    const found = [...(byId?.values() ?? [])].find(
+      (w) => w.id === workflow || w.path.endsWith(`/${workflow}`) || w.name === workflow,
+    );
+    if (!found) throw new Error(`fake: no workflow '${workflow}' on ${repo.owner}/${repo.repo}`);
+    found.state = state;
+    this.mutations.push(
+      `${state === 'active' ? 'enableWorkflow' : 'disableWorkflow'} ${repo.owner}/${repo.repo} ${found.path}`,
+    );
   }
 
   // ---- IdentityPort ----
