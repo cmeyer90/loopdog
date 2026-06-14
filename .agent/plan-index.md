@@ -8,8 +8,8 @@ Every planned task now has a full, handoff-ready spec under `tasks/`. The
 per-milestone grouping + sequencing lives in each milestone's **Planned Tasks**
 table and in `milestones.md`.
 
-- **Next task id:** `0100`
-- **Total tasks:** 99
+- **Next task id:** `0101`
+- **Total tasks:** 100
 
 | ID | Status | Branch | Title |
 |---:|---|---|---|
@@ -112,3 +112,4 @@ table and in `milestones.md`.
 | 0097 | verified | claude/stoic-gauss-7aa571 | `loopdog status` Pipeline Visualization & Speed-up |
 | 0098 | implemented | claude/optimistic-shamir-17b43f | Plan-Store Fragmentation: One Durable Plan Per Issue |
 | 0099 | verified | task/0099-cli-workflow-toggle | CLI Workflow Enable/Disable |
+| 0100 | verified | task/0100-controller-version-sync | Keep the Adopter's Controller Version in Sync |

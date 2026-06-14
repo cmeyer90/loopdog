@@ -30,6 +30,18 @@ loopdog upgrade               # apply; review + commit the diff
   writes a `.loopdog-new` sidecar and reports it for manual merge.
 - **Refuses** a downgrade (newer on-disk) or a too-old tree with an actionable
   message.
+- **Re-syncs the controller's version pins.** `upgrade` also rewrites the
+  scaffolded caller workflows (`.github/workflows/loopdog-*.yml`) to the floating
+  major — `uses: …/reusable-*.yml@vN` and `loopdog-version: 'N'` — so a repo
+  scaffolded by an older Loopdog (which wrote exact `@<sha>` / `0.x.y` pins that
+  never move) stops silently running a stale controller. This runs **even when
+  the config is already current**, since the workflow pins drift independently of
+  the config `version`. New installs already float, so they auto-track every
+  release with no action; one `loopdog upgrade` converts a legacy exact-pinned
+  repo to the same auto-tracking. (Prefer reproducibility over auto-tracking?
+  `upgrade` floats the pins by design — re-pin to an exact `@vX.Y.Z` /
+  `loopdog-version: X.Y.Z` by hand afterward, and skip `upgrade` on future
+  releases.) Preview it with `--dry-run`.
 
 ## Migration log
 

@@ -1,4 +1,5 @@
 import type { Command } from 'commander';
+import { createRequire } from 'node:module';
 import { readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { parse } from 'yaml';
@@ -9,6 +10,11 @@ import {
   planUpgrade,
   type FileTree,
 } from '@loopdog/config';
+import { retargetCallerWorkflow, type CallerPinChange } from './upgrade-workflows.js';
+
+const require = createRequire(import.meta.url);
+const { version: CLI_VERSION } = require('../../package.json') as { version: string };
+const CLI_MAJOR = Number(CLI_VERSION.split('.')[0]);
 
 /**
  * `loopdog upgrade` (task 0067): lift an attached `.loopdog/` tree from an older
@@ -16,11 +22,17 @@ import {
  * idempotent migrations. Refuses a downgrade (newer on-disk) or a too-old tree;
  * a no-op when already current. Adopter-edited files are never silently
  * overwritten — a conflicting migration writes a `.loopdog-new` sidecar.
+ *
+ * It also re-syncs the scaffolded caller workflows' version pins to the floating
+ * major (task 0100): a repo scaffolded by an older loopdog carries exact pins
+ * that never move, so its deployed controller silently goes stale. That drift is
+ * independent of the config `version`, so the sync runs even when the config is
+ * already current.
  */
 export function registerUpgrade(program: Command): void {
   program
     .command('upgrade')
-    .description('migrate the .loopdog/ tree forward to this loopdog’s config version')
+    .description('migrate the .loopdog/ tree + re-sync controller workflow pins forward')
     .option('--path <dir>', 'repo root', '.')
     .option('--dry-run', 'preview migrations + the per-file table; write nothing', false)
     .action(async (opts: { path: string; dryRun: boolean }) => {
@@ -36,45 +48,80 @@ export function registerUpgrade(program: Command): void {
         return;
       }
 
+      // --- config tree migration ---
       const plan = planUpgrade(onDisk);
-      if (plan.status === 'current') {
-        console.log(`✓ up to date (config version ${onDisk} == ${CONFIG_VERSION}).`);
-        return;
-      }
       if (!plan.ok) {
+        // 'ahead' (downgrade) or 'too-old' — incompatible; don't touch anything.
         console.error(`refused: ${plan.reason}`);
         process.exitCode = 1;
         return;
       }
-
-      // Behind: migrate the on-disk tree.
-      const before = await readTree(loopdogDir);
-      const after = migrateTree(before, onDisk);
-      const rows: Array<{ path: string; state: 'changed' | 'unchanged' | 'conflict' }> = [];
-      for (const path of new Set([...Object.keys(before), ...Object.keys(after)])) {
-        const a = before[path];
-        const b = after[path];
-        if (a === b) rows.push({ path, state: 'unchanged' });
-        else rows.push({ path, state: 'changed' }); // adopter-edit detection lands when migrations carry expected baselines
+      if (plan.status === 'current') {
+        console.log(`✓ config already current (version ${onDisk}).`);
+      } else {
+        const before = await readTree(loopdogDir);
+        const after = migrateTree(before, onDisk);
+        const changed = Object.entries(after).filter(([p, c]) => before[p] !== c);
+        console.log(
+          `${opts.dryRun ? 'would migrate' : 'migrating'} config version ${onDisk} → ${CONFIG_VERSION} ` +
+            `(${plan.steps.length} step${plan.steps.length === 1 ? '' : 's'}):`,
+        );
+        for (const s of plan.steps) console.log(`  - ${s.from}→${s.to}: ${s.description}`);
+        for (const [p] of changed) console.log(`  ~ .loopdog/${p}`);
+        if (!opts.dryRun) {
+          for (const [p, content] of changed) await writeFile(join(loopdogDir, p), content);
+        }
       }
 
-      console.log(
-        `${opts.dryRun ? 'would migrate' : 'migrating'} config version ${onDisk} → ${CONFIG_VERSION} ` +
-          `(${plan.steps.length} step${plan.steps.length === 1 ? '' : 's'}):`,
-      );
-      for (const s of plan.steps) console.log(`  - ${s.from}→${s.to}: ${s.description}`);
-      for (const r of rows.filter((r) => r.state !== 'unchanged'))
-        console.log(`  ${r.state === 'conflict' ? '⚠' : '~'} ${r.path}`);
+      // --- caller-workflow version pins (task 0100) ---
+      const wfChanges = await syncCallerWorkflows(opts.path, CLI_MAJOR, opts.dryRun);
+      if (wfChanges.length === 0) {
+        console.log(`✓ controller workflows already track @v${CLI_MAJOR} (no pin drift).`);
+      } else {
+        console.log(
+          `${opts.dryRun ? 'would re-sync' : 're-synced'} controller workflow pins ` +
+            `→ @v${CLI_MAJOR} / loopdog-version '${CLI_MAJOR}' (auto-tracks the latest ${CLI_MAJOR}.x):`,
+        );
+        for (const f of wfChanges)
+          for (const c of f.changes) console.log(`  ~ ${f.file}: ${c.field} ${c.from} → ${c.to}`);
+      }
 
       if (opts.dryRun) {
         console.log('(dry-run — nothing written.)');
         return;
       }
-      for (const [path, content] of Object.entries(after)) {
-        if (before[path] !== content) await writeFile(join(loopdogDir, path), content);
-      }
-      console.log(`✓ upgraded to config version ${CONFIG_VERSION}; review + commit the diff.`);
+      console.log('done — review + commit the diff.');
     });
+}
+
+/**
+ * Re-sync every scaffolded loopdog caller workflow under `.github/workflows/` to
+ * the floating major. Skips non-loopdog files and the custom deploy workflow
+ * (which carries no reusable ref). Writes only when not a dry-run.
+ */
+async function syncCallerWorkflows(
+  repoDir: string,
+  major: number,
+  dryRun: boolean,
+): Promise<Array<{ file: string; changes: CallerPinChange[] }>> {
+  const wfDir = join(repoDir, '.github', 'workflows');
+  let entries: string[];
+  try {
+    entries = await readdir(wfDir);
+  } catch {
+    return []; // no .github/workflows (e.g. self-hosted only) — nothing to sync
+  }
+  const results: Array<{ file: string; changes: CallerPinChange[] }> = [];
+  for (const name of entries.sort()) {
+    if (!name.startsWith('loopdog-') || !/\.ya?ml$/.test(name)) continue;
+    const abs = join(wfDir, name);
+    const content = await readFile(abs, 'utf8');
+    const { content: next, changes } = retargetCallerWorkflow(content, major);
+    if (changes.length === 0) continue;
+    if (!dryRun) await writeFile(abs, next);
+    results.push({ file: join('.github', 'workflows', name), changes });
+  }
+  return results;
 }
 
 /** Read the `.loopdog/` subtree into a path → content map (paths relative to it). */
