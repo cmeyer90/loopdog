@@ -47,6 +47,12 @@ roadmap.
   via the manually-dispatched `protect` workflow using the `ADMIN_TOKEN` repo
   secret (a maintainer PAT). This is a one-time/occasional human action, never
   part of a loop's runtime path.
+- Versioning (SemVer): we are **pre-1.0**, so a changeset is `patch` for any
+  backwards-compatible change (new feature/flag/command, enhancement, or fix) and
+  `minor` only for a breaking change; `major` is reserved for the deliberate
+  `1.0.0` gate (a `major` changeset jumps straight to 1.0.0). Docs/tests/internal
+  refactors take no changeset. Full table + rules: [`CONTRIBUTING.md`](CONTRIBUTING.md)
+  → "Choosing the bump (SemVer)".
 - Releases: changesets two-stage pipeline
   ([`.github/workflows/release.yml`](.github/workflows/release.yml)) — push to
   `main` opens/updates a "Version Packages" PR; merging it publishes

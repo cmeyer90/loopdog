@@ -41,6 +41,31 @@ User-visible changes need a changeset:
 npx changeset    # pick bump level + write a human note
 ```
 
+### Choosing the bump (SemVer)
+
+Loopdog follows [Semantic Versioning](https://semver.org). We are **pre-1.0**, and
+`1.0.0` is a deliberate ship gate ([docs/release-checklist.md](docs/release-checklist.md)) —
+changesets does **not** remap `major` for `0.x`, so a `major` changeset jumps
+straight to `1.0.0`. Pick the bump accordingly:
+
+| Your change | Pre-1.0 bump (now) | Post-1.0 bump |
+|---|---|---|
+| Backwards-compatible — new feature/flag/command, enhancement, **or** bug fix | **`patch`** (`0.x.`**`Y`**) | `minor` (feature) · `patch` (fix) |
+| Backwards-incompatible — changed/removed config field, renamed/removed command or flag, behavior an adopter must adapt to | **`minor`** (`0.`**`X`**`.0`) | `major` |
+| The deliberate `1.0.0` ship gate | _(don't — see the release checklist)_ | a single `major` |
+| Docs-only, tests-only, or an internal refactor with no user-visible effect | **no changeset** | no changeset |
+
+Rules of thumb:
+
+- **Default to `patch`.** Reserve `minor` for a change that forces an adopter to
+  do something differently.
+- **Never use `major` casually pre-1.0** — it bumps straight to `1.0.0`, which is
+  gated on the [release checklist](docs/release-checklist.md).
+- One changeset per PR; its note is the user-facing changelog line.
+- When you merge the "Version Packages" PR, don't merge other PRs at the same
+  time — a concurrent merge can leave a changeset behind, and the pipeline then
+  opens another version PR instead of publishing.
+
 Releases are cut by the two-stage pipeline in
 `.github/workflows/release.yml` (version PR → publish on merge). The publish
 job authenticates to npm via **OIDC trusted publishing** — no stored token; see
