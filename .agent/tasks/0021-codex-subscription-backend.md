@@ -20,8 +20,8 @@ Codex **strips secrets before the agent phase** and **disables agent-phase
 internet by default**, and the cloud is rate-capped (~5 tasks/hr on lower tiers).
 See [architecture](../../docs/architecture.md) "Dispatch surfaces" and "The honest
 constraints," and [codebase](../../docs/codebase.md) — this lands in
-`@looper/backends` (`backends/src/codex/`), implementing the `Backend` port in
-`@looper/core`. Correlation/ingest mechanics are shared from the sweep+correlation
+`@loopdog/backends` (`backends/src/codex/`), implementing the `Backend` port in
+`@loopdog/core`. Correlation/ingest mechanics are shared from the sweep+correlation
 primitive (0073); the controller that calls this is the transition runner
 (M03 · 0012).
 
@@ -51,10 +51,10 @@ capabilities() -> {
 ```
 
 **Auth**: dispatch is just a GitHub comment, so it uses the controller's existing
-`GITHUB_TOKEN` (M01) via `@looper/github` — **no Codex token or API key is
+`GITHUB_TOKEN` (M01) via `@loopdog/github` — **no Codex token or API key is
 stored**. The Codex cloud agent acts under OpenAI's own GitHub App on the adopter's
 install; provisioning that App is the adopter's one-time setup (documented, M02),
-not looper's job.
+not loopdog's job.
 
 **Dispatch** (`dispatch(brief, context) -> DispatchHandle`): post a single GitHub
 issue/PR comment via the GitHub port containing the `@codex` mention plus the
@@ -63,9 +63,9 @@ composed brief — e.g. `@codex implement this:\n\n<brief>` for issues, or
 `backend.codex.mode: implement|review`). Because there is **no dispatch-time
 provider handle** (the comment returns no Codex task id), the `DispatchHandle`
 carries the run_id, the posted comment id (for de-dup), and the **expected branch
-`looper/<loop>/<issue>-<run_id>`** — correlation leans entirely on
+`loopdog/<loop>/<issue>-<run_id>`** — correlation leans entirely on
 branch/trailer/issue-ref (0073), not a provider id. The brief MUST instruct the
-agent to branch with that name and include the `looper-run: <run_id>` PR trailer.
+agent to branch with that name and include the `loopdog-run: <run_id>` PR trailer.
 
 **Ingest** (`ingest(github_event) -> IngestResult | null`): on `pull_request` /
 `issue_comment` events, delegate to the 0073 matcher (branch → trailer → issue
@@ -78,7 +78,7 @@ never stranded.
 **Rate-cap awareness**: dispatch is gated by the budget/quota pre-flight
 (M12 · 0075) using `throughput.tasks_per_hour`; when the cap is exhausted the
 runner defers (re-queues for the next sweep) rather than firing and failing. Codex
-gives no quota-remaining API, so looper models the cap from observed dispatch
+gives no quota-remaining API, so loopdog models the cap from observed dispatch
 timestamps in recent run records.
 
 **Capability-mismatch surfacing** (the special focus): expose a pure
@@ -86,7 +86,7 @@ timestamps in recent run records.
 `backends/src/codex/` (or shared in `backends/src/interface/`). A gate requiring
 live secrets (`secret_phase: full`) or agent-phase network (`network: on`) against
 Codex's `setup-only`/`off` is a mismatch — e.g. a secret-dependent integration-test
-loop pointed at Codex. Mismatches are reported at `looper loops validate` /
+loop pointed at Codex. Mismatches are reported at `loopdog loops validate` /
 `doctor` time (warning, with the directive: route that gate to the adopter's CI —
 the trustworthy gate runs regardless of backend — or to the self-hosted backend
 0074), and re-checked at dispatch pre-flight so a misconfigured loop fails loud
@@ -126,7 +126,7 @@ before spending a cloud task.
 - [x] Implement `checkCompatibility` + wire it into validate/doctor and the
       dispatch pre-flight.
 - [x] Model the tasks/hr cap from run-record timestamps for the quota pre-flight.
-- [x] Register `codex` in the backend registry; add fakes to `@looper/testing`.
+- [x] Register `codex` in the backend registry; add fakes to `@loopdog/testing`.
 
 ## Test Plan
 
@@ -166,8 +166,8 @@ M18 fakes (in-memory GitHub + a fake Codex backend) — no real Codex quota cons
   (M12 · 0075) — the backend exposes the cap, the gate enforces it.
 - `checkCompatibility` lives in `backends/src/interface/` (shared with 0074);
   consumed at validate time and dispatch pre-flight.
-- The 0092/0093 bot-identity risk is encoded in `looper connect codex`
-  guidance (LOOPER_CODEX_MENTION_TOKEN as the user-attributable identity).
+- The 0092/0093 bot-identity risk is encoded in `loopdog connect codex`
+  guidance (LOOPDOG_CODEX_MENTION_TOKEN as the user-attributable identity).
 
 ## Risks / Rollback
 

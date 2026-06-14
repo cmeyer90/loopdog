@@ -1,11 +1,11 @@
 # Guide: write a project adapter
 
-A **project adapter** teaches Looper how to build/test/lint/run/deploy a project
+A **project adapter** teaches Loopdog how to build/test/lint/run/deploy a project
 type. The built-ins are `node`, `python`, and a config-driven `generic`; `auto`
 detects which fits. Write one when your stack needs commands the generic adapter
 can't express from config.
 
-> Adapters implement the `ProjectAdapter` port (`@looper/core`). They are **pure
+> Adapters implement the `ProjectAdapter` port (`@loopdog/core`). They are **pure
 > over an injected runner** — an adapter never spawns a process directly; it
 > returns the commands, and the runtime executes them. (This file is the
 > canonical adapter how-to; the older `docs/adapters.md` points here.)
@@ -21,7 +21,7 @@ import type {
   CommandResult,
   DetectResult,
   RepoFs,
-} from '@looper/core';
+} from '@loopdog/core';
 
 export class MyAdapter implements ProjectAdapter {
   readonly name = 'my-stack';
@@ -65,14 +65,14 @@ handled by `chooseAdapter`).
 
 ## Register it
 
-Adapters are a fixed list in `@looper/adapters` (`createAdapterRegistry`). Add
+Adapters are a fixed list in `@loopdog/adapters` (`createAdapterRegistry`). Add
 your class there; adopters select it with `adapter: my-stack` (root or per loop),
 or leave `adapter: auto` to let `detect` win.
 
 ## Verify with the conformance harness (offline)
 
 ```ts
-import { runAdapterConformance, fakeCommandRunner, repoFsFixture } from '@looper/testing';
+import { runAdapterConformance, fakeCommandRunner, repoFsFixture } from '@loopdog/testing';
 
 runAdapterConformance(() => new MyAdapter(), {
   fixtures: [

@@ -1,6 +1,6 @@
-import type { ControllerOptions } from '@looper/runtime';
-import { handleEvent, handleSweep } from '@looper/runtime';
-import type { RunRecord } from '@looper/core';
+import type { ControllerOptions } from '@loopdog/runtime';
+import { handleEvent, handleSweep } from '@loopdog/runtime';
+import type { RunRecord } from '@loopdog/core';
 import type { FakeGitHub } from '../fake-github/fake-github.js';
 import type { VirtualClock } from './clock.js';
 import { ALL_INVARIANTS, checkInvariants, type Invariant, type Violation } from './invariants.js';

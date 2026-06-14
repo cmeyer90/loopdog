@@ -1,5 +1,5 @@
 /**
- * The plan templates looper emits into adopter repos (task 0015) — exactly the
+ * The plan templates loopdog emits into adopter repos (task 0015) — exactly the
  * section set this repo's own `.agent/` protocol enforces, so the product and
  * the dogfood stay identical. Embedded as code so the bundled CLI carries them;
  * `packages/plans/templates/*.md` hold the same bytes (drift-guarded by test).
@@ -103,8 +103,8 @@ export const FORMAT_VERSION = 1;
 export function assertSupportedFormatVersion(version: number): void {
   if (version > FORMAT_VERSION) {
     throw new Error(
-      `plan store format_version ${version} is newer than this looper supports ` +
-        `(${FORMAT_VERSION}) — upgrade looper before touching these plans`,
+      `plan store format_version ${version} is newer than this loopdog supports ` +
+        `(${FORMAT_VERSION}) — upgrade loopdog before touching these plans`,
     );
   }
 }

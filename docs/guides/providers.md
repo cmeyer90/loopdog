@@ -1,10 +1,10 @@
 # Guide: write a model provider (execution backend)
 
-A **backend** is how Looper runs a unit of work: it dispatches a `WorkBrief` to a
+A **backend** is how Loopdog runs a unit of work: it dispatches a `WorkBrief` to a
 provider and later ingests the result (a PR or a comment) by correlation. The
 controller is provider-agnostic — add a backend and any loop can target it.
 
-> Backends implement the `ExecutionBackend` port (`@looper/core`). Looper ships
+> Backends implement the `ExecutionBackend` port (`@loopdog/core`). Loopdog ships
 > three: `claude` + `codex` (subscription-driven, no API key) and `self-hosted`
 > (the **secondary, key-holding escape hatch** — the only path that uses a model
 > API key). A new provider should follow the subscription model where it can.
@@ -18,7 +18,7 @@ import type {
   WorkBrief,
   DispatchHandle,
   IngestResult,
-} from '@looper/core';
+} from '@loopdog/core';
 
 export class MyBackend implements ExecutionBackend {
   readonly id = 'my-backend';
@@ -54,7 +54,7 @@ export class MyBackend implements ExecutionBackend {
 
   async ingest(handle: DispatchHandle): Promise<IngestResult> {
     // Find the provider's PR and return it; the controller correlates by
-    // branch name + the `looper-run:` trailer + issue ref (the dispatch-time
+    // branch name + the `loopdog-run:` trailer + issue ref (the dispatch-time
     // signal is authoritative). Return { status: 'pending' } until it appears.
     return { status: 'pending' };
   }
@@ -63,24 +63,24 @@ export class MyBackend implements ExecutionBackend {
 
 ### Correlation (0073) is the load-bearing part
 
-Looper splits **dispatch** and **ingest** so a cloud agent can run async. You do
+Loopdog splits **dispatch** and **ingest** so a cloud agent can run async. You do
 not return the PR from `dispatch`; you return a `DispatchHandle` carrying the
 three correlation signals (`expectedBranch`, `expectedTrailer`, the dispatch-time
-`signal`). A later `ingest` finds the PR and Looper matches it. **Reuse the real
+`signal`). A later `ingest` finds the PR and Loopdog matches it. **Reuse the real
 correlation matcher** — don't reinvent it. Idempotency matters: ingesting the
 same handle twice must yield one effect (find the existing PR, don't open a new
 one).
 
 ## Register it
 
-Backends are a fixed array in `@looper/backends` (`createBackendRegistry`) — no
+Backends are a fixed array in `@loopdog/backends` (`createBackendRegistry`) — no
 plugin system, no dynamic loading. Add your class there and reference it by `id`
 in `backends.default` / a loop's `backend`.
 
 ## Verify with the conformance harness (offline, zero quota)
 
 ```ts
-import { runBackendConformance, FakeGitHub } from '@looper/testing';
+import { runBackendConformance, FakeGitHub } from '@loopdog/testing';
 
 runBackendConformance({
   name: 'my-backend',

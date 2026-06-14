@@ -1,4 +1,4 @@
-# Looper's own CI (task 0003). Job names are load-bearing: branch protection
+# Loopdog's own CI (task 0003). Job names are load-bearing: branch protection
 # (.github/branch-protection.yml, task 0004) requires the contexts
 # `lint`, `test`, `build` — rename them in both places or not at all.
 name: ci
@@ -43,5 +43,5 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: smoke looper --help
+      - name: smoke loopdog --help
         run: node packages/cli/dist/main.js --help

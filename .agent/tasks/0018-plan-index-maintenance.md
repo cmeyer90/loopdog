@@ -25,8 +25,8 @@ disagree") and the index/archive rules of the planning protocol in
 its status changes… Keep the indexes boring and grep-friendly"), which this task
 automates for adopter repos.
 
-Lands in **@looper/plans** (`src/index-maintenance/`, over the `PlanStore` port
-defined in @looper/core, 0094), wired into the **@looper/runtime** transition
+Lands in **@loopdog/plans** (`src/index-maintenance/`, over the `PlanStore` port
+defined in @loopdog/core, 0094), wired into the **@loopdog/runtime** transition
 pipeline's write-back so the index update is part of the same atomic commit as the
 lifecycle + label writes (0017). The reconcile sweep (0076) calls the same
 rebuild for resilience.
@@ -47,7 +47,7 @@ rebuild for resilience.
 
 ### Technical detail
 
-**Package & shape.** `@looper/plans/src/index-maintenance/`, over the `PlanStore`
+**Package & shape.** `@loopdog/plans/src/index-maintenance/`, over the `PlanStore`
 port (0094). Pure projection logic is split from IO: `projectIndexes(plans:
 PlanDoc[]) -> { planIndex: string, milestones: string, milestoneTables:
 Map<milestoneId, string> }` is a pure function of the parsed `PlanDoc[]` (0015),
@@ -140,13 +140,13 @@ resolve through config (0015), never a hard-coded path.
       empty/no-op write (idempotent, minimal-diff), proven by a double-apply test.
 - [x] A malformed plan header is skipped with a warning and does not break the
       projection of the other plans.
-- [x] `projectIndexes` is a pure function (no IO); `@looper/core` is untouched here.
+- [x] `projectIndexes` is a pure function (no IO); `@loopdog/core` is untouched here.
 - [x] Relevant checks pass.
 
 ## Implementation Checklist
 
 - [x] Implement `projectIndexes(plans)` pure projection (rows, map, milestone
-      tables, Next-task-id) in `@looper/plans/src/index-maintenance/`.
+      tables, Next-task-id) in `@loopdog/plans/src/index-maintenance/`.
 - [x] Implement `updateIndexesFor(taskId, planStore)` incremental splice + the
       render-then-compare minimal-diff writer.
 - [x] Implement `rebuildIndexes(planStore)` full-rebuild (glob + project + write).
@@ -165,7 +165,7 @@ GitHub from 0083) — no real GitHub, no real quota.
 
 ```bash
 # from repo root
-npm test -w @looper/plans
+npm test -w @loopdog/plans
 # golden: project a fixture set of plans → exact plan-index.md + milestones.md + tables
 # add a task → one sorted row added everywhere; Next-task-id bumps
 # change a Status → only that row changes; Primary Deliverable preserved
@@ -212,7 +212,7 @@ projection is repaired by the next `rebuildIndexes`.
 
 ## Final Summary
 
-`@looper/plans/index-maintenance`: pure `projectIndexes` over parsed plans +
+`@loopdog/plans/index-maintenance`: pure `projectIndexes` over parsed plans +
 `rebuildIndexes` (render-then-compare, authoritative, malformed-tolerant,
 archive-aware) with `updateIndexesFor` delegating to it; wired into the
 PlanStore port (`syncIndexes`/`archive`). Indexes are a projection of the plan

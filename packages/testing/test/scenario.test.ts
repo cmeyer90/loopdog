@@ -1,6 +1,6 @@
 import { afterAll, describe, expect, it } from 'vitest';
 import { fileURLToPath } from 'node:url';
-import { stateLabel } from '@looper/core';
+import { stateLabel } from '@loopdog/core';
 import {
   FakeGitHub,
   InMemoryRunRecordStore,
@@ -13,8 +13,8 @@ import {
   type Cassette,
   type Scenario,
   type ScenarioWorld,
-} from '@looper/testing';
-import type { ControllerOptions } from '@looper/runtime';
+} from '@loopdog/testing';
+import type { ControllerOptions } from '@loopdog/runtime';
 import { cleanup, GROOMED_BODY, makeWorld, repo, scaffoldActRepo } from './helpers.js';
 
 /**
@@ -59,7 +59,7 @@ describe('scenario runner + goldens (0085)', () => {
     expect(a.golden.labels['1']).toContain(stateLabel('in-review'));
     expect(a.golden.prs).toHaveLength(1);
     expect(a.golden.prs[0]!.linksIssue).toBe(1);
-    // Compare (or create under LOOPER_UPDATE_GOLDENS=1) the committed golden.
+    // Compare (or create under LOOPDOG_UPDATE_GOLDENS=1) the committed golden.
     await assertGolden(a, 'implement-happy-path', { dir: GOLDEN_DIR });
   });
 
@@ -87,7 +87,7 @@ describe('scenario runner + goldens (0085)', () => {
       steps: [labeled, labeled, labeled],
     });
     expect(world.backend.dispatched.filter((b) => b.loop === 'implement')).toHaveLength(1);
-    const prs = await world.gh.listPullRequestsByHeadPrefix(repo, 'looper/implement/', {
+    const prs = await world.gh.listPullRequestsByHeadPrefix(repo, 'loopdog/implement/', {
       state: 'all',
     });
     expect(prs).toHaveLength(1); // one correlated PR, not one per delivery

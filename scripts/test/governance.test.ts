@@ -53,9 +53,9 @@ describe('CODEOWNERS (task 0004)', () => {
 });
 
 describe('release configuration (task 0005)', () => {
-  it('keeps all @looper/* packages on one fixed version line', () => {
+  it('keeps all @loopdog/* packages on one fixed version line', () => {
     const cfg = JSON.parse(readFileSync(join(root, '.changeset/config.json'), 'utf8'));
-    expect(cfg.fixed).toEqual([['@looper/*', '@loopdog/cli']]);
+    expect(cfg.fixed).toEqual([['@loopdog/*', '@loopdog/cli']]);
     expect(cfg.access).toBe('public');
     expect(cfg.baseBranch).toBe('main');
   });
@@ -73,14 +73,16 @@ describe('release configuration (task 0005)', () => {
     ];
     for (const name of packages) {
       const pkg = JSON.parse(readFileSync(join(root, `packages/${name}/package.json`), 'utf8'));
-      expect(pkg.private, `@looper/${name} must be private`).toBe(true);
+      expect(pkg.private, `@loopdog/${name} must be private`).toBe(true);
     }
     const cli = JSON.parse(readFileSync(join(root, 'packages/cli/package.json'), 'utf8'));
     expect(cli.private).toBeFalsy();
-    expect(cli.bin?.looper).toBeTruthy();
-    // @looper/* deps of the CLI are bundled at publish; they must not appear as
+    expect(cli.bin?.loopdog).toBeTruthy();
+    // @loopdog/* deps of the CLI are bundled at publish; they must not appear as
     // installable dependencies of the published artifact.
-    expect(Object.keys(cli.dependencies ?? {}).filter((d) => d.startsWith('@looper/'))).toEqual([]);
+    expect(Object.keys(cli.dependencies ?? {}).filter((d) => d.startsWith('@loopdog/'))).toEqual(
+      [],
+    );
   });
 });
 
@@ -90,13 +92,13 @@ describe('trust-boundary doc (task 0032)', () => {
   it('carries the residency matrix rows and per-backend columns', () => {
     for (const needle of [
       '| Secret class | Claude cloud | Codex cloud | Self-hosted |',
-      'Looper repo identity',
+      'Loopdog repo identity',
       'Provider subscription auth',
       'Model API key',
       'Project build/test/deploy secrets',
       'stripped before the agent phase',
-      'LOOPER_CLAUDE_FIRE_URL',
-      'LOOPER_MODEL_API_KEY',
+      'LOOPDOG_CLAUDE_FIRE_URL',
+      'LOOPDOG_MODEL_API_KEY',
     ]) {
       expect(doc, needle).toContain(needle);
     }
@@ -108,8 +110,8 @@ describe('trust-boundary doc (task 0032)', () => {
     expect(doc).toContain('ladder rung 2');
   });
 
-  it('matches the workflows: no looper GitHub App, least-privilege manifest', () => {
-    expect(doc).toContain('No looper GitHub App');
+  it('matches the workflows: no loopdog GitHub App, least-privilege manifest', () => {
+    expect(doc).toContain('No loopdog GitHub App');
     for (const wf of ['reusable-events.yml', 'reusable-sweep.yml']) {
       const parsed = parse(readFileSync(join(root, `.github/workflows/${wf}`), 'utf8')) as {
         permissions: Record<string, string>;

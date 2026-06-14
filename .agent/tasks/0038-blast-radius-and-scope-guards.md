@@ -18,18 +18,18 @@ scope-exceeding work halts and escalates instead of ballooning." See
 [architecture](../../docs/architecture.md) — "The loops" (Implementation:
 "Enforces blast-radius limits; scope-exceeding work halts and escalates") and the
 loop config shape `blast_radius: { max_files: 5 }`. The guard is a pure predicate
-in `@looper/core` (alongside the DoR/DoD gates, M03 · 0014), evaluated by the
-`@looper/runtime` pipeline at **ingest** time (M05 · 0073) on the diff the
-provider cloud agent produced — looper makes no model call. Escalation reuses the
+in `@loopdog/core` (alongside the DoR/DoD gates, M03 · 0014), evaluated by the
+`@loopdog/runtime` pipeline at **ingest** time (M05 · 0073) on the diff the
+provider cloud agent produced — loopdog makes no model call. Escalation reuses the
 stuck/escalation path (M12 · 0051) and the resilience `escalate_to` target (M19).
 
 ## Scope
 
 - A `blast_radius` predicate: given a PR diff summary + the loop's limits, decide
   `within` vs `exceeded` with a structured reason.
-- Config: extend the per-loop `loop.yml` schema (`@looper/config`) with
+- Config: extend the per-loop `loop.yml` schema (`@loopdog/config`) with
   `blast_radius: { max_files, max_diff, exempt }`, with a repo-wide default in
-  `looper.yml` (strictest of repo-wide vs per-loop wins).
+  `loopdog.yml` (strictest of repo-wide vs per-loop wins).
 - Wire the guard into the implementation pipeline at ingest: a PR that exceeds
   limits halts the transition (does **not** advance to `in-review`), labels the
   item, comments the reason, and escalates.
@@ -38,15 +38,15 @@ stuck/escalation path (M12 · 0051) and the resilience `escalate_to` target (M19
 
 ### Technical detail
 
-**Lands in:** predicate + types in `@looper/core` (`core/src/gates/`, sibling to
-the DoR/DoD gates 0014); schema in `@looper/config`; wiring in
-`@looper/runtime/src/pipeline`; the diff summary is read via the existing
-`GitHubPort` (`@looper/github`, PR files/additions/deletions — no new port).
+**Lands in:** predicate + types in `@loopdog/core` (`core/src/gates/`, sibling to
+the DoR/DoD gates 0014); schema in `@loopdog/config`; wiring in
+`@loopdog/runtime/src/pipeline`; the diff summary is read via the existing
+`GitHubPort` (`@loopdog/github`, PR files/additions/deletions — no new port).
 
-**Config types** (`@looper/config` schema, zod):
+**Config types** (`@loopdog/config` schema, zod):
 
 ```yaml
-# loop.yml (per-loop) — also settable repo-wide in looper.yml as defaults
+# loop.yml (per-loop) — also settable repo-wide in loopdog.yml as defaults
 blast_radius:
   max_files: 5            # changed files (added+modified+removed)
   max_diff: 400           # added+deleted lines across the PR
@@ -79,15 +79,15 @@ if both are over).
 
 **Pipeline wiring (ingest, runtime):** after 0073 correlates the PR to the run and
 before advancing the label to the `to` state, the runner fetches the PR diff
-summary, runs `checkBlastRadius`. On `exceeded`: do **not** set `looper:state/in-review`;
-instead set `looper:needs-human` (the loop's escalation off-ramp), apply a
-`looper:scope-exceeded` marker label, post a single comment quoting the breached
+summary, runs `checkBlastRadius`. On `exceeded`: do **not** set `loopdog:state/in-review`;
+instead set `loopdog:needs-human` (the loop's escalation off-ramp), apply a
+`loopdog:scope-exceeded` marker label, post a single comment quoting the breached
 limits + actuals + the exempted-paths note, append a `gate` step to the run record
 with `outcome.status: escalated`, and hand off via the escalation path (M12 · 0051)
 to the resilience `escalate_to` target. On `within`: proceed normally.
 
 **Idempotency:** the guard runs inside the idempotent ingest (0073); re-ingesting
-an already-escalated PR is a no-op (guard on the `looper:scope-exceeded` label /
+an already-escalated PR is a no-op (guard on the `loopdog:scope-exceeded` label /
 existing escalation comment), consistent with the runner's single-step guarantee
 (0012). The guard is **fail-closed**: if the diff can't be read, treat as a gate
 failure and escalate rather than silently advance.
@@ -114,25 +114,25 @@ lines (GitHub reports no line counts) — `max_files` still applies.
 - [x] `checkBlastRadius` returns `within` when files+diff are under limits and
       `exceeded` (naming each breached dimension) when over, with `exempt` globs
       excluded from both counts.
-- [x] Effective limits = strictest of repo-wide (`looper.yml`) and per-loop
+- [x] Effective limits = strictest of repo-wide (`loopdog.yml`) and per-loop
       (`loop.yml`); an absent dimension is treated as unbounded.
 - [x] At ingest, an over-budget PR does **not** advance to `in-review`; it lands in
-      `needs-human` with `looper:scope-exceeded`, a single explanatory comment, and
+      `needs-human` with `loopdog:scope-exceeded`, a single explanatory comment, and
       a run-record `gate` step marked `escalated`.
 - [x] Re-ingesting an already-escalated PR is a no-op (idempotent).
 - [x] The guard is fail-closed: an unreadable diff escalates, never advances.
-- [x] `loop.yml`/`looper.yml` `blast_radius` config validates via the `@looper/config`
-      schema; invalid values are rejected by `looper loops validate`.
+- [x] `loop.yml`/`loopdog.yml` `blast_radius` config validates via the `@loopdog/config`
+      schema; invalid values are rejected by `loopdog loops validate`.
 - [x] Relevant checks pass.
 
 ## Implementation Checklist
 
 - [x] Add `BlastRadiusLimits`/`DiffSummary`/`BlastRadiusVerdict` types + `checkBlastRadius`
-      in `@looper/core/src/gates`.
-- [x] Extend the `@looper/config` loop + root schema with `blast_radius` and the
+      in `@loopdog/core/src/gates`.
+- [x] Extend the `@loopdog/config` loop + root schema with `blast_radius` and the
       strictest-wins merge of repo-wide + per-loop limits.
 - [x] Read the PR diff summary via `GitHubPort` and wire the guard into the
-      ingest step of the implementation pipeline (`@looper/runtime`).
+      ingest step of the implementation pipeline (`@loopdog/runtime`).
 - [x] Implement the exceeded path: label + comment + run-record step + escalation
       handoff (M12 · 0051), idempotent and fail-closed.
 - [x] Inject effective limits into the composed brief (advisory).
@@ -148,7 +148,7 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 # unit: checkBlastRadius — under/at/over limits, exempt globs, strictest-wins merge,
 #       both-dimensions-breached, binary/rename edge cases (core, IO-free)
 # scenario: dispatch → fake provider opens an over-budget PR → ingest lands the item
-#           in needs-human + looper:scope-exceeded, does NOT reach in-review;
+#           in needs-human + loopdog:scope-exceeded, does NOT reach in-review;
 #           a within-budget PR advances normally
 # simulation: re-deliver the same over-budget PR event → single escalation (idempotent);
 #             unreadable diff → fail-closed escalation
@@ -167,7 +167,7 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 - Enforcement point: INGEST (the earliest the controller sees the diff).
   checkBlastRadius (loop-actions.ts) checks changedFiles vs max_files,
   additions+deletions vs max_diff, and forbidden_paths globs.
-- On violation: the item is NOT advanced — looper:needs-human + an explanatory
+- On violation: the item is NOT advanced — loopdog:needs-human + an explanatory
   comment (split the work or widen limits consciously) + claim release +
   an escalated run record carrying the PR number. The PR survives for human
   review; nothing merges.

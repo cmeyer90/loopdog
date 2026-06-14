@@ -1,5 +1,5 @@
-import type { GitHubPort, IssueSnapshot, RunRecord } from '@looper/core';
-import { parseCriteriaBlock, renderCriteriaBlock } from '@looper/core';
+import type { GitHubPort, IssueSnapshot, RunRecord } from '@loopdog/core';
+import { parseCriteriaBlock, renderCriteriaBlock } from '@loopdog/core';
 import type { RepoPlanStoreFiles } from '../store/repo-plan-store.js';
 import { STORE_LAYOUT } from '../format/templates.js';
 import {
@@ -42,7 +42,7 @@ export async function openPlan(
     await files.write(
       binding.path,
       serializePlan(next),
-      `looper: open plan ${binding.taskId} (DoR ready)`,
+      `loopdog: open plan ${binding.taskId} (DoR ready)`,
       file.sha,
     );
   }
@@ -78,7 +78,7 @@ export async function updatePlan(
   }
   const next = serializePlan(doc);
   if (next === file.content) return { changed: false };
-  await files.write(binding.path, next, `looper: update plan ${binding.taskId}`, file.sha);
+  await files.write(binding.path, next, `loopdog: update plan ${binding.taskId}`, file.sha);
   return { changed: true };
 }
 
@@ -102,7 +102,7 @@ export async function verifyPlan(
   await files.write(
     binding.path,
     serializePlan(doc),
-    `looper: verify plan ${binding.taskId}`,
+    `loopdog: verify plan ${binding.taskId}`,
     file.sha,
   );
   return { changed: true };
@@ -122,12 +122,12 @@ export async function archivePlan(
 
   const name = binding.path.split('/').pop()!;
   const archivedPath = files.path(STORE_LAYOUT.archiveTasks, name);
-  await files.write(archivedPath, serializePlan(doc), `looper: archive plan ${binding.taskId}`);
+  await files.write(archivedPath, serializePlan(doc), `loopdog: archive plan ${binding.taskId}`);
   // Tombstone in place of the active file so the binding marker still resolves.
   await files.write(
     binding.path,
-    `# ${binding.taskId} (archived)\n\n<!-- looper:tombstone -->\nStatus: ${terminal}\n\nMoved to ${archivedPath}.\n`,
-    `looper: tombstone for archived plan ${binding.taskId}`,
+    `# ${binding.taskId} (archived)\n\n<!-- loopdog:tombstone -->\nStatus: ${terminal}\n\nMoved to ${archivedPath}.\n`,
+    `loopdog: tombstone for archived plan ${binding.taskId}`,
     file.sha,
   );
   return { changed: true, archivedPath };

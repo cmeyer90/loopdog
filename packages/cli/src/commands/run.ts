@@ -4,13 +4,13 @@ import {
   parseRepoFromRemoteUrl,
   resolveGitHubAuth,
   ACTIONS_BOT,
-} from '@looper/github';
-import { TelemetryBranchStore, handleRun } from '@looper/runtime';
-import type { RepoRef } from '@looper/core';
+} from '@loopdog/github';
+import { TelemetryBranchStore, handleRun } from '@loopdog/runtime';
+import type { RepoRef } from '@loopdog/core';
 import { findTemplatesDir } from '../assets.js';
 
 /**
- * `looper run` / `looper tail` (task 0070): trigger a loop now (optionally on
+ * `loopdog run` / `loopdog tail` (task 0070): trigger a loop now (optionally on
  * one issue, optionally forced dry-run) and watch recent runs. Trigger honors
  * the same gates as automated runs — `--dry-run` only tightens, never loosens.
  */

@@ -9,7 +9,7 @@ Ship the built-in **implement** loop: a dispatched work cell that takes a
 `ready-for-agent` issue, implements the change against the plan's acceptance
 criteria, adds a test per `test:` criterion, runs the project adapter's
 build/test in the provider sandbox, and opens a PR that honors the correlation
-contract (branch `looper/implement/<issue>-<run_id>` + `looper-run:` trailer +
+contract (branch `loopdog/implement/<issue>-<run_id>` + `loopdog-run:` trailer +
 issue ref). Like grooming (0033), this adds **no new code module** — it ships as
 `templates/loops/implement/` assets executed by the generic runtime, plus a
 golden scenario test.
@@ -22,7 +22,7 @@ blast-radius limits, and open a PR." Grounded in
 [architecture](../../docs/architecture.md#the-loops) (implementation loop) and
 [the execution model](../../docs/architecture.md#execution-model-orchestrate-provider-cloud-agents-over-github):
 the controller claims/composes/dispatches and the **provider cloud agent** clones
-the repo, runs build/test in its sandbox, and opens the PR — looper makes no
+the repo, runs build/test in its sandbox, and opens the PR — loopdog makes no
 direct model call. The criteria the work cell builds against are the contract
 grooming (0033) wrote and the DoR gate (0014) enforces; the PR it opens is
 correlated and ingested by 0073; the adopter's CI re-verifies on the PR as the
@@ -30,8 +30,8 @@ trustworthy gate (rung 2). This is the implementation counterpart of the groomin
 work cell (0033), at higher blast radius (it touches code), so blast-radius guards
 (0038) are load-bearing.
 
-It lands as `templates/loops/implement/` assets in `@looper/runtime` plus a built-in
-`implement` policy fragment, with the golden scenario test in `@looper/testing`.
+It lands as `templates/loops/implement/` assets in `@loopdog/runtime` plus a built-in
+`implement` policy fragment, with the golden scenario test in `@loopdog/testing`.
 It consumes (does not define): brief composition + the `implement` policy
 (0022), the DoR gate + marker parser (0014), dispatch/ingest correlation (0073),
 adapter-driven build/test (0040), blast-radius guards (0038), branch/PR automation
@@ -47,7 +47,7 @@ adapter-driven build/test (0040), blast-radius guards (0038), branch/PR automati
   PR.
 - Ship a built-in `implement` policy fragment (test-per-criterion + halt-on-scope
   rules) inlined via 0022's `{% policy %}`.
-- A **golden scenario test** (M18 tier 3, in `@looper/testing`): a fixture
+- A **golden scenario test** (M18 tier 3, in `@loopdog/testing`): a fixture
   `ready-for-agent` issue with a criteria block → drive the real runner over fake
   GitHub + a fake/replay backend → assert the dispatched brief and the ingested
   PR honor the contract, the label advances to `in-review`, and the plan is kept
@@ -93,16 +93,16 @@ agent to:
 4. **Respect blast radius (0038):** if satisfying the criteria requires exceeding
    `max_files` / `max_diff`, **do not balloon the change** — stop, summarize why
    scope was exceeded, and signal escalation rather than opening an over-large PR.
-5. Open a PR on branch `{{branch}}` (`looper/implement/<issue>-<run_id>`) labeled
+5. Open a PR on branch `{{branch}}` (`loopdog/implement/<issue>-<run_id>`) labeled
    `{{transition.to}}`, referencing `#{{issue.number}}` (closes), with the
    acceptance-criteria checklist in the PR body marked off per criterion.
 
 The composer (0022) always appends the non-overridable output-contract trailer
-(branch `looper/implement/<issue>-<run_id>`, `looper-run: <run_id>` PR-body
+(branch `loopdog/implement/<issue>-<run_id>`, `loopdog-run: <run_id>` PR-body
 trailer, label per `transition.to`, issue ref) so the PR correlates back on
 ingest (0073) — defense in depth across all three signals.
 
-**Built-in `implement` policy fragment** (`@looper/runtime`, inlined via
+**Built-in `implement` policy fragment** (`@loopdog/runtime`, inlined via
 `{% policy implement %}`): encodes the durable rules independent of any single
 issue — (a) **test-per-`test:`-criterion is mandatory**; a PR missing a test for a
 testable criterion is incomplete; (b) **scope discipline / halt-on-exceed** wording
@@ -115,21 +115,21 @@ model-visible output (secret-hygiene, 0022).
 *uses* it two ways: the brief instructs the agent to self-limit, and the runner
 re-checks the ingested PR's diff against `max_files`/`max_diff` on ingest — an
 over-limit PR is **not merged**; the item is routed to escalation
-(`needs-human` / `looper:quarantine` per resilience policy M19) with the overage
+(`needs-human` / `loopdog:quarantine` per resilience policy M19) with the overage
 recorded. Belt-and-suspenders: the model is asked to stop early, and the
 deterministic controller enforces it regardless.
 
 **Ingest → in-review.** On the agent's PR event, the runner ingests (0073),
-correlates via branch + `looper-run:` trailer + issue ref, updates the run record,
+correlates via branch + `loopdog-run:` trailer + issue ref, updates the run record,
 appends the build/test result to the bound plan's verification log, marks the
 satisfied criteria, and advances the label `in-progress -> in-review` (mirroring
 plan `Status` per 0017). The controller→controller handoff to the review loop
 (M10) is carried by the cron sweep (0076), since `GITHUB_TOKEN` won't re-trigger.
 
-**Golden scenario test** (`@looper/testing/src/scenario/`, M18 tier 3): a fixture
+**Golden scenario test** (`@loopdog/testing/src/scenario/`, M18 tier 3): a fixture
 `ready-for-agent` issue ("add rate limiting") with a 0014 criteria block seeded
 into fake GitHub (0083); a fake/replay backend returns a scripted PR on branch
-`looper/implement/<issue>-<run_id>` with a `looper-run:` trailer, an `#issue` ref,
+`loopdog/implement/<issue>-<run_id>` with a `loopdog-run:` trailer, an `#issue` ref,
 and a test file per `test:` criterion; the real runner dispatches then ingests.
 Golden assertions: (a) the dispatched brief contained the injected criteria block
 + the non-overridable output-contract trailer; (b) the ingested PR correlates on
@@ -166,7 +166,7 @@ quota.
       `{% policy implement %}`.
 - [x] The DoR gate (0014) blocks dispatch on a criteria-less issue (routed back to
       grooming/human), proven by a negative scenario.
-- [x] On ingest, the PR correlates on branch + `looper-run:` trailer + issue ref
+- [x] On ingest, the PR correlates on branch + `loopdog-run:` trailer + issue ref
       (0073), the label advances to `in-review`, and the bound plan's verification
       log records the build/test run.
 - [x] An over-limit ingested PR escalates instead of advancing (0038 path),
@@ -178,13 +178,13 @@ quota.
 ## Implementation Checklist
 
 - [x] Write `templates/loops/implement/loop.yml` and confirm it validates via
-      `looper loops validate implement`.
+      `loopdog loops validate implement`.
 - [x] Write `templates/loops/implement/prompt.md` (0022 placeholders +
       `{% policy implement %}` + DoR-contract + test-per-criterion + halt-on-scope
       instructions).
-- [x] Ship the built-in `implement` policy fragment in `@looper/runtime`.
+- [x] Ship the built-in `implement` policy fragment in `@loopdog/runtime`.
 - [x] Add the fixture `ready-for-agent` issue + scripted PR backend response (and an
-      over-limit variant) in `@looper/testing`.
+      over-limit variant) in `@loopdog/testing`.
 - [x] Write the golden scenario test: dispatch brief shape, PR correlation, test-
       per-criterion, label = `in-review`, plan verification-log update, and the
       over-limit escalation path.
@@ -198,8 +198,8 @@ Tests run via the repo's `vitest` runner; behavioral paths use the M18 fakes
 
 ```bash
 # from repo root
-npm test -w @looper/runtime    # implement loop.yml validates; brief composes with the implement policy
-npm test -w @looper/testing    # golden scenario: ready-for-agent issue -> dispatch -> ingest -> in-review
+npm test -w @loopdog/runtime    # implement loop.yml validates; brief composes with the implement policy
+npm test -w @loopdog/testing    # golden scenario: ready-for-agent issue -> dispatch -> ingest -> in-review
 # golden: seed criteria-bearing issue -> run implement -> assert brief injects criteria + contract,
 #         ingested PR correlates (branch+trailer+ref), ≥1 test per test: criterion, label = in-review,
 #         plan verification log updated

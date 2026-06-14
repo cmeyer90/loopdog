@@ -7,7 +7,7 @@ Branch: task/0086-simulation-and-fault-injection
 
 A deterministic-clock simulation layer with fault injection that drives the real
 controller through the hard concurrency cases — event storms, event↔sweep races,
-dropped/duplicated webhooks, and mid-run crashes — and asserts looper's core
+dropped/duplicated webhooks, and mid-run crashes — and asserts loopdog's core
 invariants hold: **no double-dispatch, no stranded items, idempotent ingest.**
 
 ## Background
@@ -18,7 +18,7 @@ Part of [Milestone 18](../milestones/milestone-18-test-and-simulation-harness.md
 proves *correctness under adversity*. It directly stresses the primitives most at
 risk — the runner's idempotency key + single-step guarantee (M03 · 0012), the
 claim/lease protocol (0013), dispatch↔ingest correlation (M05 · 0073), and the
-events-vs-sweep handoff (M02 · 0076). Lives in the dev-only `@looper/testing`
+events-vs-sweep handoff (M02 · 0076). Lives in the dev-only `@loopdog/testing`
 package. See [codebase](../../docs/codebase.md) "Testing strategy" (tier 4) and
 [architecture](../../docs/architecture.md) "Triggering: events for latency, cron
 for resilience."
@@ -38,11 +38,11 @@ for resilience."
 
 ### Technical detail
 
-Lands in `@looper/testing` (`packages/testing/src/simulation/`), reusing the
-`@looper/testing` fakes from 0083/0084 and the scenario fixtures from 0085. No new
+Lands in `@loopdog/testing` (`packages/testing/src/simulation/`), reusing the
+`@loopdog/testing` fakes from 0083/0084 and the scenario fixtures from 0085. No new
 ports; this drives the *real* `runtime` pipeline + sweep through the fakes.
 
-**Virtual clock.** Define a `Clock` port in `@looper/core` (`now(): Date`,
+**Virtual clock.** Define a `Clock` port in `@loopdog/core` (`now(): Date`,
 `sleep()`-free — the runtime never blocks) and inject it everywhere wall time is
 read (runner, sweep, lease expiry, backoff scheduling, telemetry timestamps). The
 fake GitHub's seeded timestamps (0083) read this same clock. `VirtualClock`
@@ -122,7 +122,7 @@ claim (must defer, not steal).
 
 ## Acceptance Criteria
 
-- [x] A `Clock` port exists in `@looper/core` and the runtime reads time only
+- [x] A `Clock` port exists in `@loopdog/core` and the runtime reads time only
       through it; a `VirtualClock` drives all time in simulation (no wall-clock
       reads in the controller path).
 - [x] The simulation engine deterministically interleaves event delivery + sweep
@@ -143,7 +143,7 @@ claim (must defer, not steal).
 
 ## Implementation Checklist
 
-- [x] Add the `Clock` port to `@looper/core`; thread it through `runtime`
+- [x] Add the `Clock` port to `@loopdog/core`; thread it through `runtime`
       (pipeline, sweep, lease, backoff, telemetry) and the fake GitHub (0083).
 - [x] Implement `VirtualClock` + the simulation engine (`step`,
       `runToQuiescence`, `concurrent`) over the shared fakes.
@@ -155,7 +155,7 @@ claim (must defer, not steal).
 
 ## Test Plan
 
-Tests run via vitest in `@looper/testing`, fully offline against the M18 fakes
+Tests run via vitest in `@loopdog/testing`, fully offline against the M18 fakes
 (0083/0084) — **no real quota, no network**.
 
 ```bash
@@ -181,11 +181,11 @@ npx vitest run packages/testing/src/simulation
 
 ## Decisions
 
-- `Clock` port = `type Clock = () => Date` in `@looper/core` (+ `systemClock`
+- `Clock` port = `type Clock = () => Date` in `@loopdog/core` (+ `systemClock`
   default). The runtime already threaded an injectable `now` everywhere; this
   names it. The one wall-clock leak (`ingestPhase`'s plan-sync timestamp) now
   reads `deps.now`, so the controller path reads time ONLY through the clock when
-  injected. `VirtualClock` (in `@looper/testing`) conforms and owns all
+  injected. `VirtualClock` (in `@loopdog/testing`) conforms and owns all
   advancement; the `FakeGitHub` reads the same clock for `updatedAt`/comment
   timestamps.
 - Engine: one `step()` = deliver one event OR one sweep OR advance the clock OR a
@@ -217,7 +217,7 @@ The chief risk is a simulation that's *deterministic but unfaithful* — it pass
 while real GitHub's concurrency/delivery semantics differ, giving false
 confidence. Mitigations: event emit/suppress fidelity is owned by 0083 and the
 gated live smoke (0087) catches drift; keep the engine driving the *real* runtime
-(no test-only control-flow forks). Purely additive in the dev-only `@looper/testing`
+(no test-only control-flow forks). Purely additive in the dev-only `@loopdog/testing`
 package — revert by removing the simulation module; the `Clock` port is the only
 change touching shipped code and is a safe, inert indirection.
 

@@ -9,23 +9,23 @@ Give the self-hosted/API backend a pluggable `SecretBackend` port that injects t
 adopter's own project secrets (Actions secrets / OIDC / Vault / Doppler) into the
 adopter-controlled work-cell container, plus leak guards (output scrubbing +
 preflight redaction) so no secret value ever lands in model-visible context or in
-anything looper writes back to GitHub.
+anything loopdog writes back to GitHub.
 
 ## Background
 
 Part of [Milestone 07](../milestones/milestone-07-secrets-and-identity.md) — the
 self-hosted leg of the two-plane secret model. The primary path keeps secrets in
-the provider's cloud (0030) and never lets looper hold them; the self-hosted
+the provider's cloud (0030) and never lets loopdog hold them; the self-hosted
 backend (0074) deliberately **recovers full secret + network access** during the
-work cell by running on the adopter's own compute — which means looper now handles
+work cell by running on the adopter's own compute — which means loopdog now handles
 real secret material and must guard it. See [architecture](../../docs/architecture.md)
 "Identity & secrets (two planes)" (project-secret plane) and "Self-hosted / API
-backend." The rule we must not break: looper never serializes a long-lived
+backend." The rule we must not break: loopdog never serializes a long-lived
 credential into prompts, plans, run records, comments, logs, or other
 model/GitHub-visible artifacts it controls; self-hosted env-injected values are
-scrubbed before egress. Lands mainly in `@looper/backends`
+scrubbed before egress. Lands mainly in `@loopdog/backends`
 (`self-hosted/`), with the `SecretBackend` port + scrubber interface declared in
-`@looper/core/ports`.
+`@loopdog/core/ports`.
 
 ## Scope
 
@@ -40,7 +40,7 @@ scrubbed before egress. Lands mainly in `@looper/backends`
 
 ### Technical detail
 
-**`SecretBackend` port (`@looper/core/ports/secret-backend.ts`):**
+**`SecretBackend` port (`@loopdog/core/ports/secret-backend.ts`):**
 
 ```
 SecretBackend:
@@ -50,7 +50,7 @@ SecretRef  = { name: string, from: 'actions'|'oidc'|'vault'|'doppler', key?: str
 SecretValue = { name, value, source }   # value never serialized to plan/run-record
 ```
 
-Config: a repo-wide + per-loop `secrets:` block in `loop.yml` / `.looper/config`
+Config: a repo-wide + per-loop `secrets:` block in `loop.yml` / `.loopdog/config`
 listing the **names + source** the work cell needs (never values). Example:
 
 ```yaml
@@ -69,7 +69,7 @@ tmpfs-mounted env-file (mode 0600, deleted on exit), and (c) calls
 deny-list. Store impls: `actions` (read `process.env` injected by the adopter's
 workflow `env:`/`secrets:`), `oidc` (exchange the workflow OIDC token for a
 short-lived cloud cred), `vault`/`doppler` (token-or-OIDC auth, fetch by key). All
-network calls happen in looper's **deterministic** code, not the model phase.
+network calls happen in loopdog's **deterministic** code, not the model phase.
 
 **Leak guard / scrubber (`backends/self-hosted/scrubber.ts`, interface in `core`):**
 - **Value redaction:** replace every registered secret value (and common
@@ -87,7 +87,7 @@ network calls happen in looper's **deterministic** code, not the model phase.
   emitted raw.
 
 **Trust boundary:** secrets reside only in the adopter's runner/container and the
-adopter's store — never in looper's GitHub-visible state, never in the provider
+adopter's store — never in loopdog's GitHub-visible state, never in the provider
 cloud. This task implements the self-hosted half; the cross-backend residency table
 is documented in 0032.
 
@@ -97,7 +97,7 @@ is documented in 0032.
   interface itself (0019) — this task adds only the secret/scrub concerns.
 - Provider-cloud sandbox secret config (0030); repo identity / provider auth (0029).
 - The trust-boundary documentation (0032) — referenced, written there.
-- Any secret handling on the Claude/Codex primary path (those never give looper the
+- Any secret handling on the Claude/Codex primary path (those never give loopdog the
   values; `secret_phase: setup-only|none`).
 
 ## Acceptance Criteria
@@ -117,7 +117,7 @@ is documented in 0032.
 ## Implementation Checklist
 
 - [x] Declare the `SecretBackend` port + `SecretRef`/`SecretValue` types in `core`.
-- [x] Add the `secrets:` config block to the config schema (`@looper/config`).
+- [x] Add the `secrets:` config block to the config schema (`@loopdog/config`).
 - [x] Implement the four store resolvers in `backends/self-hosted/`.
 - [x] Implement container env injection (tmpfs env-file, 0600, deleted on exit).
 - [x] Implement the scrubber (value + pattern + encoding redaction) and wire it to
@@ -162,7 +162,7 @@ and in-memory GitHub — no real secret store, no real quota):
   original SecretBackend port + pure scrubSecrets for port-level consumers.
 - Stores: actions (worker env), vault (KV-v2 fetch), doppler (API fetch),
   oidc = explicit guidance to run the cloud's exchange action then read via
-  actions (looper performs no cloud-specific exchanges).
+  actions (loopdog performs no cloud-specific exchanges).
 - Redaction token: `«redacted:NAME»`; query-param pattern preserves the
   param prefix for debuggability.
 - Fail-closed everywhere: unresolvable secret → dispatch fails (never runs
@@ -171,7 +171,7 @@ and in-memory GitHub — no real secret store, no real quota):
 ## Risks / Rollback
 
 The core risk is a leaked credential: a missed encoding or a new token shape slips a
-secret into a PR body or run record that looper has already written to GitHub. Mitigate
+secret into a PR body or run record that loopdog has already written to GitHub. Mitigate
 with (a) never putting values in model-visible context at all, (b) value-based redaction
 ahead of pattern-based as defense in depth, (c) fail-closed/withhold semantics, and
 (d) a broad scrubber corpus test. The self-hosted backend is secondary, so this can ship

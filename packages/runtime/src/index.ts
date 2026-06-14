@@ -1,4 +1,4 @@
-// @looper/runtime — the controller / composition root: the effectful
+// @loopdog/runtime — the controller / composition root: the effectful
 // transition pipeline, triggers + reconcile sweep, telemetry, built-in loops.
 export { runLoopOnItem, runLoopOnce } from './pipeline/transition-runner.js';
 export type { RunnerDeps } from './pipeline/transition-runner.js';
@@ -8,9 +8,9 @@ export {
   handleRun,
   handleSweep,
 } from './pipeline/controller.js';
-// Re-exported for the CLI (which may not depend on @looper/backends directly).
-export { checkCompatibility, compose, lintPrompt, resolveArtifact } from '@looper/backends';
-export type { Brief, ComposeContext, PromptLintIssue, PromptSource } from '@looper/backends';
+// Re-exported for the CLI (which may not depend on @loopdog/backends directly).
+export { checkCompatibility, compose, lintPrompt, resolveArtifact } from '@loopdog/backends';
+export type { Brief, ComposeContext, PromptLintIssue, PromptSource } from '@loopdog/backends';
 export type { ControllerOptions, EventResult, RunResult } from './pipeline/controller.js';
 export { matchLoopsForEvent } from './triggers/match.js';
 export { runSweep } from './sweep/sweep.js';

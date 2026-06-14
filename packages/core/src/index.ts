@@ -1,4 +1,4 @@
-// @looper/core — pure domain: state machine, transition decision logic,
+// @loopdog/core — pure domain: state machine, transition decision logic,
 // DoR/DoD gates, run-record types, and the port interfaces. No IO.
 
 // ports

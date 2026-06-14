@@ -1,4 +1,4 @@
-// @looper/backends — execution-backend implementations: claude (/fire),
+// @loopdog/backends — execution-backend implementations: claude (/fire),
 // codex (@codex mention), self-hosted (worker dispatch) + the shared
 // correlation primitive, brief composer, selection/auth, and registry.
 export { correlatePr, findCorrelatedPr, ingestViaCorrelation } from './correlation/correlate.js';

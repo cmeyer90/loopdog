@@ -1,11 +1,11 @@
 import type { Command } from 'commander';
 import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
-import { loadConfig } from '@looper/config';
+import { loadConfig } from '@loopdog/config';
 import { findTemplatesDir } from '../assets.js';
 
 /**
- * `looper init` (task 0007): attach looper to a repo — scaffold the root
+ * `loopdog init` (task 0007): attach loopdog to a repo — scaffold the root
  * config, the built-in loop folders, and the thin workflow callers; preview
  * everything first; never clobber adopter edits; validate what was written.
  */
@@ -25,7 +25,7 @@ export interface ScaffoldPlan {
 export function registerInit(program: Command): void {
   program
     .command('init')
-    .description('attach looper to this repository (scaffold config + loops + workflows)')
+    .description('attach loopdog to this repository (scaffold config + loops + workflows)')
     .option('--dry-run', 'preview only — write nothing', false)
     .option('--yes', 'non-interactive: accept and write the plan', false)
     .option('--force', 'offer to re-write conflicting files (still asks per file)', false)
@@ -75,10 +75,10 @@ export function registerInit(program: Command): void {
         [
           '',
           'Next steps:',
-          '  1. looper connect claude   (and/or: looper connect codex)',
+          '  1. loopdog connect claude   (and/or: loopdog connect codex)',
           '  2. commit the scaffold and open a test issue',
           '  3. watch the dry-run previews, then promote loops one at a time:',
-          '       looper promote groom --to act',
+          '       loopdog promote groom --to act',
         ].join('\n'),
       );
     });
@@ -110,17 +110,17 @@ export async function buildScaffoldPlan(
     });
   };
 
-  await add(join(templatesDir, 'looper.yml'), '.looper/looper.yml');
+  await add(join(templatesDir, 'loopdog.yml'), '.loopdog/loopdog.yml');
   const loopsDir = join(templatesDir, 'loops');
   for (const loop of (await readdir(loopsDir)).sort()) {
     for (const file of (await readdir(join(loopsDir, loop))).sort()) {
-      await add(join(loopsDir, loop, file), join('.looper', 'loops', loop, file));
+      await add(join(loopsDir, loop, file), join('.loopdog', 'loops', loop, file));
     }
   }
   for (const wf of (await readdir(join(templatesDir, 'workflows'))).sort()) {
     // The self-hosted worker is the opt-in escape hatch — scaffolded only when
-    // a self-hosted backend is configured (looper connect default self-hosted).
-    if (wf === 'looper-self-hosted-worker.yml') continue;
+    // a self-hosted backend is configured (loopdog connect default self-hosted).
+    if (wf === 'loopdog-self-hosted-worker.yml') continue;
     await add(join(templatesDir, 'workflows', wf), join('.github', 'workflows', wf));
   }
 
@@ -147,7 +147,7 @@ export async function buildScaffoldPlan(
 }
 
 function renderPlan(plan: ScaffoldPlan): void {
-  console.log('looper init plan:\n');
+  console.log('loopdog init plan:\n');
   for (const f of plan.files) {
     const mark = f.action === 'create' ? '+' : f.action === 'skip' ? '=' : '!';
     console.log(

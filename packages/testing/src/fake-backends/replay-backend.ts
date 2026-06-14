@@ -5,7 +5,7 @@ import type {
   IngestResult,
   PullRequestSnapshot,
   WorkBrief,
-} from '@looper/core';
+} from '@loopdog/core';
 import type { FakeGitHub } from '../fake-github/fake-github.js';
 
 /**

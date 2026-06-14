@@ -2,13 +2,13 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — "Durable
+> Background: [Loopdog Architecture](../../docs/architecture.md) — "Durable
 > planning store (plans-as-memory)." Productizes the milestones+tasks system this
 > repo uses on itself.
 
 ## Objective
 
-Let looper write and maintain durable plans (milestones + tasks) inside any target
+Let loopdog write and maintain durable plans (milestones + tasks) inside any target
 repo, bind every issue/epic to a plan, and keep the issue label and plan `Status`
 in sync — giving the loops inspectable working memory that survives across
 sessions and workers.
@@ -27,14 +27,14 @@ sessions and workers.
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0015 | verified | task/0015-portable-plan-format | Portable Plan Format | Configurable plan-store layout + task/milestone templates looper emits. |
+| 0015 | verified | task/0015-portable-plan-format | Portable Plan Format | Configurable plan-store layout + task/milestone templates loopdog emits. |
 | 0016 | verified | task/0016-issue-to-plan-binding | Issue ↔ Plan Binding | Generator linking each issue to a plan; label↔Status mirroring. |
 | 0017 | verified | task/0017-plan-lifecycle-automation | Plan Lifecycle Automation | Open/update/verify/archive transitions driven by the loops. |
 | 0018 | verified | task/0018-plan-index-maintenance | Plan Index Maintenance | Automatic upkeep of the plan + milestone indexes. |
 
 ## Definition Of Done
 
-- [x] Looper creates a linked plan per issue in a configurable store path
+- [x] Loopdog creates a linked plan per issue in a configurable store path
   (0015 format + 0016 binding; epics' milestone files use the shipped
   milestone template — automated epic decomposition is M08 grooming's job).
 - [x] Issue labels and plan `Status` stay synchronized through the lifecycle

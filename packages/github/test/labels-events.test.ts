@@ -1,19 +1,19 @@
 import { describe, expect, it } from 'vitest';
-import { FakeGitHub } from '@looper/testing';
-import { parseActionsEvent, reconcileLabels } from '@looper/github';
-import { DEFAULT_TRANSITION_TABLE } from '@looper/core';
+import { FakeGitHub } from '@loopdog/testing';
+import { parseActionsEvent, reconcileLabels } from '@loopdog/github';
+import { DEFAULT_TRANSITION_TABLE } from '@loopdog/core';
 
 const repo = { owner: 'o', repo: 'r' };
 
 describe('label reconciliation IO (0011)', () => {
-  it('creates all looper labels once; second run is a no-op; customs untouched', async () => {
+  it('creates all loopdog labels once; second run is a no-op; customs untouched', async () => {
     const gh = new FakeGitHub();
     await gh.createRepoLabel(repo, { name: 'bug', color: 'ff0000' });
     gh.mutations.length = 0;
 
     const first = await reconcileLabels(gh, repo, DEFAULT_TRANSITION_TABLE);
-    expect(first.created).toContain('looper:state/new');
-    expect(first.created).toContain('looper:quarantine');
+    expect(first.created).toContain('loopdog:state/new');
+    expect(first.created).toContain('loopdog:quarantine');
 
     const second = await reconcileLabels(gh, repo, DEFAULT_TRANSITION_TABLE);
     expect(second.created).toEqual([]);
@@ -30,7 +30,7 @@ describe('event normalization (0008)', () => {
       {
         action: 'labeled',
         issue: { number: 7, author_association: 'OWNER' },
-        label: { name: 'looper:state/new' },
+        label: { name: 'loopdog:state/new' },
         sender: { login: 'dana', type: 'User' },
       },
       repo,
@@ -42,7 +42,7 @@ describe('event normalization (0008)', () => {
       item: { ...repo, number: 7 },
       actor: { login: 'dana', type: 'User' },
       authorAssociation: 'OWNER',
-      label: 'looper:state/new',
+      label: 'loopdog:state/new',
       deliveredAt: '2026-06-09T12:00:00Z',
     });
   });

@@ -5,12 +5,12 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Establish looper's **repo identity** as the Actions `GITHUB_TOKEN` (least-privilege,
+Establish loopdog's **repo identity** as the Actions `GITHUB_TOKEN` (least-privilege,
 zero-setup) and define the **two-plane auth model** around it: handoffs the token
 can't re-trigger fall back to the cron sweep (0076), an optional PAT buys instant
 handoff, local CLI auth is device-flow/`gh`, and provider (work-cell) auth uses
 the provider's validated subscription surface (Claude routine import; Codex
-provider App). No looper GitHub App, no manual PAT required, no model API key on
+provider App). No loopdog GitHub App, no manual PAT required, no model API key on
 the primary path.
 
 ## Background
@@ -19,12 +19,12 @@ Part of [Milestone 07](../milestones/milestone-07-secrets-and-identity.md) — t
 identity half of the two-plane secret model; the secret planes themselves land in
 0030 (provider cloud env) and 0031 (self-hosted injection), and the honest
 trust-boundary writeup in 0032. This task is the foundation those build on: it
-fixes *who looper acts as* and *what that identity may do*. See
+fixes *who loopdog acts as* and *what that identity may do*. See
 [architecture](../../docs/architecture.md) "Identity & secrets (two planes)" and
 "The `GITHUB_TOKEN` mechanic (why the sweep is load-bearing)." It lands primarily
-in `@looper/github` (the `identity/` module: token source resolution + the
+in `@loopdog/github` (the `identity/` module: token source resolution + the
 `Identity` port impl) with the permission manifest shipped from
-`@looper/runtime` (`templates/workflows/looper-*.yml`); the `core` `GitHubPort`
+`@loopdog/runtime` (`templates/workflows/loopdog-*.yml`); the `core` `GitHubPort`
 interface already names identity. It is upstream of the runner (0012) which reads
 identity to attribute claims/run-records, the sweep (0076) which is the handoff
 backstop, the authorization gate (M17 · 0079) which treats `GITHUB_TOKEN` actors
@@ -33,8 +33,8 @@ as the trusted "system" actor, and backend selection (M05 · 0023) which resolve
 
 ## Scope
 
-- Resolve looper's repo identity from the runtime environment: prefer an explicit
-  PAT (`LOOPER_PAT`) when present, else the Actions `GITHUB_TOKEN`, else (local
+- Resolve loopdog's repo identity from the runtime environment: prefer an explicit
+  PAT (`LOOPDOG_PAT`) when present, else the Actions `GITHUB_TOKEN`, else (local
   CLI) the device-flow/`gh` token from 0077. Expose it through one `Identity` impl.
 - Ship the **least-privilege permission manifest** for the reusable workflows.
 - Implement the **fork-PR read-only caveat**: detect when the event token is
@@ -47,7 +47,7 @@ as the trusted "system" actor, and backend selection (M05 · 0023) which resolve
 
 ### Technical detail
 
-**Identity resolution** (`@looper/github/src/identity/`). One port, implementing the
+**Identity resolution** (`@loopdog/github/src/identity/`). One port, implementing the
 `core` `GitHubPort` identity surface:
 
 ```ts
@@ -63,14 +63,14 @@ interface RepoIdentity {
 resolveRepoIdentity(env): RepoIdentity   // pure resolution from env + event ctx
 ```
 
-Resolution order: `LOOPER_PAT` env (instant handoff) → `GITHUB_TOKEN` (default CI)
+Resolution order: `LOOPDOG_PAT` env (instant handoff) → `GITHUB_TOKEN` (default CI)
 → CLI stored token (0077). `reTriggersWorkflows` is `false` exactly when
 `source==='actions'` — this is the flag the runner/sweep consult to decide whether
 a state change will be picked up by a follow-on event or must wait for the sweep
 (0076). It does **not** depend on PAT type beyond presence.
 
 **Least-privilege permissions** — the manifest baked into
-`templates/workflows/looper-*.yml` (no repo-wide write):
+`templates/workflows/loopdog-*.yml` (no repo-wide write):
 
 ```yaml
 permissions:
@@ -94,7 +94,7 @@ repo's privileged context and completes the write. A PAT (if set) makes fork-PR
 writes work instantly and skips the defer.
 
 **Two planes, kept distinct** (types only — no new auth network calls here):
-- *Repo identity plane* — this task; `RepoIdentity` above; how looper reads/writes
+- *Repo identity plane* — this task; `RepoIdentity` above; how loopdog reads/writes
   GitHub.
 - *Provider auth plane* — the user's subscription via the provider's validated
   surface: Claude routine import (`/fire` URL + bearer-token secret refs) or Codex
@@ -108,13 +108,13 @@ re-triggers ⇒ instant; cron is always the trusted system actor.
 
 ## Out Of Scope
 
-- The CLI `looper login` device-flow plumbing + token storage (M02 · 0077) — this
+- The CLI `loopdog login` device-flow plumbing + token storage (M02 · 0077) — this
   task *consumes* its resolved token, doesn't implement it.
 - Provider backend selection + provider-credential resolution (M05 · 0023);
   provider onboarding UX (Claude routine import; Codex App install) (M02 · 0010).
 - The project-secret planes: provider cloud env (0030), self-hosted injection +
   leak guards (0031), and the trust-boundary doc (0032).
-- Any looper GitHub App, hosted backend, or model API key on the primary path.
+- Any loopdog GitHub App, hosted backend, or model API key on the primary path.
 
 ## Acceptance Criteria
 
@@ -129,19 +129,19 @@ re-triggers ⇒ instant; cron is always the trusted system actor.
       block above; no `actions`/`deployments`/`security-events` write by default.
 - [x] The token is never present in any run-record, log line, or telemetry payload
       (redaction test).
-- [x] No looper GitHub App, no model API key, and no DB/queue introduced.
+- [x] No loopdog GitHub App, no model API key, and no DB/queue introduced.
 - [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [x] Add `@looper/github/src/identity/` with `resolveRepoIdentity` + the
+- [x] Add `@loopdog/github/src/identity/` with `resolveRepoIdentity` + the
       `RepoIdentity` type, wired into the `GitHubPort` impl.
-- [x] Implement source precedence (`LOOPER_PAT` → `GITHUB_TOKEN` → CLI) and the
+- [x] Implement source precedence (`LOOPDOG_PAT` → `GITHUB_TOKEN` → CLI) and the
       `reTriggersWorkflows`/`writable` flags from env + event context.
 - [x] Add fork-PR detection + the runner defer-to-sweep path (coordinate the
       `deferred:fork-readonly` outcome with 0012/0076).
 - [x] Set the least-privilege `permissions` manifest in
-      `templates/workflows/looper-*.yml`; document the opt-in `id-token` for deploy.
+      `templates/workflows/loopdog-*.yml`; document the opt-in `id-token` for deploy.
 - [x] Add token redaction to the run-record/telemetry serializer.
 - [x] Document the two-plane split + handoff matrix in the package README and link
       it from onboarding (consumed by 0032).
@@ -153,7 +153,7 @@ no real GitHub token, no provider quota.
 
 ```bash
 # replace with the chosen stack's runner, e.g.:
-pnpm -F @looper/github test
+pnpm -F @loopdog/github test
 # - resolveRepoIdentity precedence + flag matrix (table test)
 # - fork-PR event → writable:false → runner defers to sweep (fake-github scenario)
 # - PAT set → fork-PR write proceeds; redaction test asserts token never serialized

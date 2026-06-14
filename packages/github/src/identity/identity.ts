@@ -1,6 +1,6 @@
 /**
- * Looper's repo identity (M07 · 0029): in CI the controller is the workflow's
- * `GITHUB_TOKEN` — keyless, auto-scoped, no looper GitHub App. Locally it is
+ * Loopdog's repo identity (M07 · 0029): in CI the controller is the workflow's
+ * `GITHUB_TOKEN` — keyless, auto-scoped, no loopdog GitHub App. Locally it is
  * the user's `gh` auth or a token env var. This module only RESOLVES tokens;
  * it never persists them anywhere model-visible.
  */
@@ -27,7 +27,7 @@ export async function resolveGitHubAuth(
     // fall through to the error below
   }
   throw new Error(
-    'no GitHub auth: set GITHUB_TOKEN (CI) or GH_TOKEN, or login with `gh auth login` / `looper login`',
+    'no GitHub auth: set GITHUB_TOKEN (CI) or GH_TOKEN, or login with `gh auth login` / `loopdog login`',
   );
 }
 

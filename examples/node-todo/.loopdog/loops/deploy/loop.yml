@@ -1,5 +1,5 @@
 # Deploy entry: on merge, mark the item deploying. The actual deployment runs
-# in YOUR CI through the project adapter's deploy command (see looper-deploy
+# in YOUR CI through the project adapter's deploy command (see loopdog-deploy
 # workflow template); the smoke loop promotes or fails it.
 name: deploy
 trigger:

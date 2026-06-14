@@ -24,7 +24,7 @@ do not — and leaves the user-facing `resilience:` block, quarantine, and CLI t
 0091; concurrency + circuit breaker to 0090. See
 [architecture](../../docs/architecture.md#resilience--failure-policy) and
 "Triggering: events for latency, cron for resilience." Lands the pure logic in
-`@looper/core` (`core/src/resilience/`) and the effectful side in `@looper/runtime`,
+`@loopdog/core` (`core/src/resilience/`) and the effectful side in `@loopdog/runtime`,
 reusing the `GitHubPort` — no new IO port.
 
 ## Scope
@@ -45,14 +45,14 @@ reusing the `GitHubPort` — no new IO port.
 - The failure taxonomy + class→response mapping (0088) — this task only *reads* the
   class and acts on `transient`/timeout.
 - `max_in_flight` defer + circuit breaker (0090).
-- The `resilience:` config surface, `looper:quarantine`, `on_failure` routing,
-  `escalate_to` notification, and CLI (`looper status`/`retry`) — 0091.
+- The `resilience:` config surface, `loopdog:quarantine`, `on_failure` routing,
+  `escalate_to` notification, and CLI (`loopdog status`/`retry`) — 0091.
 - Item-level escalation edge + `resetAttempts` mechanics (owned by 0051; this task
   extends its types and schedule, it does not re-own them).
 
 ### Technical detail
 
-**Configurable backoff (pure, in `@looper/core/src/resilience/`).** Generalize
+**Configurable backoff (pure, in `@loopdog/core/src/resilience/`).** Generalize
 0051's `nextBackoff` to read the `retries` policy. Extend, don't fork, its types:
 
 ```ts
@@ -76,7 +76,7 @@ dispatch's re-fires; `max_attempts_per_item` (0051) bounds the item across dispa
 Exhausting `retries.max` on a `transient` failure rolls into the item attempt
 counter; exhausting that hits 0051's escalation edge.
 
-**Dispatch timeout (effectful, in `@looper/runtime`).** When the runner dispatches
+**Dispatch timeout (effectful, in `@loopdog/runtime`).** When the runner dispatches
 (0073), it stamps a deadline `dispatch_started + dispatch_timeout` into the
 attempts marker (extend 0051's hidden issue-body block with a `dispatch_deadline`
 field; keyed by `loop`, survives re-labeling). The **sweep** (0076), per tick,
@@ -87,17 +87,17 @@ synthetic class `transient` (a no-PR timeout is retryable), and run `recordFailu
 → backoff or escalate. This is the same path 0073 describes for "no correlated PR
 within the lease," now governed by `dispatch_timeout` rather than only the raw lease.
 
-**Marker extension** (0051's `<!-- looper:attempts ... -->`), additive fields:
+**Marker extension** (0051's `<!-- loopdog:attempts ... -->`), additive fields:
 
 ```
-<!-- looper:attempts loop=implement count=2 not_before=2026-06-08T14:32:00Z
+<!-- loopdog:attempts loop=implement count=2 not_before=2026-06-08T14:32:00Z
      dispatch_deadline=2026-06-08T15:02:00Z retry_count=1
      first_failed=... last_run=run_91c last_class=transient -->
 ```
 
-**Config keys** (repo-wide `looper.yml`, per-loop `loop.yml`, strictest-wins; full
+**Config keys** (repo-wide `loopdog.yml`, per-loop `loop.yml`, strictest-wins; full
 block + validation owned by 0091, this task consumes a forward-compatible subset
-via `@looper/config`):
+via `@loopdog/config`):
 
 ```yaml
 resilience:
@@ -145,7 +145,7 @@ re-evaluation, never silent drop), logging a warning.
 
 ## Implementation Checklist
 
-- [x] Extend `@looper/core/src/resilience/` types with `RetryPolicy`/`BackoffShape`
+- [x] Extend `@loopdog/core/src/resilience/` types with `RetryPolicy`/`BackoffShape`
       and generalize `nextBackoff` (3 shapes + jitter); keep 0051's `evaluate` shape.
 - [~] Per-dispatch `retry_count` budget (`RetryPolicy.max` + `hasRetryBudget`)
       defined + unit-tested in core; the runtime currently uses the item attempt
@@ -153,12 +153,12 @@ re-evaluation, never silent drop), logging a warning.
       Decisions).
 - [x] Extend the attempts marker (parse/serialize) with `dispatch_deadline`
       (`dispatchDeadlineLabel`/`parseDispatchDeadline`/`clearDispatchDeadline`) over
-      the `GitHubPort` in `@looper/runtime`. (`retry_count` marker deferred.)
+      the `GitHubPort` in `@loopdog/runtime`. (`retry_count` marker deferred.)
 - [x] Stamp `dispatch_deadline` on dispatch; wire the failed-step path to the
       `transient`-vs-terminal branch.
 - [x] Implement the sweep's timeout check (no-PR-by-deadline → release claim +
       record `transient` timeout → backoff/escalate), with ingest-wins ordering.
-- [x] Load the `resilience.retries`/`dispatch_timeout` subset via `@looper/config`
+- [x] Load the `resilience.retries`/`dispatch_timeout` subset via `@loopdog/config`
       (repo + per-loop, strictest-wins), forward-compatible with 0091's full block.
 
 ## Test Plan
@@ -168,11 +168,11 @@ Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
 
 ```bash
 # core unit (IO-free): nextBackoff across 3 shapes × boundaries (base/cap/jitter)
-pnpm -F @looper/core test
+pnpm -F @loopdog/core test
 #  - exponential 30s base → 30,60,120,...,cap 600; linear/constant schedules
 #  - retry budget vs item budget: which exhausts first, strictest wins
 # runtime behavioral (fakes): retry + timeout end-to-end
-pnpm -F @looper/runtime test
+pnpm -F @loopdog/runtime test
 #  - transient fail → marker retry_count=1, not_before set, item skipped until clock
 #  - advance fake clock past not_before → sweep re-dispatches
 #  - dispatch with no PR; advance clock past dispatch_deadline → sweep escalates,
@@ -206,10 +206,10 @@ pnpm -F @looper/runtime test
 - **Single budget in the runtime.** The task envisioned two budgets (per-dispatch
   `retry_count` + item `max_attempts_per_item`, strictest-wins). The core type +
   `hasRetryBudget` exist and are unit-tested, but the runtime currently uses the
-  item attempt counter (`looper:attempts/N`) as the single budget — simpler and
+  item attempt counter (`loopdog:attempts/N`) as the single budget — simpler and
   sufficient, since a transient retry and an item attempt coincide in the current
   failure path. The distinct per-dispatch `retry_count` marker is deferred.
-- `dispatch_deadline` is a label (`looper:dispatch-deadline/<iso>`) stamped by the
+- `dispatch_deadline` is a label (`loopdog:dispatch-deadline/<iso>`) stamped by the
   RUNTIME at dispatch (`deps.now` + `dispatch_timeout`), NOT the backend's own
   `dispatchedAt` (the fakes stamp epoch). Clamped to the claim lease so it never
   outlives the claim. Ingest wins: the timeout is evaluated only when `ingest`

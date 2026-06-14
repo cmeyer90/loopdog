@@ -1,7 +1,7 @@
 {
   "name": "@loopdog/cli",
   "version": "0.1.0",
-  "description": "Looper — autonomous-SDLC loops for any GitHub repository, driven by your existing Claude Code and Codex subscriptions.",
+  "description": "Loopdog — autonomous-SDLC loops for any GitHub repository, driven by your existing Claude Code and Codex subscriptions.",
   "license": "Apache-2.0",
   "type": "module",
   "private": false,
@@ -28,13 +28,13 @@
     "zod": "^3.25.0"
   },
   "bin": {
-    "looper": "dist/main.js"
+    "loopdog": "dist/main.js"
   },
   "devDependencies": {
-    "@looper/core": "0.1.0",
-    "@looper/config": "0.1.0",
-    "@looper/github": "0.1.0",
-    "@looper/runtime": "0.1.0"
+    "@loopdog/core": "0.1.0",
+    "@loopdog/config": "0.1.0",
+    "@loopdog/github": "0.1.0",
+    "@loopdog/runtime": "0.1.0"
   },
   "repository": {
     "type": "git",

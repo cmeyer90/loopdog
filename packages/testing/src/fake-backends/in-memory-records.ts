@@ -1,5 +1,5 @@
-import type { RunRecord } from '@looper/core';
-import type { RunRecordStore } from '@looper/runtime';
+import type { RunRecord } from '@loopdog/core';
+import type { RunRecordStore } from '@loopdog/runtime';
 
 /** In-memory `RunRecordStore` for tests — no branch IO, just the list. */
 export class InMemoryRunRecordStore implements RunRecordStore {

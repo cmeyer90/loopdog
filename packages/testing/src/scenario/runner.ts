@@ -1,9 +1,9 @@
 import { readFile, writeFile, mkdir } from 'node:fs/promises';
 import { dirname, join } from 'node:path';
 import { parse as parseYaml } from 'yaml';
-import type { ControllerOptions } from '@looper/runtime';
-import { handleEvent, handleSweep } from '@looper/runtime';
-import type { IssueSnapshot, PullRequestSnapshot, RunRecord } from '@looper/core';
+import type { ControllerOptions } from '@loopdog/runtime';
+import { handleEvent, handleSweep } from '@loopdog/runtime';
+import type { IssueSnapshot, PullRequestSnapshot, RunRecord } from '@loopdog/core';
 import type { FakeGitHub } from '../fake-github/fake-github.js';
 import type { InMemoryRunRecordStore } from '../fake-backends/in-memory-records.js';
 import type { VirtualClock } from '../simulation/clock.js';
@@ -120,7 +120,7 @@ export async function loadScenario(path: string): Promise<Scenario> {
 export interface GoldenOpts {
   /** Directory holding `<name>.golden.json`. */
   dir: string;
-  /** Rewrite the golden from the observed end-state (env LOOPER_UPDATE_GOLDENS=1). */
+  /** Rewrite the golden from the observed end-state (env LOOPDOG_UPDATE_GOLDENS=1). */
   update?: boolean;
 }
 
@@ -135,7 +135,7 @@ export async function assertGolden(
   opts: GoldenOpts,
 ): Promise<void> {
   const path = join(opts.dir, `${name}.golden.json`);
-  const update = opts.update ?? process.env['LOOPER_UPDATE_GOLDENS'] === '1';
+  const update = opts.update ?? process.env['LOOPDOG_UPDATE_GOLDENS'] === '1';
   if (update) {
     await mkdir(dirname(path), { recursive: true });
     await writeFile(path, goldenJson(result.golden));
@@ -146,14 +146,14 @@ export async function assertGolden(
     stored = await readFile(path, 'utf8');
   } catch {
     throw new Error(
-      `golden '${name}' is missing (${path}). Re-run with LOOPER_UPDATE_GOLDENS=1 to create it (then review).`,
+      `golden '${name}' is missing (${path}). Re-run with LOOPDOG_UPDATE_GOLDENS=1 to create it (then review).`,
     );
   }
   const golden = JSON.parse(stored) as Golden;
   const { match, diff } = diffGolden(result.golden, golden);
   if (!match) {
     throw new Error(
-      `golden '${name}' drifted:\n${diff}\n\nIf intended, re-run with LOOPER_UPDATE_GOLDENS=1 and review the diff.`,
+      `golden '${name}' drifted:\n${diff}\n\nIf intended, re-run with LOOPDOG_UPDATE_GOLDENS=1 and review the diff.`,
     );
   }
 }

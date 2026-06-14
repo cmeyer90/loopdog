@@ -2,14 +2,14 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — design tenets
+> Background: [Loopdog Architecture](../../docs/architecture.md) — design tenets
 > and V1 scope. This is the adoption surface for an open-source tool.
 
 ## Objective
 
-Make looper adoptable and trustworthy: a docs site with quickstart and full
+Make loopdog adoptable and trustworthy: a docs site with quickstart and full
 config/adapter/provider references, runnable example attachments, and a published
-security & trust model — so a new maintainer can attach looper safely in minutes.
+security & trust model — so a new maintainer can attach loopdog safely in minutes.
 
 ## Guiding Decisions
 
@@ -18,7 +18,7 @@ security & trust model — so a new maintainer can attach looper safely in minut
 - A real example attachment (in this repo or a sibling demo repo) doubles as a
   dogfood and a copyable template.
 - Trust is earned with an explicit threat model and a clear statement of what
-  looper can and cannot do to a repo.
+  loopdog can and cannot do to a repo.
 
 ## Planned Tasks
 
@@ -35,7 +35,7 @@ security & trust model — so a new maintainer can attach looper safely in minut
 - A docs site covers quickstart, full config reference, and authoring guides.
 - At least one runnable example attachment exists and is referenced from the
   quickstart.
-- A security & trust document states looper's permissions, guarantees, and threat
+- A security & trust document states loopdog's permissions, guarantees, and threat
   model.
 
 ## Verification Log
@@ -44,9 +44,9 @@ security & trust model — so a new maintainer can attach looper safely in minut
   place: a `docs/` hub (`README.md` index + `quickstart.md` 10-min keyless attach),
   a complete `config-reference.md` (every root + loop field, precedence, edge
   cases), two authoring guides (`guides/adapters.md` canonical + `guides/
-  providers.md`, real `@looper/core` APIs + the actual conformance entrypoints;
+  providers.md`, real `@loopdog/core` APIs + the actual conformance entrypoints;
   `adapters.md` redirects), a runnable `examples/node-todo/` attachment (real app
-  `node --test` green + `.looper/` from the templates, schema-validated and
+  `node --test` green + `.loopdog/` from the templates, schema-validated and
   scenario-tested to a committed golden offline), and `security.md` (trust model,
   permission inventory, blast-radius table, threat model, residency 0032, ToS
   0092, disclosure). All internal links resolve; repo-wide 244 tests green, lint

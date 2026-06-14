@@ -1,19 +1,19 @@
-# 0003 Looper's Own CI
+# 0003 Loopdog's Own CI
 
 Status: verified  
 Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Give looper a green, reproducible CI pipeline (lint + test + build) on every PR,
+Give loopdog a green, reproducible CI pipeline (lint + test + build) on every PR,
 so the tool is built to the standard it enforces on adopters.
 
 ## Background
 
 Part of [Milestone 01](../milestones/milestone-01-project-foundation-and-oss-scaffolding.md);
-depends on task 0001 (stack + buildable CLI). The verification ladder looper
+depends on task 0001 (stack + buildable CLI). The verification ladder loopdog
 provides others (see [architecture](../../docs/architecture.md)) starts with CI
-the agent cannot edit away — looper should hold itself to that from the start.
+the agent cannot edit away — loopdog should hold itself to that from the start.
 Branch protection + CODEOWNERS enforcement lands in task 0004.
 
 ## Scope

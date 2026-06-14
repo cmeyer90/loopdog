@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FakeGitHub } from '@looper/testing';
-import { TelemetryBranchStore } from '@looper/runtime';
-import type { RunRecord } from '@looper/core';
+import { FakeGitHub } from '@loopdog/testing';
+import { TelemetryBranchStore } from '@loopdog/runtime';
+import type { RunRecord } from '@loopdog/core';
 
 const repo = { owner: 'o', repo: 'r' };
 

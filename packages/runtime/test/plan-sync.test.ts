@@ -1,10 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { runLoopOnce } from '@looper/runtime';
-import type { RunnerDeps } from '@looper/runtime';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@looper/testing';
-import { RepoPlanStoreFiles } from '@looper/plans';
-import { DEFAULT_TRANSITION_TABLE, renderCriteriaBlock, stateLabel } from '@looper/core';
-import type { LoopDefinition, TriggerEvent } from '@looper/core';
+import { runLoopOnce } from '@loopdog/runtime';
+import type { RunnerDeps } from '@loopdog/runtime';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@loopdog/testing';
+import { RepoPlanStoreFiles } from '@loopdog/plans';
+import { DEFAULT_TRANSITION_TABLE, renderCriteriaBlock, stateLabel } from '@loopdog/core';
+import type { LoopDefinition, TriggerEvent } from '@loopdog/core';
 
 const repo = { owner: 'o', repo: 'r' };
 const ref = { ...repo, number: 1 };
@@ -15,14 +15,14 @@ const GROOMED_BODY = [
   renderCriteriaBlock([
     { text: 'limits requests', validation: { kind: 'test', ref: 'rl.test.ts' }, met: false },
   ]),
-  '<!-- looper:scope -->api only<!-- /looper:scope -->',
+  '<!-- loopdog:scope -->api only<!-- /loopdog:scope -->',
 ].join('\n\n');
 
 async function setup() {
   const gh = new FakeGitHub();
   await gh.ensureBranch(repo, 'main');
   const backend = new FakeBackend(gh, { id: 'claude' });
-  const planFiles = new RepoPlanStoreFiles(gh, repo, 'main', '.looper/plans');
+  const planFiles = new RepoPlanStoreFiles(gh, repo, 'main', '.loopdog/plans');
   const deps: RunnerDeps = {
     gh,
     backends: new Map([['claude', backend]]),
@@ -41,7 +41,7 @@ const implementLoop: LoopDefinition = {
   transition: { from: 'ready-for-agent', to: 'in-review' },
   backend: 'claude',
   gates: { requireDor: true, requireCi: true, tier: 'default' },
-  promptPath: '.looper/loops/implement/prompt.md',
+  promptPath: '.loopdog/loops/implement/prompt.md',
   mode: 'act',
   expects: 'pull-request',
 };
@@ -58,7 +58,7 @@ describe('plan lifecycle wiring in the runner (0017)', () => {
 
     // dispatch: a plan is bound + updated, status mirrors in-progress
     await runLoopOnce(deps, implementLoop, repo, CRON);
-    const path = '.looper/plans/tasks/0001-add-rate-limiting.md';
+    const path = '.loopdog/plans/tasks/0001-add-rate-limiting.md';
     let plan = (await planFiles.read(path))!.content;
     expect(plan).toContain('# 0001 Add rate limiting');
     expect(plan).toContain('Status: in-progress'); // mirrored from the label
@@ -70,7 +70,7 @@ describe('plan lifecycle wiring in the runner (0017)', () => {
     expect(plan).toContain('Status: implemented');
 
     // the issue carries the plan marker (two-way link)
-    expect((await gh.getIssue(ref)).body).toContain('<!-- looper:plan task=0001');
+    expect((await gh.getIssue(ref)).body).toContain('<!-- loopdog:plan task=0001');
   });
 
   it('makes no plan writes in dry-run (plan upkeep is gated too)', async () => {
@@ -82,7 +82,7 @@ describe('plan lifecycle wiring in the runner (0017)', () => {
       labels: [stateLabel('ready-for-agent')],
     });
     const out = await runLoopOnce({ ...deps, forceDryRun: true }, implementLoop, repo, CRON);
-    expect(await planFiles.list('.looper/plans/tasks')).toEqual([]);
+    expect(await planFiles.list('.loopdog/plans/tasks')).toEqual([]);
     expect(out[0]!.planned!.some((a) => a.kind === 'plan')).toBe(true); // intended, recorded
   });
 });

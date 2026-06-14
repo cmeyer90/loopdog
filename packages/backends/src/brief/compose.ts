@@ -1,30 +1,30 @@
 /**
  * Prompt & policy artifacts → composed brief (task 0022). Every dispatched
  * brief comes from versioned, reviewable repo files; no prompt text lives
- * inline in looper source. Pure + deterministic: same inputs → byte-identical
+ * inline in loopdog source. Pure + deterministic: same inputs → byte-identical
  * text and ref.
  */
 
 export interface PromptSource {
   /** Built-in default for a loop (shipped templates). */
   builtin(loop: string): Promise<string | null>;
-  /** Adopter override: `.looper/loops/<loop>/prompt.md`. */
+  /** Adopter override: `.loopdog/loops/<loop>/prompt.md`. */
   repo(loop: string): Promise<string | null>;
-  /** Per-backend overlay: `.looper/loops/<loop>/prompt.<backend>.md`. */
+  /** Per-backend overlay: `.loopdog/loops/<loop>/prompt.<backend>.md`. */
   overlay(loop: string, backend: string): Promise<string | null>;
-  /** Shared fragment: `.looper/policies/<name>.md` (built-ins as fallback). */
+  /** Shared fragment: `.loopdog/policies/<name>.md` (built-ins as fallback). */
   policy(name: string): Promise<string | null>;
 }
 
 export interface ComposeContext {
   issue: { number: number; title: string; body: string };
-  /** The looper:acceptance-criteria block text (0014); '' when absent. */
+  /** The loopdog:acceptance-criteria block text (0014); '' when absent. */
   acceptanceCriteria: string;
   transition: { from: string; to: string };
   runId: string;
   loop: string;
   backend: string;
-  /** `looper/<loop>/<issue>-<run_id>` (0073). */
+  /** `loopdog/<loop>/<issue>-<run_id>` (0073). */
   branch: string;
   repo: { defaultBranch: string };
   adapter: { testCmd?: string | undefined };
@@ -62,11 +62,11 @@ const PLACEHOLDER_RE = /\{\{\s*([a-z_.]+)\s*\}\}/g;
 /** Built-in policy fragments (the non-overridable output contract lives here). */
 export const BUILTIN_POLICIES: Record<string, string> = {
   'output-contract': [
-    '## Looper output contract (required — do not deviate)',
+    '## Loopdog output contract (required — do not deviate)',
     '',
     '- Work on a NEW branch named exactly: `{{branch}}`',
     '- If you open a pull request: its body MUST end with the exact trailer line',
-    '  `looper-run: {{run_id}}`, and it MUST reference `#{{issue.number}}`.',
+    '  `loopdog-run: {{run_id}}`, and it MUST reference `#{{issue.number}}`.',
     '- Stay within the declared scope. If the work exceeds it, STOP and explain',
     '  in a comment instead of proceeding.',
   ].join('\n'),

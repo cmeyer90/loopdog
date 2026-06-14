@@ -1,7 +1,7 @@
 import { HERMETIC_GLOB, LIVE_GLOB, TIERS, type Tier } from './registry.js';
 
 /**
- * Tier selection (task 0087). `LOOPER_TIER` chooses which slice of the pyramid
+ * Tier selection (task 0087). `LOOPDOG_TIER` chooses which slice of the pyramid
  * runs; the vitest config maps the result to `include`/`exclude` globs.
  *
  *   1-4 (default) → hermetic tiers, EXCLUDING `*.live.test.ts`

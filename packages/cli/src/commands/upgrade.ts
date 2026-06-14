@@ -8,30 +8,30 @@ import {
   migrateTree,
   planUpgrade,
   type FileTree,
-} from '@looper/config';
+} from '@loopdog/config';
 
 /**
- * `looper upgrade` (task 0067): lift an attached `.looper/` tree from an older
- * config `version` to the one this looper understands, applying ordered,
+ * `loopdog upgrade` (task 0067): lift an attached `.loopdog/` tree from an older
+ * config `version` to the one this loopdog understands, applying ordered,
  * idempotent migrations. Refuses a downgrade (newer on-disk) or a too-old tree;
  * a no-op when already current. Adopter-edited files are never silently
- * overwritten — a conflicting migration writes a `.looper-new` sidecar.
+ * overwritten — a conflicting migration writes a `.loopdog-new` sidecar.
  */
 export function registerUpgrade(program: Command): void {
   program
     .command('upgrade')
-    .description('migrate the .looper/ tree forward to this looper’s config version')
+    .description('migrate the .loopdog/ tree forward to this loopdog’s config version')
     .option('--path <dir>', 'repo root', '.')
     .option('--dry-run', 'preview migrations + the per-file table; write nothing', false)
     .action(async (opts: { path: string; dryRun: boolean }) => {
-      const looperDir = join(opts.path, '.looper');
-      const rootYml = join(looperDir, 'looper.yml');
+      const loopdogDir = join(opts.path, '.loopdog');
+      const rootYml = join(loopdogDir, 'loopdog.yml');
       let onDisk: number;
       try {
         const raw = parse(await readFile(rootYml, 'utf8')) as { version?: number };
         onDisk = typeof raw?.version === 'number' ? raw.version : 1;
       } catch {
-        console.error(`no .looper/looper.yml at ${looperDir} — run \`looper init\` first.`);
+        console.error(`no .loopdog/loopdog.yml at ${loopdogDir} — run \`loopdog init\` first.`);
         process.exitCode = 2;
         return;
       }
@@ -48,7 +48,7 @@ export function registerUpgrade(program: Command): void {
       }
 
       // Behind: migrate the on-disk tree.
-      const before = await readTree(looperDir);
+      const before = await readTree(loopdogDir);
       const after = migrateTree(before, onDisk);
       const rows: Array<{ path: string; state: 'changed' | 'unchanged' | 'conflict' }> = [];
       for (const path of new Set([...Object.keys(before), ...Object.keys(after)])) {
@@ -71,13 +71,13 @@ export function registerUpgrade(program: Command): void {
         return;
       }
       for (const [path, content] of Object.entries(after)) {
-        if (before[path] !== content) await writeFile(join(looperDir, path), content);
+        if (before[path] !== content) await writeFile(join(loopdogDir, path), content);
       }
       console.log(`✓ upgraded to config version ${CONFIG_VERSION}; review + commit the diff.`);
     });
 }
 
-/** Read the `.looper/` subtree into a path → content map (paths relative to it). */
+/** Read the `.loopdog/` subtree into a path → content map (paths relative to it). */
 async function readTree(dir: string): Promise<FileTree> {
   const out: FileTree = {};
   async function walk(d: string): Promise<void> {

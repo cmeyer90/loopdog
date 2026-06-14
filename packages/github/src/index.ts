@@ -1,4 +1,4 @@
-// @looper/github — the GitHub port: Octokit wrapper over GITHUB_TOKEN,
+// @loopdog/github — the GitHub port: Octokit wrapper over GITHUB_TOKEN,
 // labels/claims IO, event parsing, identity.
 export { OctokitGitHub } from './client/octokit-github.js';
 export { acquireClaim, clearExpiredClaim, releaseClaim, renewLease } from './claims/claims.js';

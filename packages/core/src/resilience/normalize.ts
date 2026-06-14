@@ -4,7 +4,7 @@ import { DEFAULT_BREAKER, DEFAULT_CEILING, type BreakerPolicy, type Ceiling } fr
 
 /**
  * Normalize the config-resolved `resilience` block (task 0091 — seconds/minutes,
- * partial, already merged repo→per-loop by `@looper/config`) into the ms-based
+ * partial, already merged repo→per-loop by `@loopdog/config`) into the ms-based
  * policy types the runtime (0089/0090) consumes. Absent fields fall back to the
  * safe defaults, so the runtime always gets a complete policy.
  */

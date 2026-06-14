@@ -8,8 +8,8 @@ import type {
   TaskPlan,
   TaskPlanDraft,
   TaskPlanPatch,
-} from '@looper/core';
-import { parseCriteriaBlock } from '@looper/core';
+} from '@loopdog/core';
+import { parseCriteriaBlock } from '@loopdog/core';
 import { RepoPlanStoreFiles } from './repo-plan-store.js';
 import {
   appendToSection,
@@ -108,7 +108,7 @@ export class RepoPlanStore implements PlanStore {
     }
     const next = serializePlan(doc);
     if (next !== file.content) {
-      await this.files.write(ref.path, next, `looper: update plan ${ref.id}`, file.sha);
+      await this.files.write(ref.path, next, `loopdog: update plan ${ref.id}`, file.sha);
     }
   }
 
@@ -120,7 +120,7 @@ export class RepoPlanStore implements PlanStore {
     await this.files.write(
       ref.path,
       serializePlan(setStatus(doc, status)),
-      `looper: plan ${ref.id} status -> ${status}`,
+      `loopdog: plan ${ref.id} status -> ${status}`,
       file.sha,
     );
   }
@@ -129,7 +129,12 @@ export class RepoPlanStore implements PlanStore {
     const file = await this.files.read(ref.path);
     if (!file) return;
     const doc = appendToSection(parsePlan(file.content), 'Verification Log', `- ${entry}`);
-    await this.files.write(ref.path, serializePlan(doc), `looper: log on plan ${ref.id}`, file.sha);
+    await this.files.write(
+      ref.path,
+      serializePlan(doc),
+      `loopdog: log on plan ${ref.id}`,
+      file.sha,
+    );
   }
 
   async archive(ref: PlanRef): Promise<void> {

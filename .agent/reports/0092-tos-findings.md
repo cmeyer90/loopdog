@@ -43,7 +43,7 @@ below is reconstructed from search-index snippets and flagged accordingly.
    credentials on behalf of their users" (enforced against OpenCode/OpenClaw-class
    harnesses reusing **login OAuth tokens for raw inference**). The per-routine
    `/fire` token is a purpose-built credential whose docs instruct embedding it
-   in external systems — a different, sanctioned surface. Looper must never
+   in external systems — a different, sanctioned surface. Loopdog must never
    touch claude.ai login OAuth tokens.
 5. **New sanctioned path (eff. 2026-06-15):** subscription plans receive a
    monthly **Agent SDK credit** that explicitly covers "third-party apps that
@@ -88,7 +88,7 @@ below is reconstructed from search-index snippets and flagged accordingly.
 ## Consequence model (if the answer were/becomes "no")
 
 Trigger conditions: a provider prohibits third-party subscription orchestration
-in writing, blocks looper's pattern technically, or the `/fire` research preview
+in writing, blocks loopdog's pattern technically, or the `/fire` research preview
 is withdrawn without replacement.
 
 1. **Product re-centering:** the self-hosted/API backend (0074) becomes the
@@ -96,7 +96,7 @@ is withdrawn without replacement.
    machine, plans, adapters, gates are unchanged — only dispatch changes.
 2. **M02 changes:** onboarding (0010) defaults to API-key/self-hosted connect;
    subscription connect becomes the optional path (or is removed for the
-   affected provider). `looper.yml` `backend:` default flips.
+   affected provider). `loopdog.yml` `backend:` default flips.
 3. **M05 changes:** the affected subscription backend (0020/0021) is demoted to
    experimental/off; 0074 hardening is pulled earlier in the order.
 4. **M07 changes:** the project-secret plane simplifies — secrets inject into
@@ -105,7 +105,7 @@ is withdrawn without replacement.
 5. **Docs/walkthroughs:** connecting-accounts walkthrough and quickstart rewrite
    around `ANTHROPIC_API_KEY`/OpenAI-key self-hosted execution.
 6. **Per-provider asymmetry is survivable:** a Codex "no" with a Claude "yes"
-   leaves looper subscription-native on Claude and self-hosted/API for
+   leaves loopdog subscription-native on Claude and self-hosted/API for
    cross-provider review (the `codex exec` API-key path), and vice versa.
 
 ## Go/no-go recommendation
@@ -123,7 +123,7 @@ is withdrawn without replacement.
   conservative rate caps (M12 · 0075), circuit-breaker on limit signals
   (M19 · 0090). Before marketing unattended at-scale operation, obtain a written
   staff answer (channel: openai/codex GitHub repo / developer forum).
-- **Both:** looper is distributed as a tool the adopter runs on their own
+- **Both:** loopdog is distributed as a tool the adopter runs on their own
   account. No hosted multi-tenant mode in V1 (would cross explicit prohibitions
   at both providers). State the ToS posture plainly in the trust docs (0032,
   0062).

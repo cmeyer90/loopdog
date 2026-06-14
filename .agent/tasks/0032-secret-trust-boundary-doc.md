@@ -5,7 +5,7 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Write the honest, canonical trust-boundary document for looper: where every kind
+Write the honest, canonical trust-boundary document for loopdog: where every kind
 of secret resides per backend, what the Codex agent-phase secret-stripping /
 no-internet constraints mean for tests, and exactly what each execution path can
 and cannot *verify* — so adopters make an informed residency decision before
@@ -15,7 +15,7 @@ their code or secrets enter a provider's cloud. Reference it from onboarding.
 
 Part of [Milestone 07](../milestones/milestone-07-secrets-and-identity.md). The
 milestone establishes the **two-plane** secret model (provider-auth plane +
-project-secret plane) and the enforceable rule that looper never serializes a
+project-secret plane) and the enforceable rule that loopdog never serializes a
 long-lived credential into prompts, plans, comments, run records, logs, or other
 GitHub/model-visible artifacts it controls; this task is the documentation
 deliverable that makes the boundary legible. Grounded in
@@ -24,7 +24,7 @@ deliverable that makes the boundary legible. Grounded in
 "The verification ladder (trust)". It depends on the *behavior* defined by repo
 identity & provider auth (0029), provider cloud env/secret config (0030), and
 self-hosted secret injection & leak guards (0031); this doc describes that
-behavior, it does not implement it. Onboarding (0010) and `looper login`
+behavior, it does not implement it. Onboarding (0010) and `loopdog login`
 ([connecting-accounts walkthrough](../../docs/walkthroughs/connecting-accounts.md))
 link to it. No new code beyond docs + one assertion that the doc stays in sync.
 
@@ -47,7 +47,7 @@ link to it. No new code beyond docs + one assertion that the doc stays in sync.
 ### Technical detail
 
 **Lands in:** `docs/` (the doc) + a tiny check in the `docs`/`config` area; no
-`@looper/*` runtime code. The doc is `docs/trust-boundary.md`, peer to
+`@loopdog/*` runtime code. The doc is `docs/trust-boundary.md`, peer to
 `architecture.md`/`codebase.md`.
 
 **Two planes (restate canonically, link don't duplicate):**
@@ -55,9 +55,9 @@ link to it. No new code beyond docs + one assertion that the doc stays in sync.
 - *Provider-auth plane* — the user's Claude/Codex subscription via the provider's
   validated surface: Claude routine import (`/fire` URL + bearer-token secret
   refs, with repo/environment configured in Claude) and Codex provider App. Usually
-  **no model API key** for looper to store on the primary path. Looper's own repo
+  **no model API key** for loopdog to store on the primary path. Loopdog's own repo
   identity is the Actions `GITHUB_TOKEN` (handoffs via the cron sweep, 0076;
-  optional PAT for instant) — **not** a secret plane and **not** a looper GitHub
+  optional PAT for instant) — **not** a secret plane and **not** a loopdog GitHub
   App.
 - *Project-secret plane* — build/test/deploy secrets the work cell needs. Primary
   path: configured into the **provider's** cloud env (0030). Self-hosted: injected
@@ -68,14 +68,14 @@ per backend; each cell = *where it resides* + *who can read it*):
 
 | Secret class | Claude cloud | Codex cloud | Self-hosted |
 |---|---|---|---|
-| Looper repo identity (`GITHUB_TOKEN`/PAT) | Adopter's Actions runner only; never sent to provider | same | same |
+| Loopdog repo identity (`GITHUB_TOKEN`/PAT) | Adopter's Actions runner only; never sent to provider | same | same |
 | Provider subscription auth | Imported routine `/fire` URL + bearer token as keychain/Actions `SecretRef`s; repo/environment setup in Claude | Codex provider App (no token) | n/a (uses adopter's own model API key) |
 | Model API key | none on primary path | none on primary path | **adopter's own**, in adopter's store, never model-visible |
 | Project build/test/deploy secrets | Claude cloud environment configured in Claude's web UI; not forwarded from Actions at `/fire` | provider cloud env, **stripped before agent phase** | adopter's runner/container, scrubbed from model context |
 
 **Codex constraints subsection (state the consequence plainly):** secrets are
 stripped before the agent phase and agent-phase internet is disabled by default →
-tests needing live credentials or network may not run inside the work cell. Looper
+tests needing live credentials or network may not run inside the work cell. Loopdog
 therefore treats the adopter's own GitHub Actions CI as the trustworthy gate
 (rung 2) *regardless of where the work cell ran* — the sandbox produces the change,
 CI is what trusts it. Codex cloud is also quota-capped (~5 tasks/hr lower tiers).
@@ -86,10 +86,10 @@ secrets/network) but rung 2 (their CI) is full; on self-hosted rung 1 *recovers*
 full secret/network access. Make explicit that rungs 2–4 (CI, cross-provider
 review, deploy smoke) are backend-independent and gate merge.
 
-**The one rule, stated up top:** *looper never serializes a long-lived credential
+**The one rule, stated up top:** *loopdog never serializes a long-lived credential
 into prompts, plans, comments, run records, logs, or other model/GitHub-visible
-artifacts it controls* — and looper scrubs secrets from egress it controls.
-Backend env residency is stated separately; looper can never edit the checks
+artifacts it controls* — and loopdog scrubs secrets from egress it controls.
+Backend env residency is stated separately; loopdog can never edit the checks
 (rung 2) that gate it.
 
 **Edge cases to cover:** ZDR orgs (excluded from Claude cloud → must use
@@ -108,15 +108,15 @@ so the boundary can't silently rot. No quota/provider calls.
   self-hosted injection/leak-guard *code* (0031) — this is documentation of them.
 - Scrubbing implementation, budget/quota enforcement (M12), the ToS legal
   determination itself (0092).
-- Any new looper GitHub App, API-keys on the primary path, or database/queue.
+- Any new loopdog GitHub App, API-keys on the primary path, or database/queue.
 
 ## Acceptance Criteria
 
-- [x] `docs/trust-boundary.md` exists and states the one rule (looper never
+- [x] `docs/trust-boundary.md` exists and states the one rule (loopdog never
       serializes long-lived credentials into model/GitHub-visible artifacts it
       controls) up top.
 - [x] It documents both planes (provider-auth + project-secret) and names the
-      Actions `GITHUB_TOKEN` as looper's repo identity (no looper GitHub App).
+      Actions `GITHUB_TOKEN` as loopdog's repo identity (no loopdog GitHub App).
 - [x] A per-backend residency matrix covers Claude cloud, Codex cloud, and
       self-hosted for each secret class, stating where it resides and who reads it.
 - [x] The Codex agent-phase secret-stripping + no-internet constraints are stated,
@@ -125,7 +125,7 @@ so the boundary can't silently rot. No quota/provider calls.
 - [x] It states no long-lived model API key on the primary path, documents Claude
       routine import vs. Codex provider App, states the ZDR exclusion →
       self-hosted, and flags the ToS question (0092) as an open risk.
-- [x] Onboarding (0010) and `looper login` docs link to it; the drift guard fails
+- [x] Onboarding (0010) and `loopdog login` docs link to it; the drift guard fails
       if the doc is missing or unreferenced.
 - [x] Relevant checks pass.
 
@@ -135,7 +135,7 @@ so the boundary can't silently rot. No quota/provider calls.
 - [x] Build the residency matrix and the verify-per-path table.
 - [x] Write the Codex-constraints subsection and the self-hosted recovery note.
 - [x] Cross-link 0010, 0023, 0031, 0076, 0092 and the verification-ladder section.
-- [x] Add the link from onboarding docs / `looper login` output.
+- [x] Add the link from onboarding docs / `loopdog login` output.
 - [x] Add the doc-presence + link drift-guard assertion.
 
 ## Test Plan

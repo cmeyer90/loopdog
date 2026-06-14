@@ -5,7 +5,7 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-A guided `looper connect` flow that links the adopter's **Claude and/or Codex
+A guided `loopdog connect` flow that links the adopter's **Claude and/or Codex
 subscription** to a repo through the provider's validated repo-connect surface,
 authorizes the repos, verifies the connection is live, and records a per-loop
 backend choice — so loops dispatch to a provider cloud agent on the user's
@@ -18,7 +18,7 @@ Part of [Milestone 02](../milestones/milestone-02-attachment-and-configuration-m
 subscription through the provider's validated surface (manual routine import for
 Claude; provider App for Codex), authorize repos, pick the execution backend per
 loop." This is the second half of the keyless connect story:
-`looper login` (0077) authenticates the *user to GitHub* (OAuth device flow or
+`loopdog login` (0077) authenticates the *user to GitHub* (OAuth device flow or
 reused `gh`) and **chains into this task**, which connects the *provider*. It
 predates and feeds the backends (M05 · [0019](0019-execution-backend-interface.md),
 [0020](0020-claude-subscription-backend.md)) — provisioning routines/sessions is
@@ -26,34 +26,34 @@ theirs; this task only establishes and verifies the subscription link and writes
 the backend selection that [0006](0006-config-schema-and-validation.md)'s
 `backends:` / per-loop `backend:` keys validate. See
 [architecture](../../docs/architecture.md) "Identity & secrets (two planes)" — the
-**provider auth plane** — and "Dispatch surfaces." Lands in `@looper/cli` (the
-flow) over `@looper/github` (provider-connect introspection) and `@looper/config`
-(persisting selection); **no** looper GitHub App is introduced.
+**provider auth plane** — and "Dispatch surfaces." Lands in `@loopdog/cli` (the
+flow) over `@loopdog/github` (provider-connect introspection) and `@loopdog/config`
+(persisting selection); **no** loopdog GitHub App is introduced.
 
 Claude-specific caveat resolved: public Claude Code GitHub Actions setup is a
-separate API-key path (`ANTHROPIC_API_KEY`) and does not satisfy Looper's
+separate API-key path (`ANTHROPIC_API_KEY`) and does not satisfy Loopdog's
 subscription backend. Current Claude routine docs require API triggers/tokens to
-be created in the Claude web UI. Therefore `looper connect claude` implements a
+be created in the Claude web UI. Therefore `loopdog connect claude` implements a
 manual routine import flow: guide the user to create/edit the routine, select the
 repo and Claude cloud environment, add an API trigger, copy the `/fire` URL and
 one-time bearer token, and store them as GitHub Actions secret refs.
 
 ## Scope
 
-- A `looper connect [<provider>]` command (also reachable as the tail of `looper
-  init`/`looper login`) that walks the provider's repo-authorization surface:
+- A `loopdog connect [<provider>]` command (also reachable as the tail of `loopdog
+  init`/`loopdog login`) that walks the provider's repo-authorization surface:
   install the provider's GitHub App where required, or run the Claude manual
   routine import path.
 - A live **verification probe** that confirms the App can act on the repo before
   declaring connected, or confirms the imported Claude routine secret refs and
   records the operator's repo/environment setup assertion for the routine path.
 - Per-loop backend selection written to config; root default recorded too.
-- A `looper connect --status` / connection state that the CLI and `init` preview
+- A `loopdog connect --status` / connection state that the CLI and `init` preview
   read.
 
 ### Technical detail
 
-**Providers & their install/import surfaces** (`@looper/cli/src/commands/connect.ts`,
+**Providers & their install/import surfaces** (`@loopdog/cli/src/commands/connect.ts`,
 with a small provider registry):
 
 | Provider | Backend id | Install surface | Dispatch mode (capability, 0019) |
@@ -71,7 +71,7 @@ fire URL and bearer token once, writes them to Actions secrets (or records exist
 secret names), and stores only `SecretRef`s plus non-secret setup assertions in
 connection state. It never asks for `ANTHROPIC_API_KEY`.
 
-`ConnectionState` (persisted to `~/.looper/connections.json` keyed by repo, *not*
+`ConnectionState` (persisted to `~/.loopdog/connections.json` keyed by repo, *not*
 committed; the OS-keychain token from 0077 stays in the keychain):
 
 ```ts
@@ -86,7 +86,7 @@ interface ProviderConnection {
 }
 ```
 
-**Verification probe** (`@looper/github`): for App-backed paths, list the repo's
+**Verification probe** (`@loopdog/github`): for App-backed paths, list the repo's
 installed GitHub Apps via `GET /repos/{owner}/{repo}/installation` / org
 installations using the user token from 0077, and match the provider's known App
 slug (`chatgpt-codex-connector` for Codex, plus any optional Claude-native
@@ -100,11 +100,11 @@ pretend this is a GitHub App install and does not fire the routine by default
 (that spends quota); backend liveness is 0020/0093's concern.
 
 **Backend selection.** After at least one provider verifies, prompt
-(`@clack/prompts`) for a **root default backend** (`looper.yml`
+(`@clack/prompts`) for a **root default backend** (`loopdog.yml`
 `backends.default`) and, optionally, a **per-loop override** for each discovered
-loop (writing `backend:` into `.looper/loops/<name>/loop.yml`). Selection is
+loop (writing `backend:` into `.loopdog/loops/<name>/loop.yml`). Selection is
 constrained to verified providers (plus `self-hosted`, always selectable since it
-needs no App). Writes go through `@looper/config`'s schema so they validate
+needs no App). Writes go through `@loopdog/config`'s schema so they validate
 immediately (0006); unverified-but-selected ⇒ a warning, not a hard fail (lets a
 user pre-author then connect).
 
@@ -122,7 +122,7 @@ capabilities), not enforced here.
 
 **CI note.** This is a **local CLI** flow only; the controller in Actions never
 runs it (it uses `GITHUB_TOKEN` and the already-verified provider connection).
-`looper connect --status` is read-only and safe to call anywhere.
+`loopdog connect --status` is read-only and safe to call anywhere.
 
 ## Out Of Scope
 
@@ -135,43 +135,43 @@ runs it (it uses `GITHUB_TOKEN` and the already-verified provider connection).
 
 ## Acceptance Criteria
 
-- [x] `looper connect claude` follows the manual routine import path (routine
-      setup checklist + fire URL/token secret refs); `looper connect codex` opens
+- [x] `loopdog connect claude` follows the manual routine import path (routine
+      setup checklist + fire URL/token secret refs); `loopdog connect codex` opens
       the correct provider App install URL.
 - [ ] **OPERATOR (live):** A live verification probe distinguishes "provider
       access verified for this repo" from "not connected," and only a verified
       provider is reported connected. (V1 reports secret-presence as
       "connected"; a true probe = firing the routine, which spends quota — the
       0093 spike kit is the manual probe until the live-smoke tier, 0087.)
-- [x] Backend selection writes `backends.default` to `looper.yml` and optional
-      per-loop `backend:` into `.looper/loops/<name>/loop.yml`, validated by 0006.
+- [x] Backend selection writes `backends.default` to `loopdog.yml` and optional
+      per-loop `backend:` into `.loopdog/loops/<name>/loop.yml`, validated by 0006.
 - [x] Only verified providers (plus `self-hosted`) are offered as selectable
       backends; selecting an unverified one warns.
 - [x] The flow is idempotent and resumable; a re-run on an already-connected
       repo is a no-op (secret presence detected; `--rotate` re-imports); the
       verification poll is deferred with the live probe above.
 - [x] ZDR / no-subscription users are routed to `self-hosted` with a recorded note.
-- [x] No model API key is requested or stored on the Claude/Codex paths; no looper
+- [x] No model API key is requested or stored on the Claude/Codex paths; no loopdog
       GitHub App is introduced.
 - [x] Relevant checks pass.
 
 ## Implementation Checklist
 
 - [x] Add the provider registry (App slug/install URL where applicable, Claude
-      manual routine import method, dispatch mode) in `@looper/cli`.
-- [x] Implement `looper connect [<provider>]` + `--status` with `@clack/prompts`,
+      manual routine import method, dispatch mode) in `@loopdog/cli`.
+- [x] Implement `loopdog connect [<provider>]` + `--status` with `@clack/prompts`,
       browser-open + poll-for-installation for App paths, and the Claude routine
       setup/import checklist + secret-ref capture.
-- [x] Add the installation/verification probe to `@looper/github` (`installation`
+- [x] Add the installation/verification probe to `@loopdog/github` (`installation`
       lookup by App slug for App paths; Claude secret-ref/setup assertion checks
       for routine import).
-- [x] Implement backend selection writes through `@looper/config` (root default +
+- [x] Implement backend selection writes through `@loopdog/config` (root default +
       per-loop override).
 - [x] Persist `ProviderConnection` state; make the flow idempotent/resumable with a
       poll timeout.
 - [x] Handle ZDR / no-subscription → recommend self-hosted; surface Codex
       mention-only + rate-cap notes.
-- [x] Chain from `looper login` (0077) and `looper init` (0007); update connect
+- [x] Chain from `loopdog login` (0077) and `loopdog init` (0007); update connect
       docs/walkthrough.
 
 ## Test Plan
@@ -182,8 +182,8 @@ real network**.
 
 ```bash
 # replace with this repo's checks
-pnpm --filter @looper/cli test    # connect flow: authorize/import→verify→select
-pnpm --filter @looper/github test # provider-connect probe matches/doesn't match
+pnpm --filter @loopdog/cli test    # connect flow: authorize/import→verify→select
+pnpm --filter @loopdog/github test # provider-connect probe matches/doesn't match
 ```
 
 - Component: probe returns `verified:true` with the expected `method` only when
@@ -197,7 +197,7 @@ pnpm --filter @looper/github test # provider-connect probe matches/doesn't match
 
 ## Verification Log
 
-- 2026-06-09: `looper connect claude` / `connect codex` implemented and smoke-
+- 2026-06-09: `loopdog connect claude` / `connect codex` implemented and smoke-
   tested non-interactively (prints the guided steps + manual gh fallback).
   Live secret-set + provider round-trip require real subscriptions (operator;
   spike 0093 RUNBOOK is the validation kit).
@@ -207,13 +207,13 @@ pnpm --filter @looper/github test # provider-connect probe matches/doesn't match
 - Claude connect = the 0093 manual-routine-import decision verbatim: guided
   web-UI steps (routine, repo+cloud env selection — env vars configured IN
   Claude, branch-push permissions, API trigger), then the /fire URL + token
-  imported as `LOOPER_CLAUDE_FIRE_URL` / `LOOPER_CLAUDE_FIRE_TOKEN` Actions
+  imported as `LOOPDOG_CLAUDE_FIRE_URL` / `LOOPDOG_CLAUDE_FIRE_TOKEN` Actions
   secrets via `gh secret set` (values read with hidden input, never echoed,
   never written to disk). Rotation = regenerate in Claude + re-run connect.
 - Codex connect = provider-App authorization guidance + the 0092/0093 finding
   surfaced honestly: the mention identity must be linked to the ChatGPT
   account, so automation needs the adopter's own attributable identity
-  (`LOOPER_CODEX_MENTION_TOKEN` PAT) — a bot identity cannot spend quota.
+  (`LOOPDOG_CODEX_MENTION_TOKEN` PAT) — a bot identity cannot spend quota.
 - Backend selection per loop is config (0006 `backend:` + root default);
   no separate selection wizard in V1.
 
@@ -231,8 +231,8 @@ connect output, not resolved here.
 
 ## Final Summary
 
-`looper connect claude` guides the manual routine import end-to-end and
-stores the /fire URL + bearer token as Actions secret refs; `looper connect
+`loopdog connect claude` guides the manual routine import end-to-end and
+stores the /fire URL + bearer token as Actions secret refs; `loopdog connect
 codex` guides provider-App authorization and the user-attributable mention
 identity. Per-loop backend choice is plain config. No model API keys anywhere
 on this path.

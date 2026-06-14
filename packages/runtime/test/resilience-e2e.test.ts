@@ -3,10 +3,10 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { handleSweep } from '@looper/runtime';
-import type { ControllerOptions } from '@looper/runtime';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore, VirtualClock } from '@looper/testing';
-import { renderCriteriaBlock, stateLabel } from '@looper/core';
+import { handleSweep } from '@loopdog/runtime';
+import type { ControllerOptions } from '@loopdog/runtime';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore, VirtualClock } from '@loopdog/testing';
+import { renderCriteriaBlock, stateLabel } from '@loopdog/core';
 import { buildScaffoldPlan } from '../../cli/src/commands/init.js';
 
 /**
@@ -28,12 +28,12 @@ const GROOMED = [
   renderCriteriaBlock([
     { text: 'works', validation: { kind: 'test', ref: 'a.test.ts' }, met: false },
   ]),
-  '<!-- looper:scope -->bounded<!-- /looper:scope -->',
+  '<!-- loopdog:scope -->bounded<!-- /loopdog:scope -->',
 ].join('\n');
 
 /** Scaffold an act-mode repo with a custom `resilience:` block. */
 async function scaffold(resilienceYaml: string): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'looper-resil-'));
+  const dir = await mkdtemp(join(tmpdir(), 'loopdog-resil-'));
   dirs.push(dir);
   const templatesDir = fileURLToPath(new URL('../../../templates/', import.meta.url));
   const plan = await buildScaffoldPlan(templatesDir, dir);
@@ -42,7 +42,7 @@ async function scaffold(resilienceYaml: string): Promise<string> {
     await mkdir(join(target, '..'), { recursive: true });
     await writeFile(target, await readFile(file.source, 'utf8'));
   }
-  const rootYml = join(dir, '.looper', 'looper.yml');
+  const rootYml = join(dir, '.loopdog', 'loopdog.yml');
   let yml = (await readFile(rootYml, 'utf8')).replace('mode: dry-run', 'mode: act');
   // Replace the whole resilience block (template lines) with the test's.
   yml = yml.replace(/resilience:\n(?: {2}.*\n)+/, resilienceYaml);
@@ -87,17 +87,17 @@ describe('resilience & failure policy (M19)', () => {
 
     // Attempt 1 → transient (backoff), then advance past the timer and retry.
     await handleSweep(opts);
-    expect((await gh.getIssue({ ...repo, number: 1 })).labels).not.toContain('looper:quarantine');
+    expect((await gh.getIssue({ ...repo, number: 1 })).labels).not.toContain('loopdog:quarantine');
     clock.advanceMinutes(15);
     // Attempt 2 → poisoned (max_attempts_per_item: 2) → quarantine + escalate.
     await handleSweep(opts);
 
     const issue = await gh.getIssue({ ...repo, number: 1 });
-    expect(issue.labels).toContain('looper:quarantine');
-    expect(issue.labels).toContain('looper:needs-human');
+    expect(issue.labels).toContain('loopdog:quarantine');
+    expect(issue.labels).toContain('loopdog:needs-human');
     const comments = await gh.listComments({ ...repo, number: 1 });
     expect(comments.some((c) => c.body.includes('@team/oncall'))).toBe(true);
-    expect(comments.some((c) => c.body.includes('looper retry'))).toBe(true);
+    expect(comments.some((c) => c.body.includes('loopdog retry'))).toBe(true);
     expect(
       records.records.some(
         (r) => r.outcome.status === 'escalated' && r.outcome.failure?.class === 'poisoned',
@@ -143,7 +143,7 @@ describe('resilience & failure policy (M19)', () => {
     await handleSweep(opts); // ingest still pending, but the deadline lapsed → timeout
     // max_attempts_per_item: 1 → the timed-out attempt is poisoned → quarantined.
     const issue = await gh.getIssue({ ...repo, number: 1 });
-    expect(issue.labels).toContain('looper:quarantine');
+    expect(issue.labels).toContain('loopdog:quarantine');
     expect(
       records.records.some((r) => r.steps.some((s) => s.detail.includes('dispatch timeout'))),
     ).toBe(true);

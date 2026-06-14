@@ -1,20 +1,20 @@
 /**
  * Versioned config contract + migration registry (task 0067). The on-disk
- * `.looper/looper.yml` carries a `version`; the controller refuses to run config
- * it doesn't understand, and `looper upgrade` lifts an older tree forward by
+ * `.loopdog/loopdog.yml` carries a `version`; the controller refuses to run config
+ * it doesn't understand, and `loopdog upgrade` lifts an older tree forward by
  * applying ordered, idempotent migrations.
  *
  * V1 baseline: `CONFIG_VERSION = 1` and there are no migrations yet (1 is the
  * first version). The machinery — the version gate, the ordered/gap-checked
  * registry, the no-op-on-current behavior — is in place so a future `2` adds one
- * registry entry and `looper upgrade` just works.
+ * registry entry and `loopdog upgrade` just works.
  */
 
 export const CONFIG_VERSION = 1;
-/** The oldest on-disk version `looper upgrade` can migrate forward from. */
+/** The oldest on-disk version `loopdog upgrade` can migrate forward from. */
 export const MIN_MIGRATABLE_FROM = 1;
 
-/** A file tree as a path → content map (the `.looper/` subtree). */
+/** A file tree as a path → content map (the `.loopdog/` subtree). */
 export type FileTree = Record<string, string>;
 
 export interface Migration {
@@ -54,7 +54,7 @@ export const MIGRATIONS: readonly Migration[] = [];
 
 export type VersionStatus = 'current' | 'behind' | 'ahead' | 'too-old';
 
-/** Classify an on-disk version against what this looper understands. */
+/** Classify an on-disk version against what this loopdog understands. */
 export function classifyVersion(onDisk: number): VersionStatus {
   if (onDisk > CONFIG_VERSION) return 'ahead'; // downgrade — refuse
   if (onDisk === CONFIG_VERSION) return 'current';
@@ -83,14 +83,14 @@ export function planUpgrade(onDisk: number): UpgradePlan {
         ...base,
         ok: false,
         steps: [],
-        reason: `config version ${onDisk} is newer than this looper (${CONFIG_VERSION}) — upgrade looper, don't downgrade the config`,
+        reason: `config version ${onDisk} is newer than this loopdog (${CONFIG_VERSION}) — upgrade loopdog, don't downgrade the config`,
       };
     case 'too-old':
       return {
         ...base,
         ok: false,
         steps: [],
-        reason: `config version ${onDisk} is older than the minimum migratable version (${MIN_MIGRATABLE_FROM}) — re-scaffold with \`looper init\``,
+        reason: `config version ${onDisk} is older than the minimum migratable version (${MIN_MIGRATABLE_FROM}) — re-scaffold with \`loopdog init\``,
       };
     case 'behind':
       return {

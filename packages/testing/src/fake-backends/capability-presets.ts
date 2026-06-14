@@ -1,4 +1,4 @@
-import type { BackendCapabilities } from '@looper/core';
+import type { BackendCapabilities } from '@loopdog/core';
 
 /**
  * Capability presets (task 0084): the declared `Capabilities` shapes of the

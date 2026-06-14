@@ -5,7 +5,7 @@ import type {
   GitHubPort,
   IngestResult,
   WorkBrief,
-} from '@looper/core';
+} from '@loopdog/core';
 import { ingestViaCorrelation } from '../correlation/correlate.js';
 
 /**
@@ -23,8 +23,8 @@ export const CLAUDE_ROUTINE_BETA = 'experimental-cc-routine-2026-04-01';
 export const CLAUDE_API_VERSION = '2023-06-01';
 
 /** Secret-ref names (env vars injected from Actions secrets by the caller). */
-export const CLAUDE_FIRE_URL_REF = 'LOOPER_CLAUDE_FIRE_URL';
-export const CLAUDE_FIRE_TOKEN_REF = 'LOOPER_CLAUDE_FIRE_TOKEN';
+export const CLAUDE_FIRE_URL_REF = 'LOOPDOG_CLAUDE_FIRE_URL';
+export const CLAUDE_FIRE_TOKEN_REF = 'LOOPDOG_CLAUDE_FIRE_TOKEN';
 
 export interface ClaudeBackendOptions {
   gh: GitHubPort;
@@ -64,8 +64,8 @@ export class ClaudeBackend implements ExecutionBackend {
     if (!fireUrl || !token) {
       throw new Error(
         `claude backend: missing ${CLAUDE_FIRE_URL_REF}/${CLAUDE_FIRE_TOKEN_REF} secret refs — ` +
-          'run `looper connect claude` to import the routine fire URL + token ' +
-          '(ZDR orgs cannot use Claude routines; use `looper connect default self-hosted`)',
+          'run `loopdog connect claude` to import the routine fire URL + token ' +
+          '(ZDR orgs cannot use Claude routines; use `loopdog connect default self-hosted`)',
       );
     }
 

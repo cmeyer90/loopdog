@@ -1,12 +1,12 @@
-# Looper's reusable SWEEP workflow (task 0076) — the resilience backstop.
+# Loopdog's reusable SWEEP workflow (task 0076) — the resilience backstop.
 # Recovers webhook-missed items, carries GITHUB_TOKEN controller→controller
-# handoffs (why no looper GitHub App is needed), and drives time-based
+# handoffs (why no loopdog GitHub App is needed), and drives time-based
 # transitions (lease reclaim, cron-due loops, hold retries).
-name: looper-reusable-sweep
+name: loopdog-reusable-sweep
 on:
   workflow_call:
     inputs:
-      looper-version:
+      loopdog-version:
         description: '@loopdog/cli version to run'
         type: string
         default: latest
@@ -27,9 +27,9 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 20
-      - name: run looper controller (sweep)
+      - name: run loopdog controller (sweep)
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          npx --yes @loopdog/cli@${{ inputs.looper-version }} controller sweep \
+          npx --yes @loopdog/cli@${{ inputs.loopdog-version }} controller sweep \
             --repo "${{ github.repository }}"

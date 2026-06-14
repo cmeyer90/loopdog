@@ -2,7 +2,7 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) —
+> Background: [Loopdog Architecture](../../docs/architecture.md) —
 > "Observability, cost & safety" and the subscription rate-limit constraints.
 > Cross-cutting; layers across the loops once Milestones 08–10 exist. The CLI
 > surface over this data is Milestone 16.

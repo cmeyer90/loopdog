@@ -9,7 +9,7 @@ import {
   selectorRequiresIO,
   tierGlobs,
   tiersForSelector,
-} from '@looper/testing';
+} from '@loopdog/testing';
 
 /**
  * Tier runner + hermeticity guards (task 0087): proves the load-bearing
@@ -19,7 +19,7 @@ import {
  */
 
 describe('tier selection (0087)', () => {
-  it('parses LOOPER_TIER and maps to include/exclude globs', () => {
+  it('parses LOOPDOG_TIER and maps to include/exclude globs', () => {
     expect(parseTierSelector(undefined)).toBe('1-4');
     expect(parseTierSelector('1-4')).toBe('1-4');
     expect(parseTierSelector('5')).toBe('5');
@@ -108,12 +108,12 @@ describe('drift classification (0087)', () => {
       {
         capabilities: { opensPr: true, zdrCompatible: true },
         api: { triggerMode: 'api_fire' },
-        correlation: { trailerKey: 'looper-run' },
+        correlation: { trailerKey: 'loopdog-run' },
       },
       {
         capabilities: { opensPr: true, zdrCompatible: false }, // capability flag flipped
         api: { triggerMode: 'mention' }, // api contract changed
-        correlation: { trailerKey: 'looper-trace' }, // correlation shape changed
+        correlation: { trailerKey: 'loopdog-trace' }, // correlation shape changed
       },
     );
     expect(drifted.drifted).toBe(true);

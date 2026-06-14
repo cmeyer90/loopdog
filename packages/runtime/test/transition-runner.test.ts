@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { runLoopOnce } from '@looper/runtime';
-import type { RunnerDeps } from '@looper/runtime';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@looper/testing';
-import { DEFAULT_TRANSITION_TABLE, renderCriteriaBlock, stateLabel } from '@looper/core';
-import type { LoopDefinition, TriggerEvent } from '@looper/core';
+import { runLoopOnce } from '@loopdog/runtime';
+import type { RunnerDeps } from '@loopdog/runtime';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@loopdog/testing';
+import { DEFAULT_TRANSITION_TABLE, renderCriteriaBlock, stateLabel } from '@loopdog/core';
+import type { LoopDefinition, TriggerEvent } from '@loopdog/core';
 
 const repo = { owner: 'o', repo: 'r' };
 const ref = { ...repo, number: 1 };
@@ -14,7 +14,7 @@ const GROOMED_BODY = [
   renderCriteriaBlock([
     { text: 'limits at 100 req/min', validation: { kind: 'test', ref: 'rl.test.ts' }, met: false },
   ]),
-  '<!-- looper:scope -->only api/ratelimit<!-- /looper:scope -->',
+  '<!-- loopdog:scope -->only api/ratelimit<!-- /loopdog:scope -->',
 ].join('\n\n');
 
 function setup(loopPatch: Partial<LoopDefinition> = {}) {
@@ -27,7 +27,7 @@ function setup(loopPatch: Partial<LoopDefinition> = {}) {
     transition: { from: 'ready-for-agent', to: 'in-review' },
     backend: 'claude',
     gates: { requireDor: true, requireCi: true, tier: 'default' },
-    promptPath: '.looper/loops/implement/prompt.md',
+    promptPath: '.loopdog/loops/implement/prompt.md',
     mode: 'act',
     expects: 'pull-request',
     ...loopPatch,
@@ -53,13 +53,13 @@ describe('transition runner (0012) — work-cell loop', () => {
     expect(first).toHaveLength(1);
     expect(first[0]!.outcome.status).toBe('pending');
     expect(backend.dispatched).toHaveLength(1);
-    expect(backend.dispatched[0]!.instructions).toContain('looper-run:');
+    expect(backend.dispatched[0]!.instructions).toContain('loopdog-run:');
 
     const afterDispatch = await gh.getIssue(ref);
     expect(afterDispatch.labels).toContain(stateLabel('in-progress'));
     expect(afterDispatch.labels).not.toContain(stateLabel('ready-for-agent'));
     const comments = await gh.listComments(ref);
-    expect(comments.some((c) => c.body.includes('looper:dispatch'))).toBe(true);
+    expect(comments.some((c) => c.body.includes('loopdog:dispatch'))).toBe(true);
 
     // Invocation 2 (sweep finds it in in-progress? — runner ingests via the
     // pending marker regardless of which state the sweep saw it in).
@@ -76,7 +76,7 @@ describe('transition runner (0012) — work-cell loop', () => {
 
     const done = await gh.getIssue(ref);
     expect(done.labels).toContain(stateLabel('in-review'));
-    expect(done.labels.filter((l) => l.startsWith('looper:claimed-by/'))).toEqual([]);
+    expect(done.labels.filter((l) => l.startsWith('loopdog:claimed-by/'))).toEqual([]);
     expect(done.assignees).toEqual([]);
 
     // Invocation 3: nothing left to do (idempotent end state).
@@ -98,7 +98,7 @@ describe('transition runner (0012) — work-cell loop', () => {
     await Promise.all([runLoopOnce(deps, loop, repo, event), runLoopOnce(deps, loop, repo, CRON)]);
     expect(backend.dispatched).toHaveLength(1);
     const comments = await gh.listComments(ref);
-    expect(comments.filter((c) => c.body.includes('looper:dispatch ')).length).toBe(1);
+    expect(comments.filter((c) => c.body.includes('loopdog:dispatch ')).length).toBe(1);
   });
 
   it('a silent work cell keeps the item pending (no stranding, no re-dispatch)', async () => {
@@ -129,13 +129,13 @@ describe('transition runner (0012) — work-cell loop', () => {
     const r1 = await runLoopOnce({ ...deps, maxAttempts: 2 }, loop, repo, CRON);
     expect(r1[0]!.outcome.status).toBe('failed');
     let issue = await gh.getIssue(ref);
-    expect(issue.labels.filter((l) => l.startsWith('looper:claimed-by/'))).toEqual([]);
-    expect(issue.labels).toContain('looper:attempts/1');
+    expect(issue.labels.filter((l) => l.startsWith('loopdog:claimed-by/'))).toEqual([]);
+    expect(issue.labels).toContain('loopdog:attempts/1');
 
     const r2 = await runLoopOnce({ ...deps, maxAttempts: 2 }, loop, repo, CRON);
     expect(r2[0]!.outcome.status).toBe('escalated');
     issue = await gh.getIssue(ref);
-    expect(issue.labels).toContain('looper:needs-human');
+    expect(issue.labels).toContain('loopdog:needs-human');
 
     // Escalated item is no longer driven.
     const r3 = await runLoopOnce({ ...deps, maxAttempts: 2 }, loop, repo, CRON);
@@ -198,10 +198,10 @@ describe('transition runner — mode enforcement (0009)', () => {
     expect(backend.dispatched).toEqual([]);
     expect((await gh.getIssue(ref)).labels).toEqual([stateLabel('ready-for-agent')]);
     const advisories = (await gh.listComments(ref)).filter((c) =>
-      c.body.includes('looper-suggest:implement:ready-for-agent->in-review'),
+      c.body.includes('loopdog-suggest:implement:ready-for-agent->in-review'),
     );
     expect(advisories).toHaveLength(1);
-    expect(advisories[0]!.body).toContain('looper promote implement --to act');
+    expect(advisories[0]!.body).toContain('loopdog promote implement --to act');
   });
 
   it('forceDryRun tightens an act loop to dry-run for one invocation', async () => {

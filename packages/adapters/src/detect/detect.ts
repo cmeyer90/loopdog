@@ -1,4 +1,4 @@
-import type { ProjectAdapter, RepoFs } from '@looper/core';
+import type { ProjectAdapter, RepoFs } from '@loopdog/core';
 
 /**
  * Stack auto-detection (task 0025): score every registered adapter's detect()
@@ -58,7 +58,7 @@ export function chooseAdapter(
   if (config.adapter && config.adapter !== 'auto') {
     return {
       adapter: config.adapter,
-      evidence: ['explicit override in looper.yml'],
+      evidence: ['explicit override in loopdog.yml'],
       detection: matches,
     };
   }

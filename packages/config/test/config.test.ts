@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtemp, mkdir, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { isCronDue, loadConfig, validateCron } from '@looper/config';
+import { isCronDue, loadConfig, validateCron } from '@loopdog/config';
 
 const ROOT_YML = `
 version: 1
@@ -27,7 +27,7 @@ mode: act
 let dirs: string[] = [];
 
 async function tree(files: Record<string, string>): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'looper-config-'));
+  const dir = await mkdtemp(join(tmpdir(), 'loopdog-config-'));
   dirs.push(dir);
   for (const [path, content] of Object.entries(files)) {
     const full = join(dir, path);
@@ -45,17 +45,17 @@ afterEach(async () => {
 describe('config discovery + validation (0006)', () => {
   it('validates and resolves a good tree, merging root defaults', async () => {
     const dir = await tree({
-      '.looper/looper.yml': ROOT_YML,
-      '.looper/loops/implement/loop.yml': IMPLEMENT_YML,
-      '.looper/loops/implement/prompt.md': 'You are the implementation work cell.',
-      '.looper/loops/groom/loop.yml': `
+      '.loopdog/loopdog.yml': ROOT_YML,
+      '.loopdog/loops/implement/loop.yml': IMPLEMENT_YML,
+      '.loopdog/loops/implement/prompt.md': 'You are the implementation work cell.',
+      '.loopdog/loops/groom/loop.yml': `
 name: groom
 trigger: { github_event: issues, action: [opened] }
 transition: { from: needs-grooming, to: ready-for-agent }
 expects: plan-update
 gates: { require_dor: false }
 `,
-      '.looper/loops/groom/prompt.md': 'You are the grooming work cell.',
+      '.loopdog/loops/groom/prompt.md': 'You are the grooming work cell.',
     });
     const result = await loadConfig(dir);
     expect(result.errors).toEqual([]);
@@ -81,19 +81,19 @@ gates: { require_dor: false }
 
   it('rejects events/actions outside the canonical matrix', async () => {
     const dir = await tree({
-      '.looper/looper.yml': ROOT_YML,
-      '.looper/loops/bad/loop.yml': `
+      '.loopdog/loopdog.yml': ROOT_YML,
+      '.loopdog/loops/bad/loop.yml': `
 name: bad
 trigger: { github_event: label, action: [labeled] }
 transition: { from: new, to: needs-grooming }
 `,
-      '.looper/loops/bad/prompt.md': 'x',
-      '.looper/loops/worse/loop.yml': `
+      '.loopdog/loops/bad/prompt.md': 'x',
+      '.loopdog/loops/worse/loop.yml': `
 name: worse
 trigger: { github_event: push }
 transition: { from: new, to: needs-grooming }
 `,
-      '.looper/loops/worse/prompt.md': 'x',
+      '.loopdog/loops/worse/prompt.md': 'x',
     });
     const result = await loadConfig(dir);
     expect(result.ok).toBe(false);
@@ -104,13 +104,13 @@ transition: { from: new, to: needs-grooming }
 
   it('rejects an illegal transition with the table reason', async () => {
     const dir = await tree({
-      '.looper/looper.yml': ROOT_YML,
-      '.looper/loops/jump/loop.yml': `
+      '.loopdog/loopdog.yml': ROOT_YML,
+      '.loopdog/loops/jump/loop.yml': `
 name: jump
 trigger: { github_event: issues, action: [opened] }
 transition: { from: new, to: merged }
 `,
-      '.looper/loops/jump/prompt.md': 'x',
+      '.loopdog/loops/jump/prompt.md': 'x',
     });
     const result = await loadConfig(dir);
     expect(result.ok).toBe(false);
@@ -120,8 +120,8 @@ transition: { from: new, to: merged }
 
   it('accepts custom states/edges via declares (custom loops, 0011)', async () => {
     const dir = await tree({
-      '.looper/looper.yml': ROOT_YML,
-      '.looper/loops/security/loop.yml': `
+      '.loopdog/loopdog.yml': ROOT_YML,
+      '.loopdog/loops/security/loop.yml': `
 name: security
 trigger: { github_event: pull_request, action: [opened] }
 transition: { from: in-review, to: security-review }
@@ -129,7 +129,7 @@ declares:
   states: [security-review]
   edges: [{ from: in-review, to: security-review, by: security }]
 `,
-      '.looper/loops/security/prompt.md': 'x',
+      '.loopdog/loops/security/prompt.md': 'x',
     });
     const result = await loadConfig(dir);
     expect(result.errors).toEqual([]);
@@ -138,8 +138,8 @@ declares:
 
   it('requires prompt.md, folder-name match, unique names, one trigger kind', async () => {
     const dir = await tree({
-      '.looper/looper.yml': ROOT_YML,
-      '.looper/loops/a/loop.yml': `
+      '.loopdog/loopdog.yml': ROOT_YML,
+      '.loopdog/loops/a/loop.yml': `
 name: not-a
 trigger: { github_event: issues, action: [opened], cron: daily }
 transition: { from: new, to: needs-grooming }
@@ -151,8 +151,8 @@ transition: { from: new, to: needs-grooming }
     expect(messages).toContain('exactly one trigger kind');
     // name/prompt checks only run on schema-valid loops — fix trigger, recheck
     const dir2 = await tree({
-      '.looper/looper.yml': ROOT_YML,
-      '.looper/loops/a/loop.yml': `
+      '.loopdog/loopdog.yml': ROOT_YML,
+      '.loopdog/loops/a/loop.yml': `
 name: not-a
 trigger: { github_event: issues, action: [opened] }
 transition: { from: new, to: needs-grooming }
@@ -166,25 +166,25 @@ transition: { from: new, to: needs-grooming }
 
   it('rejects unsupported cron expressions with guidance', async () => {
     const dir = await tree({
-      '.looper/looper.yml': ROOT_YML,
-      '.looper/loops/dep/loop.yml': `
+      '.loopdog/loopdog.yml': ROOT_YML,
+      '.loopdog/loops/dep/loop.yml': `
 name: dep
 trigger: { cron: "1-5 * * * *" }
 transition: { from: scheduled, to: in-review }
 expects: pull-request
 `,
-      '.looper/loops/dep/prompt.md': 'x',
+      '.loopdog/loops/dep/prompt.md': 'x',
     });
     const result = await loadConfig(dir);
     expect(result.ok).toBe(false);
     expect(result.errors[0]!.path).toBe('trigger.cron');
   });
 
-  it('fails closed on a missing root file with a pointer to looper init', async () => {
+  it('fails closed on a missing root file with a pointer to loopdog init', async () => {
     const dir = await tree({});
     const result = await loadConfig(dir);
     expect(result.ok).toBe(false);
-    expect(result.errors[0]!.message).toContain('looper init');
+    expect(result.errors[0]!.message).toContain('loopdog init');
   });
 });
 

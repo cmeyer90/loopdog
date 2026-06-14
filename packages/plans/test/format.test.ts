@@ -15,12 +15,12 @@ import {
   serializePlan,
   setHeaderField,
   setStatus,
-} from '@looper/plans';
+} from '@loopdog/plans';
 
 const FIXTURE = `# 0042 Add Rate Limiting
 
 Status: ready
-Branch: looper/implement/7
+Branch: loopdog/implement/7
 Issue: #7
 
 ## Goal
@@ -29,10 +29,10 @@ Limit the API.
 
 ## Acceptance Criteria
 
-<!-- looper:acceptance-criteria -->
+<!-- loopdog:acceptance-criteria -->
 - [ ] limits at 100 req/min (test: rl.test.ts)
 - [ ] clear error message (manual)
-<!-- /looper:acceptance-criteria -->
+<!-- /loopdog:acceptance-criteria -->
 
 ## Implementation Checklist
 
@@ -124,6 +124,6 @@ describe('plan format (0015)', () => {
 
   it('refuses a newer format_version with guidance', () => {
     expect(() => assertSupportedFormatVersion(FORMAT_VERSION)).not.toThrow();
-    expect(() => assertSupportedFormatVersion(FORMAT_VERSION + 1)).toThrow(/upgrade looper/);
+    expect(() => assertSupportedFormatVersion(FORMAT_VERSION + 1)).toThrow(/upgrade loopdog/);
   });
 });

@@ -1,10 +1,10 @@
 /**
  * Label namespace + default state set (task 0011). Labels ARE the state
- * machine; everything looper writes lives under the `looper:` namespace so it
+ * machine; everything loopdog writes lives under the `loopdog:` namespace so it
  * never collides with the adopter's own labels.
  */
 
-export const STATE_LABEL_PREFIX = 'looper:state/';
+export const STATE_LABEL_PREFIX = 'loopdog:state/';
 
 /** Default lifecycle states. */
 export const DEFAULT_STATES = [
@@ -27,35 +27,35 @@ export const DEPLOY_STATES = ['deploying', 'deploy-failed', 'rolled-back'] as co
 
 /** Terminal/holding off-ramps — any state may route here (always legal). */
 export const OFF_RAMP_LABELS = [
-  'looper:blocked',
-  'looper:needs-human',
-  'looper:stuck',
-  'looper:abandoned',
+  'loopdog:blocked',
+  'loopdog:needs-human',
+  'loopdog:stuck',
+  'loopdog:abandoned',
 ] as const;
 
 /** Operational labels (holds/marks that never replace the lifecycle state). */
 export const OPERATIONAL_LABELS = [
   /** Kill switch (M12 · 0050): present on repo item or used as repo-wide marker. */
-  'looper:stop',
+  'loopdog:stop',
   /** Authorization hold + release (M17 · 0080). */
-  'looper:needs-approval',
-  'looper:approved',
+  'loopdog:needs-approval',
+  'loopdog:approved',
   /** Budget/quota/kill-switch hold that preserves the lifecycle state (M12). */
-  'looper:parked',
+  'loopdog:parked',
   /** Exhausted-failure hold (M19 · 0091). */
-  'looper:quarantine',
+  'loopdog:quarantine',
 ] as const;
 
 /** Claim/lease/lock marker prefixes (task 0013). */
-export const CLAIM_LABEL_PREFIX = 'looper:claimed-by/';
-export const LEASE_LABEL_PREFIX = 'looper:lease/';
-export const LOCK_LABEL_PREFIX = 'looper:lock/';
+export const CLAIM_LABEL_PREFIX = 'loopdog:claimed-by/';
+export const LEASE_LABEL_PREFIX = 'loopdog:lease/';
+export const LOCK_LABEL_PREFIX = 'loopdog:lock/';
 
 /** Quarantine hold for a poisoned item (M19 · 0091). */
-export const QUARANTINE_LABEL = 'looper:quarantine';
+export const QUARANTINE_LABEL = 'loopdog:quarantine';
 
-/** Circuit-breaker pause, per loop (M19 · 0090): `looper:paused/<loop>`. */
-export const PAUSED_LABEL_PREFIX = 'looper:paused/';
+/** Circuit-breaker pause, per loop (M19 · 0090): `loopdog:paused/<loop>`. */
+export const PAUSED_LABEL_PREFIX = 'loopdog:paused/';
 
 export function pausedLabel(loop: string): string {
   return `${PAUSED_LABEL_PREFIX}${loop}`;
@@ -77,5 +77,5 @@ export function isOffRamp(label: string): boolean {
   return (OFF_RAMP_LABELS as readonly string[]).includes(label);
 }
 
-/** Off-ramp targets accepted as a transition `to` (the `looper:` prefix stripped). */
-export const OFF_RAMP_STATES = OFF_RAMP_LABELS.map((l) => l.slice('looper:'.length));
+/** Off-ramp targets accepted as a transition `to` (the `loopdog:` prefix stripped). */
+export const OFF_RAMP_STATES = OFF_RAMP_LABELS.map((l) => l.slice('loopdog:'.length));

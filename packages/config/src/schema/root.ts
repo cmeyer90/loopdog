@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-/** Schema for the root `.looper/looper.yml` (task 0006) — global defaults. */
+/** Schema for the root `.loopdog/loopdog.yml` (task 0006) — global defaults. */
 
 const budgetCeiling = z.object({
   max_dispatches: z.number().int().min(0).default(0), // 0 = unlimited
@@ -12,7 +12,7 @@ export const authorizationSchema = z.object({
   allow: z.array(z.string()).default([]),
   deny: z.array(z.string()).default([]),
   on_unauthorized: z.enum(['park', 'ignore', 'comment']).default('park'),
-  approval_label: z.string().default('looper:approved'),
+  approval_label: z.string().default('loopdog:approved'),
   allowed_bots: z.array(z.string()).default([]),
   /** WHAT (0081): event selectors this loop will act on (beyond its trigger). */
   trigger_sources: z.array(z.string()).optional(),
@@ -75,7 +75,7 @@ export const rootConfigSchema = z.object({
       self_hosted: z
         .object({
           agent: z.enum(['claude', 'codex']).default('claude'),
-          api_key_secret: z.string().default('LOOPER_MODEL_API_KEY'),
+          api_key_secret: z.string().default('LOOPDOG_MODEL_API_KEY'),
         })
         .default({}),
     })
@@ -84,11 +84,11 @@ export const rootConfigSchema = z.object({
     .union([
       z.string().transform((path) => ({ path, format_version: 1 })),
       z.object({
-        path: z.string().default('.looper/plans'),
+        path: z.string().default('.loopdog/plans'),
         format_version: z.number().int().min(1).default(1),
       }),
     ])
-    .default({ path: '.looper/plans', format_version: 1 }),
+    .default({ path: '.loopdog/plans', format_version: 1 }),
   sweep: z
     .object({
       interval: z.string().default('*/5 * * * *'),
@@ -112,8 +112,8 @@ export const rootConfigSchema = z.object({
     .default({}),
   kill_switch: z
     .object({
-      variable: z.string().default('LOOPER_KILL'),
-      label: z.string().default('looper:stop'),
+      variable: z.string().default('LOOPDOG_KILL'),
+      label: z.string().default('loopdog:stop'),
     })
     .default({}),
   quota: z

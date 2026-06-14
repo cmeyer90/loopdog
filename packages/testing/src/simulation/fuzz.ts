@@ -1,4 +1,4 @@
-import type { ControllerOptions } from '@looper/runtime';
+import type { ControllerOptions } from '@loopdog/runtime';
 import type { FakeGitHub } from '../fake-github/fake-github.js';
 import { VirtualClock } from './clock.js';
 import { Sim, SimViolation, type Action } from './sim.js';

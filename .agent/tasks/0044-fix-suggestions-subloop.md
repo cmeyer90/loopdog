@@ -45,10 +45,10 @@ re-entry into 0041/0042/0043 (which re-evaluate the new commit). No new package.
 
 ### Technical detail
 
-**Package(s):** the loop ships in `@looper/runtime` as `templates/loops/fix/`
-assets (scaffolded by `looper init`). The fix-brief composition is a pure helper in
-`@looper/runtime` (pipeline); the verdict/finding inputs are the `IntentDiff` /
-`CriterionVerdict` types from `@looper/core` (0043). Dispatch + correlation reuse
+**Package(s):** the loop ships in `@loopdog/runtime` as `templates/loops/fix/`
+assets (scaffolded by `loopdog init`). The fix-brief composition is a pure helper in
+`@loopdog/runtime` (pipeline); the verdict/finding inputs are the `IntentDiff` /
+`CriterionVerdict` types from `@loopdog/core` (0043). Dispatch + correlation reuse
 `Backend.dispatch` / 0073. No new package, no new port.
 
 **`loop.yml`:**
@@ -72,12 +72,12 @@ a self-review.
 `templates/loops/fix/prompt.md`): the input is the persisted split verdict from
 0043 — the `unmet`/`uncertain` `CriterionVerdict[]` (id + text + evidence) plus any
 `severity: blocker` review findings (0042's verdict block). The brief instructs the
-agent to, on the **existing PR head branch** `looper/<loop>/<issue>-<run_id>`
+agent to, on the **existing PR head branch** `loopdog/<loop>/<issue>-<run_id>`
 (amend the PR, do not open a new one): address *each* listed criterion/finding,
 keep the change scoped to those (respect the implement loop's blast-radius limits),
 re-run tests locally, and push to the same branch. `test:`-tagged criteria that
 failed in CI are included as "make these acceptance tests pass" — the agent fixes
-the code, never edits the CI gate (rung 2 is the check looper cannot edit). The new
+the code, never edits the CI gate (rung 2 is the check loopdog cannot edit). The new
 dispatch gets a fresh `run_id`; the PR is the same.
 
 **Revalidate cycle (who advances what):**
@@ -160,18 +160,18 @@ evidence (so a human inherits full context). The counter resets when the PR reac
 - [x] Implement fix-brief composition from 0043's persisted `IntentDiff` (unmet/uncertain + blocker findings + evidence); CI-only fallback path.
 - [x] Implement the fix-cycle counter + `resilience.max_fix_attempts` check (M19) → escalate to `needs-human` on exhaustion with a still-unmet summary.
 - [x] Wire the label flip back to `in-review` and confirm the sweep (0076) re-arms review; assert idempotent dispatch per (item, SHA, cycle).
-- [x] Register `fix` in the built-in loop assets and `looper init` scaffold.
+- [x] Register `fix` in the built-in loop assets and `loopdog init` scaffold.
 - [x] Add the golden scenario test + fixtures (full cycle + escalation).
 
 ## Test Plan
 
 Tests run via the repo's `vitest` runner; behavioral tests use the M18 fakes
-(in-memory GitHub + fake/replay backends from `@looper/testing`) — no real quota,
+(in-memory GitHub + fake/replay backends from `@loopdog/testing`) — no real quota,
 deterministic, offline.
 
 ```bash
 # from repo root, run the runtime package suite
-pnpm -F @looper/runtime test
+pnpm -F @loopdog/runtime test
 # scenario: split verdict (1 unmet) → fix brief lists that criterion+evidence →
 #   dispatch to implementer on same branch → fix commit → CI re-runs → re-review →
 #   all met → advances toward verified.
@@ -207,7 +207,7 @@ pnpm -F @looper/runtime test
   blast-radius limits; out-of-scope churn is a review finding next cycle.
 - **Editing the gate, not the code** — an agent "fixes" a `test:` failure by
   weakening the test. Defense: the brief forbids touching CI/tests-as-gate (rung 2
-  is the check looper cannot edit), and a CODEOWNERS-protected test path catches it.
+  is the check loopdog cannot edit), and a CODEOWNERS-protected test path catches it.
 - Rollback: the loop is data — disabling `fix` (remove the asset / `enabled: false`)
   reverts to a human acting on `changes-requested`, with no code change and no loss
   of the persisted verdict.

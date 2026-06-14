@@ -5,8 +5,8 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Give looper a repeatable, automated release process: semver-versioned
-`@looper/*` packages, a generated changelog, and a tag-driven pipeline that
+Give loopdog a repeatable, automated release process: semver-versioned
+`@loopdog/*` packages, a generated changelog, and a tag-driven pipeline that
 publishes the CLI (and the reusable workflows/templates adopters consume) as
 verifiable artifacts — so the tool ships to the standard it enforces.
 
@@ -17,7 +17,7 @@ The milestone's Guiding Decisions require "semver from day one" and a release
 process that exists even pre-1.0. It builds on the workspace skeleton (0001), the
 green/reproducible CI (0003), and the branch-protection + CODEOWNERS gate (0004)
 — release is the publish stage layered on top of a trustworthy CI. The stack is
-an npm-workspaces monorepo of `@looper/*` packages per
+an npm-workspaces monorepo of `@loopdog/*` packages per
 [`docs/codebase.md`](../../docs/codebase.md) "Packages"; V1 targets semver
 `1.0.0` per [architecture](../../docs/architecture.md) "V1 scope", so the
 machinery must carry pre-1.0 (`0.x`) builds today and graduate to `1.0.0`
@@ -36,8 +36,8 @@ unchanged.
 ### Technical detail
 
 **Lands in:** repo root tooling (`.changeset/`, `.github/workflows/release.yml`,
-root `package.json` scripts) plus the publishable surface in `@looper/cli` (the
-`looper` binary) and the `templates/` adopters scaffold. No `@looper/*` runtime
+root `package.json` scripts) plus the publishable surface in `@loopdog/cli` (the
+`loopdog` binary) and the `templates/` adopters scaffold. No `@loopdog/*` runtime
 code changes — this is build/release plumbing.
 
 **Versioning — Changesets.** Adopt [`@changesets/cli`](https://github.com/changesets/changesets):
@@ -48,16 +48,16 @@ bumps), the "loops are data" repo (changesets are reviewable artifacts in VCS,
 consistent with everything-as-artifact), and needs no external service.
 
 - Config `.changeset/config.json`: `access: public`, `baseBranch: main`,
-  `changelog: ["@changesets/changelog-github", { repo: "<org>/looper" }]`.
-- **Internal-only packages are never published.** `@looper/testing` is dev-only
-  (`private: true`); `@looper/core/config/github/plans/backends/adapters/runtime`
+  `changelog: ["@changesets/changelog-github", { repo: "<org>/loopdog" }]`.
+- **Internal-only packages are never published.** `@loopdog/testing` is dev-only
+  (`private: true`); `@loopdog/core/config/github/plans/backends/adapters/runtime`
   are libraries the CLI bundles. Decide per package whether to publish the
-  library or bundle it into `@looper/cli`'s `dist` (see Decisions). The default
-  recommendation: publish **only `@looper/cli`** in V1 (single consumer-facing
+  library or bundle it into `@loopdog/cli`'s `dist` (see Decisions). The default
+  recommendation: publish **only `@loopdog/cli`** in V1 (single consumer-facing
   artifact), `private: true` or `linked` on the rest, so the published surface
   stays one package; revisit if a package is consumed standalone.
 - Linked/fixed versioning: keep all published packages on **one synchronized
-  version line** (`linked` or `fixed` in changesets) so `looper --version` is the
+  version line** (`linked` or `fixed` in changesets) so `loopdog --version` is the
   release version users cite in issues.
 
 **Release pipeline — two-stage, tag-driven.** `.github/workflows/release.yml`:
@@ -78,13 +78,13 @@ consistent with everything-as-artifact), and needs no external service.
 - **Auth:** the publish job needs an `NPM_TOKEN` repo secret (npm automation
   token) — the **only** external credential here; document it in
   `CONTRIBUTING`/`SECURITY` and scope it to publish. The `GITHUB_TOKEN` covers
-  the tag/Release/PR (consistent with looper's identity model — controller acts
-  as `GITHUB_TOKEN`, no looper App). Note this `NPM_TOKEN` is a maintainer
+  the tag/Release/PR (consistent with loopdog's identity model — controller acts
+  as `GITHUB_TOKEN`, no loopdog App). Note this `NPM_TOKEN` is a maintainer
   release credential, unrelated to the keyless adopter path.
 - **Templates/workflows distribution:** the reusable workflow callers and
   `templates/` assets adopters reference must be versioned too. Pin the published
-  `looper init`-scaffolded workflow to a release tag (or `@v0`/`@v1` major-moving
-  ref), so an adopter's pinned looper version is reproducible. Record the ref
+  `loopdog init`-scaffolded workflow to a release tag (or `@v0`/`@v1` major-moving
+  ref), so an adopter's pinned loopdog version is reproducible. Record the ref
   convention in Decisions.
 - **`0.x` today:** seed all packages at `0.1.0`; pre-1.0 semver (minor = breaking
   is allowed) until M15 graduates to `1.0.0` by a single `major` changeset — no
@@ -116,16 +116,16 @@ via changesets `pre enter`.
 - [x] On push to `main` with pending changesets, a "Version Packages" PR is
       opened/updated that bumps versions and regenerates `CHANGELOG.md`.
       (Wired in `release.yml`; `changeset version` dry-verified locally.)
-- [x] Merging the version PR publishes `@looper/cli` (the only public package)
+- [x] Merging the version PR publishes `@loopdog/cli` (the only public package)
       to npm and cuts a matching GitHub Release with notes + git tag. (Wired;
       needs the operator-held `NPM_TOKEN` secret for the live path.)
 - [x] Published artifacts carry npm **provenance** (`NPM_CONFIG_PROVENANCE` +
       `id-token: write` on the job).
-- [x] `@looper/testing` and all non-public packages are never published
+- [x] `@loopdog/testing` and all non-public packages are never published
       (`private: true` everywhere but cli; unit-tested in `scripts/test/`).
 - [x] Publishing is gated behind the same lint + test + build that gates a PR
       (0003); an unverified tree cannot publish.
-- [x] `looper --version` reports the released semver (reads the package
+- [x] `loopdog --version` reports the released semver (reads the package
       version); all packages share one fixed version line.
 - [x] A documented manual fallback exists (CONTRIBUTING + AGENTS.md), and
       re-running a partially-failed publish is idempotent (`changeset publish`
@@ -134,17 +134,17 @@ via changesets `pre enter`.
 ## Implementation Checklist
 
 - [x] Add `@changesets/cli` + `@changesets/changelog-github`; init
-      `.changeset/config.json` (fixed `@looper/*` line, public access, main).
+      `.changeset/config.json` (fixed `@loopdog/*` line, public access, main).
 - [x] Mark non-published packages `private: true` (all 8 libraries + testing);
-      publishable surface = only `@looper/cli`, bundled via tsup `prepack`.
-- [x] Seed all packages at `0.1.0`; `looper --version` reads the package version.
+      publishable surface = only `@loopdog/cli`, bundled via tsup `prepack`.
+- [x] Seed all packages at `0.1.0`; `loopdog --version` reads the package version.
 - [x] Add `.github/workflows/release.yml`: single changesets/action job that
       opens the version PR or publishes, after re-running lint+test+build, with
       `id-token: write` + `contents: write` + provenance.
 - [x] Add the `NPM_TOKEN` secret requirement to docs (SECURITY "Maintainer
       credentials" + CONTRIBUTING).
 - [x] Version the reusable workflows/`templates/` and document the pinning ref
-      (see Decisions: tag-pinned `@vX.Y.Z` refs emitted by `looper init`).
+      (see Decisions: tag-pinned `@vX.Y.Z` refs emitted by `loopdog init`).
 - [x] Document the release runbook + manual fallback in AGENTS.md/CONTRIBUTING.
 
 ## Test Plan
@@ -166,30 +166,30 @@ npx changeset publish --dry-run    # confirm only public packages would publish
 
 - 2026-06-09: `npx changeset version --help` — CLI installed and runnable.
 - 2026-06-09: `npm pack --dry-run` in `packages/cli` — prepack ran tsup; tarball
-  = 5 files (bundled main/index + chunk, package.json; @looper/* inlined), no
+  = 5 files (bundled main/index + chunk, package.json; @loopdog/* inlined), no
   private package contents leaked as deps; LICENSE added to the package after.
 - 2026-06-09: governance unit tests green (only cli public; fixed version line;
-  no @looper/* in cli dependencies).
+  no @loopdog/* in cli dependencies).
 
 ## Decisions
 
-- Published surface: **only `@looper/cli`**, with the `@looper/*` libraries
-  bundled in by tsup at `prepack` (`noExternal: /^@looper\//`). The libraries'
+- Published surface: **only `@loopdog/cli`**, with the `@loopdog/*` libraries
+  bundled in by tsup at `prepack` (`noExternal: /^@loopdog\//`). The libraries'
   third-party runtime deps are therefore real `dependencies` of the cli package
-  (kept external by the bundler). `@looper/*` appear only as devDependencies of
+  (kept external by the bundler). `@loopdog/*` appear only as devDependencies of
   cli — enforced by a unit test.
-- Versioning: changesets **fixed** group `[["@looper/*"]]` (one version line;
+- Versioning: changesets **fixed** group `[["@loopdog/*"]]` (one version line;
   private packages version but never tag/publish).
 - Templates/workflow pinning: scaffolded workflow callers reference this repo's
-  reusable workflows at the release tag (`cmeyer90/looper/.github/workflows/...@vX.Y.Z`)
-  matching the installed CLI version; `looper init` writes the pin (M02 · 0007).
+  reusable workflows at the release tag (`cmeyer90/loopdog/.github/workflows/...@vX.Y.Z`)
+  matching the installed CLI version; `loopdog init` writes the pin (M02 · 0007).
 - Provenance: `NPM_CONFIG_PROVENANCE=true` env + `id-token: write`;
   `GITHUB_TOKEN` covers the version PR/tag/Release; `NPM_TOKEN` is the only
   external credential (publish-scoped; documented in SECURITY).
 
 ## Risks / Rollback
 
-- **Accidental publish of a private/dev package** (e.g. `@looper/testing` leaking
+- **Accidental publish of a private/dev package** (e.g. `@loopdog/testing` leaking
   fakes) — mitigated by `private: true` + a `--dry-run` assertion in CI before
   the real publish. Rollback: `npm deprecate`/unpublish within the window.
 - **`NPM_TOKEN` compromise** — scope it to publish-only, store as a repo secret,
@@ -206,7 +206,7 @@ npx changeset publish --dry-run    # confirm only public packages would publish
 Changesets-driven two-stage release: contributors drop changesets; pushes to
 main open/update a "Version Packages" PR (the human gate, CODEOWNERS-protected
 paths); merging re-verifies lint+test+build and publishes the bundled
-`@looper/cli` to npm with provenance, tags, and cuts the GitHub Release.
+`@loopdog/cli` to npm with provenance, tags, and cuts the GitHub Release.
 Everything else is private-by-construction with tests enforcing it. Pre-1.0
 semver today; `1.0.0` is one major changeset away with no pipeline change.
 Live publish requires the operator-held `NPM_TOKEN`.

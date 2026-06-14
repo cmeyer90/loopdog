@@ -1,13 +1,13 @@
 import type { Command } from 'commander';
 import { mkdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { loadConfig } from '@looper/config';
-import { DEFAULT_TRANSITION_TABLE, validateLoopTransition } from '@looper/core';
-import { resolveArtifact, createFsPromptSource, checkCompatibility } from '@looper/runtime';
+import { loadConfig } from '@loopdog/config';
+import { DEFAULT_TRANSITION_TABLE, validateLoopTransition } from '@loopdog/core';
+import { resolveArtifact, createFsPromptSource, checkCompatibility } from '@loopdog/runtime';
 import { findTemplatesDir } from '../assets.js';
 
 /**
- * `looper loops list|show|new` (tasks 0068/0078): what loops exist, what each
+ * `loopdog loops list|show|new` (tasks 0068/0078): what loops exist, what each
  * runs, how it's prompted, what its steps are — and authoring a new loop via
  * a short questionnaire ("loops are data": a folder, never core code).
  */
@@ -103,7 +103,7 @@ export function registerLoops(program: Command): void {
       if (artifact) {
         console.log(`\n## prompt (${artifact.source})\n`);
         console.log(artifact.body.split('\n').slice(0, 20).join('\n'));
-        console.log(`\n(see the full brief: looper prompts show ${loop.name})`);
+        console.log(`\n(see the full brief: loopdog prompts show ${loop.name})`);
       }
       void checkCompatibility;
     });
@@ -170,13 +170,13 @@ export function registerLoops(program: Command): void {
         const declares = edge.legal
           ? ''
           : [
-              `# this loop declares its custom states/edges (validated by looper):`,
+              `# this loop declares its custom states/edges (validated by loopdog):`,
               `declares:`,
               `  states: [${[from, to].filter((s) => !DEFAULT_TRANSITION_TABLE.states.includes(s)).join(', ')}]`,
               `  edges: [{ from: ${from}, to: ${to}, by: ${name} }]`,
             ].join('\n') + '\n';
 
-        const dir = join(opts.path, '.looper', 'loops', name);
+        const dir = join(opts.path, '.loopdog', 'loops', name);
         await mkdir(dir, { recursive: true });
         const trigger = cron
           ? `trigger:\n  cron: "${cron}"`
@@ -191,14 +191,14 @@ export function registerLoops(program: Command): void {
             ...(opts.backend ? [`backend: ${opts.backend}`] : []),
             `gates: { require_dor: false, require_ci: true, tier: default }`,
             `# mode inherits the root default (dry-run) until you promote:`,
-            `#   looper promote ${name} --to act`,
+            `#   loopdog promote ${name} --to act`,
             declares,
           ].join('\n') + '\n',
         );
         await writeFile(
           join(dir, 'prompt.md'),
           `# ${name}\n\nDescribe exactly what this loop's work cell must do.\n` +
-            `The output contract (branch + looper-run trailer) is appended automatically.\n`,
+            `The output contract (branch + loopdog-run trailer) is appended automatically.\n`,
         );
 
         const result = await loadConfig(opts.path);
@@ -209,7 +209,7 @@ export function registerLoops(program: Command): void {
           return;
         }
         console.log(`✓ created ${dir}/{loop.yml,prompt.md} — edit prompt.md next.`);
-        console.log(`  try it: looper run ${name} --dry-run`);
+        console.log(`  try it: loopdog run ${name} --dry-run`);
       },
     );
 }
@@ -217,7 +217,7 @@ export function registerLoops(program: Command): void {
 async function mustLoad(path: string) {
   const result = await loadConfig(path);
   if (!result.ok || !result.config) {
-    console.error('config invalid — run `looper config validate`');
+    console.error('config invalid — run `loopdog config validate`');
     process.exitCode = 1;
     return null;
   }

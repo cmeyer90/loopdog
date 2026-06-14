@@ -5,14 +5,14 @@ import { promisify } from 'node:util';
 const execFileAsync = promisify(execFile);
 
 /**
- * `looper connect <provider>` (task 0010): guided subscription onboarding via
+ * `loopdog connect <provider>` (task 0010): guided subscription onboarding via
  * the provider's VALIDATED surface. Claude = manual routine/API-trigger import
- * (the 0093 decision: looper never creates routines/tokens programmatically);
+ * (the 0093 decision: loopdog never creates routines/tokens programmatically);
  * Codex = the provider's GitHub App. No model API keys on this path.
  */
 
-export const CLAUDE_FIRE_URL_SECRET = 'LOOPER_CLAUDE_FIRE_URL';
-export const CLAUDE_FIRE_TOKEN_SECRET = 'LOOPER_CLAUDE_FIRE_TOKEN';
+export const CLAUDE_FIRE_URL_SECRET = 'LOOPDOG_CLAUDE_FIRE_URL';
+export const CLAUDE_FIRE_TOKEN_SECRET = 'LOOPDOG_CLAUDE_FIRE_TOKEN';
 
 export function registerConnect(program: Command): void {
   const connect = program
@@ -36,8 +36,8 @@ export function registerConnect(program: Command): void {
           if (stdout.includes(CLAUDE_FIRE_URL_SECRET)) {
             console.log(
               `✓ already connected (${CLAUDE_FIRE_URL_SECRET} secret present).\n` +
-                '  Live re-verification: fire a test run with `looper run groom --issue <n>`.\n' +
-                '  To rotate the token: regenerate in Claude, then `looper connect claude --rotate`.',
+                '  Live re-verification: fire a test run with `loopdog run groom --issue <n>`.\n' +
+                '  To rotate the token: regenerate in Claude, then `loopdog connect claude --rotate`.',
             );
             return;
           }
@@ -52,7 +52,7 @@ export function registerConnect(program: Command): void {
           '  1. In Claude (web): Claude Code → Routines → create a routine.',
           '     - Repository: select THIS repo (authorize Anthropic’s GitHub App if asked).',
           '     - Cloud environment: pick/create one. Project env vars + setup scripts',
-          '       for the sandbox are configured THERE, in Claude — looper never',
+          '       for the sandbox are configured THERE, in Claude — loopdog never',
           '       forwards Actions secrets at /fire time.',
           '     - Allow the routine to create branches / open PRs.',
           '  2. Add an **API trigger** to the routine. Claude shows a per-routine',
@@ -65,7 +65,7 @@ export function registerConnect(program: Command): void {
           'Note: Zero-Data-Retention orgs cannot use Claude cloud routines, and',
           'tests needing live secrets/network may not run in provider sandboxes —',
           'those cases use the self-hosted backend instead:',
-          '  looper connect default self-hosted',
+          '  loopdog connect default self-hosted',
           '',
         ].join('\n'),
       );
@@ -88,7 +88,7 @@ export function registerConnect(program: Command): void {
       await ghSecretSet(CLAUDE_FIRE_TOKEN_SECRET, String(fireToken), repoArgs);
       console.log(
         `✓ stored ${CLAUDE_FIRE_URL_SECRET} + ${CLAUDE_FIRE_TOKEN_SECRET} as Actions secrets.\n` +
-          '  Rotation: regenerate the token in Claude, then re-run `looper connect claude`.',
+          '  Rotation: regenerate the token in Claude, then re-run `loopdog connect claude`.',
       );
     });
 
@@ -108,7 +108,7 @@ export function registerConnect(program: Command): void {
           '  3. The GitHub identity that posts @codex mentions must be CONNECTED to',
           '     that ChatGPT account — Codex resolves quota through the commenter.',
           '     For automation, that usually means a fine-grained PAT for your own',
-          '     account stored as the LOOPER_CODEX_MENTION_TOKEN secret (a bot',
+          '     account stored as the LOOPDOG_CODEX_MENTION_TOKEN secret (a bot',
           '     identity with no linked ChatGPT account cannot trigger Codex).',
           '',
           'Verify: comment `@codex review` on any PR — Codex should react.',
@@ -121,7 +121,7 @@ export function registerConnect(program: Command): void {
 export function registerConnectDefault(connect: Command): void {
   connect
     .command('default')
-    .description('set the default execution backend in .looper/looper.yml')
+    .description('set the default execution backend in .loopdog/loopdog.yml')
     .argument('<backend>', 'claude | codex | self-hosted')
     .option('--path <dir>', 'repo root', '.')
     .action(async (backend: string, opts: { path: string }) => {
@@ -132,12 +132,12 @@ export function registerConnectDefault(connect: Command): void {
       }
       const { readFile, writeFile } = await import('node:fs/promises');
       const { join } = await import('node:path');
-      const file = join(opts.path, '.looper', 'looper.yml');
+      const file = join(opts.path, '.loopdog', 'loopdog.yml');
       let text: string;
       try {
         text = await readFile(file, 'utf8');
       } catch {
-        console.error(`no ${file} — run \`looper init\` first`);
+        console.error(`no ${file} — run \`loopdog init\` first`);
         process.exitCode = 2;
         return;
       }
@@ -145,10 +145,10 @@ export function registerConnectDefault(connect: Command): void {
         ? text.replace(/^(\s*)default:\s*\S+(.*)$/m, `$1default: ${backend}$2`)
         : text.replace(/^backends:\s*$/m, `backends:\n  default: ${backend}`);
       await writeFile(file, next);
-      const { loadConfig } = await import('@looper/config');
+      const { loadConfig } = await import('@loopdog/config');
       const result = await loadConfig(opts.path);
       if (!result.ok) {
-        console.error('edit left the config invalid — review .looper/looper.yml');
+        console.error('edit left the config invalid — review .loopdog/loopdog.yml');
         process.exitCode = 1;
         return;
       }

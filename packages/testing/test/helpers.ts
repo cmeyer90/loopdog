@@ -2,10 +2,10 @@ import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import type { ControllerOptions } from '@looper/runtime';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore, VirtualClock } from '@looper/testing';
-import type { ScenarioWorld } from '@looper/testing';
-import { renderCriteriaBlock } from '@looper/core';
+import type { ControllerOptions } from '@loopdog/runtime';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore, VirtualClock } from '@loopdog/testing';
+import type { ScenarioWorld } from '@loopdog/testing';
+import { renderCriteriaBlock } from '@loopdog/core';
 // test-only import of the CLI scaffolder (boundary check scans src/ only).
 import { buildScaffoldPlan } from '../../cli/src/commands/init.js';
 
@@ -17,9 +17,9 @@ export async function cleanup(): Promise<void> {
   dirs.length = 0;
 }
 
-/** Scaffold a real looper repo on disk (act mode) from the shipped templates. */
+/** Scaffold a real loopdog repo on disk (act mode) from the shipped templates. */
 export async function scaffoldActRepo(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'looper-m18-'));
+  const dir = await mkdtemp(join(tmpdir(), 'loopdog-m18-'));
   dirs.push(dir);
   const templatesDir = fileURLToPath(new URL('../../../templates/', import.meta.url));
   const plan = await buildScaffoldPlan(templatesDir, dir);
@@ -28,7 +28,7 @@ export async function scaffoldActRepo(): Promise<string> {
     await mkdir(join(target, '..'), { recursive: true });
     await writeFile(target, await readFile(file.source, 'utf8'));
   }
-  const rootYml = join(dir, '.looper', 'looper.yml');
+  const rootYml = join(dir, '.loopdog', 'loopdog.yml');
   await writeFile(rootYml, (await readFile(rootYml, 'utf8')).replace('mode: dry-run', 'mode: act'));
   return dir;
 }
@@ -64,5 +64,5 @@ export const GROOMED_BODY = [
   renderCriteriaBlock([
     { text: 'rate limit enforced', validation: { kind: 'test', ref: 'rl.test.ts' }, met: false },
   ]),
-  '<!-- looper:scope -->api/ratelimit only<!-- /looper:scope -->',
+  '<!-- loopdog:scope -->api/ratelimit only<!-- /loopdog:scope -->',
 ].join('\n');

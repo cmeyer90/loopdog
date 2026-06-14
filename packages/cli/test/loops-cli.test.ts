@@ -3,7 +3,7 @@ import { mkdtemp, readFile, rm } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { buildProgram } from '@loopdog/cli';
-import { loadConfig } from '@looper/config';
+import { loadConfig } from '@loopdog/config';
 
 let dirs: string[] = [];
 let out: string[] = [];
@@ -26,20 +26,20 @@ afterEach(async () => {
 });
 
 async function scaffold(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'looper-cli-m16-'));
+  const dir = await mkdtemp(join(tmpdir(), 'loopdog-cli-m16-'));
   dirs.push(dir);
   const program = buildProgram();
-  await program.parseAsync(['node', 'looper', 'init', '--yes', '--path', dir]);
+  await program.parseAsync(['node', 'loopdog', 'init', '--yes', '--path', dir]);
   return dir;
 }
 
 async function cli(...args: string[]): Promise<void> {
   const program = buildProgram();
   program.exitOverride();
-  await program.parseAsync(['node', 'looper', ...args]);
+  await program.parseAsync(['node', 'loopdog', ...args]);
 }
 
-describe('looper loops (0068)', () => {
+describe('loopdog loops (0068)', () => {
   it('lists every built-in loop with transition/trigger/mode/tier', async () => {
     const dir = await scaffold();
     out = [];
@@ -81,7 +81,7 @@ describe('looper loops (0068)', () => {
   });
 });
 
-describe('looper loops new (0078)', () => {
+describe('loopdog loops new (0078)', () => {
   it('scaffolds a loop folder, validates, and is usable', async () => {
     const dir = await scaffold();
     out = [];
@@ -102,7 +102,7 @@ describe('looper loops new (0078)', () => {
       'pull-request',
     );
     expect(out.join('\n')).toContain('created');
-    const loopYml = await readFile(join(dir, '.looper/loops/dep-update/loop.yml'), 'utf8');
+    const loopYml = await readFile(join(dir, '.loopdog/loops/dep-update/loop.yml'), 'utf8');
     expect(loopYml).toContain('name: dep-update');
     expect(loopYml).toContain('cron: "weekly"');
     const result = await loadConfig(dir);
@@ -129,22 +129,22 @@ describe('looper loops new (0078)', () => {
       '--expects',
       'comment',
     );
-    const loopYml = await readFile(join(dir, '.looper/loops/audit/loop.yml'), 'utf8');
+    const loopYml = await readFile(join(dir, '.loopdog/loops/audit/loop.yml'), 'utf8');
     expect(loopYml).toContain('declares:');
     expect((await loadConfig(dir)).ok).toBe(true);
   });
 });
 
-describe('looper status control verbs (0071)', () => {
+describe('loopdog status control verbs (0071)', () => {
   it('pause sets a loop to dry-run; resume returns it to act; tier:core merge is refused', async () => {
     const dir = await scaffold();
     await cli('promote', 'implement', '--to', 'act', '--path', dir);
     await cli('pause', 'implement', '--path', dir);
-    expect(await readFile(join(dir, '.looper/loops/implement/loop.yml'), 'utf8')).toContain(
+    expect(await readFile(join(dir, '.loopdog/loops/implement/loop.yml'), 'utf8')).toContain(
       'mode: dry-run',
     );
     await cli('resume', 'implement', '--path', dir);
-    expect(await readFile(join(dir, '.looper/loops/implement/loop.yml'), 'utf8')).toContain(
+    expect(await readFile(join(dir, '.loopdog/loops/implement/loop.yml'), 'utf8')).toContain(
       'mode: act',
     );
 
@@ -157,7 +157,7 @@ describe('looper status control verbs (0071)', () => {
   it('budget set updates global ceilings and keeps the config valid', async () => {
     const dir = await scaffold();
     await cli('budget', 'set', '--path', dir, '--daily', '50', '--usd', '25');
-    const root = await readFile(join(dir, '.looper/looper.yml'), 'utf8');
+    const root = await readFile(join(dir, '.loopdog/loopdog.yml'), 'utf8');
     expect(root).toContain('max_dispatches: 50');
     expect(root).toContain('max_usd: 25');
     expect((await loadConfig(dir)).ok).toBe(true);

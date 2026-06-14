@@ -6,13 +6,13 @@ import {
   chooseAdapter,
   createAdapterRegistry,
   detectStack,
-} from '@looper/adapters';
+} from '@loopdog/adapters';
 import {
   ADAPTER_FIXTURES,
   fakeCommandRunner,
   repoFsFixture,
   runAdapterConformance,
-} from '@looper/testing';
+} from '@loopdog/testing';
 
 describe('node adapter (0027)', () => {
   runAdapterConformance(() => new NodeAdapter(), {
@@ -119,7 +119,7 @@ describe('stack auto-detection (0025)', () => {
     const matches = await detectStack(ADAPTER_FIXTURES['node-npm'], createAdapterRegistry());
     const choice = chooseAdapter(matches, { adapter: 'python' });
     expect(choice.adapter).toBe('python');
-    expect(choice.evidence).toEqual(['explicit override in looper.yml']);
+    expect(choice.evidence).toEqual(['explicit override in loopdog.yml']);
     expect(choice.detection[0]!.adapter).toBe('node'); // advisory ranking intact
   });
 

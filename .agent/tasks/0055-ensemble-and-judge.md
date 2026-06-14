@@ -30,8 +30,8 @@ schema (0043), and per-provider outcome telemetry (0053). The judge is a
 specialized application of the cross-model review cell (0042). Ensemble is the
 `tier:core` companion to single-attempt routing (0056) and the cost/quality knobs
 (0057), and is governed by the cross-provider review policy (0054). It lands as a
-built-in loop asset plus a pure decision helper in `@looper/runtime` /
-`@looper/core`.
+built-in loop asset plus a pure decision helper in `@loopdog/runtime` /
+`@loopdog/core`.
 
 ## Scope
 
@@ -51,12 +51,12 @@ built-in loop asset plus a pure decision helper in `@looper/runtime` /
 
 ### Technical detail
 
-**Package(s):** the loop ships in `@looper/runtime` as
+**Package(s):** the loop ships in `@loopdog/runtime` as
 `templates/loops/implement-ensemble/` assets (`loop.yml`, `prompt.md`, and a
-`judge.prompt.md` brief), scaffolded by `looper init`. The pure selection logic
-(`decideEnsemble`) lands in `@looper/core` (`core/src/ensemble/select.ts`,
+`judge.prompt.md` brief), scaffolded by `loopdog init`. The pure selection logic
+(`decideEnsemble`) lands in `@loopdog/core` (`core/src/ensemble/select.ts`,
 exported from `core/index.ts`). Parallel dispatch, correlation, and cleanup wire
-through `@looper/runtime` (pipeline) reusing the `Backend` port (M05 · 0019),
+through `@loopdog/runtime` (pipeline) reusing the `Backend` port (M05 · 0019),
 correlation (0073), and tier derivation (0045). No new package; no model API
 calls on the controller — every implement and judge step is a dispatched
 provider-cloud task.
@@ -65,14 +65,14 @@ provider-cloud task.
 (0012): ensemble runs only when **all** hold, else fall back to single-attempt
 implement (0009/0056):
 - `deriveTier(...) === 'core'` (0045), and
-- `looper.yml` `ensemble.enabled: true` (or the loop's `gates.ensemble: true`), and
+- `loopdog.yml` `ensemble.enabled: true` (or the loop's `gates.ensemble: true`), and
 - the budget/quota gate (0050/0075) has headroom for **N parallel attempts +1
   judge** (ensemble is counted as N+1 dispatches against quota — never starts a
   second attempt it cannot pay for), and
 - at least **two** distinct providers expose `capabilities.can_implement` and one
   more (possibly reused after attempts complete) exposes `can_review`.
 
-**Config (`looper.yml`, schema in `@looper/config` · 0006):**
+**Config (`loopdog.yml`, schema in `@loopdog/config` · 0006):**
 
 ```yaml
 ensemble:
@@ -99,8 +99,8 @@ outcome: { selected: run_e7a.1, pr: 142, loser_pr: 143, decision: winner }
 ```
 
 **Parallel dispatch + correlation.** The pipeline dispatches both attempt briefs
-in the same invocation, each branch `looper/implement-ensemble/<issue>-<run_id>`
-with its own `looper-run:` trailer (0073). Because provider work is async,
+in the same invocation, each branch `loopdog/implement-ensemble/<issue>-<run_id>`
+with its own `loopdog-run:` trailer (0073). Because provider work is async,
 dispatch returns immediately; both PRs are ingested by **later** invocations
 (event or sweep). The runner does not block — ensemble state is "awaiting
 attempts" until both correlated PRs (or lease timeouts) are in. The cron sweep
@@ -118,7 +118,7 @@ PR(s) satisfy it (with file/line evidence), then emit a fenced verdict block the
 runtime parses:
 
 ```yaml
-# looper:ensemble-verdict
+# loopdog:ensemble-verdict
 verdict: winner | tie | reject-both
 winner: 142            # PR number, required when verdict=winner
 rationale:
@@ -127,7 +127,7 @@ findings: [ { pr: 143, severity: blocker, note } ]
 ```
 
 The judge must defer to CI on `test:` criteria (it confirms presence/coverage, not
-pass — CI is rung 2, the gate looper cannot edit) exactly as the reviewer does in
+pass — CI is rung 2, the gate loopdog cannot edit) exactly as the reviewer does in
 0042.
 
 **Deterministic selection — `decideEnsemble(verdict, attempts, config)` (core, IO-free):**
@@ -154,7 +154,7 @@ ladder unchanged** — it still gets the cross-provider review (0042/0043), DoD 
 (0014), and graduated auto-merge (0045); ensemble does **not** bypass any rung
 (the judge picks the *better candidate*, it does not approve merge). The winner's
 label moves to the review loop's `from` state (`in-review`); the loser PR(s) are
-**closed with a comment** (`looper-ensemble-loser: <parent_run_id>`) and their
+**closed with a comment** (`loopdog-ensemble-loser: <parent_run_id>`) and their
 branches deleted, idempotently (guard on already-closed). The parent run records
 `selected`/`loser_pr`/`decision`; telemetry (0053) logs a per-provider win/loss so
 outcome-driven routing (0056) learns which provider wins `tier:core` tickets.
@@ -193,7 +193,7 @@ never leave one PR merged and one orphaned.
       a distinct correlated branch/PR (0073), without blocking the invocation.
 - [x] The judge provider is distinct from **both** implementers; if none distinct
       is available the run escalates (no self-judging).
-- [x] The judge emits a parseable `looper:ensemble-verdict` block; the controller
+- [x] The judge emits a parseable `loopdog:ensemble-verdict` block; the controller
       (not the model) selects the winner deterministically.
 - [x] `verdict: winner` advances the winning PR into the normal review ladder and
       closes the loser PR(s) + branches idempotently; the winner still passes every
@@ -210,31 +210,31 @@ never leave one PR merged and one orphaned.
 
 ## Implementation Checklist
 
-- [x] Add the `ensemble` config block + validation to `@looper/config` (0006).
+- [x] Add the `ensemble` config block + validation to `@loopdog/config` (0006).
 - [x] Implement `decideEnsemble` + the `EnsembleAction` types and verdict parser in
-      `@looper/core` (`core/src/ensemble/`); fail-closed on tie/reject/parse error.
+      `@loopdog/core` (`core/src/ensemble/`); fail-closed on tie/reject/parse error.
 - [x] Author `templates/loops/implement-ensemble/{loop.yml,prompt.md,judge.prompt.md}`
-      in `@looper/runtime` (parallel implement brief + comparative judge brief +
-      `looper:ensemble-verdict` contract).
+      in `@loopdog/runtime` (parallel implement brief + comparative judge brief +
+      `loopdog:ensemble-verdict` contract).
 - [x] Wire the ensemble pre-flight gate (tier + enabled + provider count + budget)
       into the runner pipeline (0012), falling back to single-attempt otherwise.
 - [x] Implement parallel dispatch + dual correlation + the "await both then judge"
       state via `Backend.dispatch` and correlation (0073).
 - [x] Implement winner advance into the review ladder + idempotent loser
       close/branch-delete + parent run-record/telemetry write (0053).
-- [x] Register the loop in the built-in assets and `looper init` scaffold.
+- [x] Register the loop in the built-in assets and `loopdog init` scaffold.
 - [x] Add golden scenario + simulation tests (below).
 
 ## Test Plan
 
 Tests run via the repo's `vitest` runner; behavioral tests use the M18 fakes
-(in-memory GitHub + fake/replay backends from `@looper/testing`) — no real quota,
+(in-memory GitHub + fake/replay backends from `@loopdog/testing`) — no real quota,
 deterministic, offline.
 
 ```bash
 # from repo root, run the affected suites
-pnpm -F @looper/core test
-pnpm -F @looper/runtime test
+pnpm -F @loopdog/core test
+pnpm -F @loopdog/runtime test
 # unit (core): decideEnsemble → winner advances + losers closed; tie→escalate;
 #   reject-both→escalate/retry-once; malformed/missing-PR verdict→fail closed.
 # scenario (fakes): tier:core + enabled + 2 providers → 2 PRs → distinct judge →
@@ -261,8 +261,8 @@ pnpm -F @looper/runtime test
 - Mechanics: dispatch the same brief to two distinct providers with suffixed
   run ids (distinct branches), persist both handles; when BOTH attempts have
   PRs, dispatch the judge (comment expectation) instructed to compare against
-  the criteria and emit `looper-winner: #N`; the winner advances + is
-  labeled, the loser is labeled looper:abandoned with an explanatory comment;
+  the criteria and emit `loopdog-winner: #N`; the winner advances + is
+  labeled, the loser is labeled loopdog:abandoned with an explanatory comment;
   all markers resolve. No winner verdict → fail-closed escalation.
 - Judge backend precedence: ensemble.judge → review_backend → the opposite
   provider.

@@ -7,8 +7,8 @@ import type {
   DetectResult,
   ProjectAdapter,
   RepoFs,
-} from '@looper/core';
-import { skippedResult } from '@looper/core';
+} from '@loopdog/core';
+import { skippedResult } from '@loopdog/core';
 
 /**
  * The Node adapter (task 0027): detects via package.json (+ lockfile → package

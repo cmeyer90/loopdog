@@ -1,14 +1,14 @@
 import type { Command } from 'commander';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
-import { loadConfig } from '@looper/config';
-import { DEFAULT_STATES, OFF_RAMP_LABELS, QUARANTINE_LABEL, stateLabel } from '@looper/core';
-import { aggregateOutcomes, TelemetryBranchStore } from '@looper/runtime';
-import { OctokitGitHub, parseRepoFromRemoteUrl, resolveGitHubAuth } from '@looper/github';
-import type { GitHubPort, RepoRef, RunRecord } from '@looper/core';
+import { loadConfig } from '@loopdog/config';
+import { DEFAULT_STATES, OFF_RAMP_LABELS, QUARANTINE_LABEL, stateLabel } from '@loopdog/core';
+import { aggregateOutcomes, TelemetryBranchStore } from '@loopdog/runtime';
+import { OctokitGitHub, parseRepoFromRemoteUrl, resolveGitHubAuth } from '@loopdog/github';
+import type { GitHubPort, RepoRef, RunRecord } from '@loopdog/core';
 
 /**
- * `looper status` + control verbs (task 0071): the fleet overview (pipeline
+ * `loopdog status` + control verbs (task 0071): the fleet overview (pipeline
  * counts, attention list, 24h throughput, quota burn) and the explicit
  * control surface (pause/resume, stop/resume-all kill switch, budget set,
  * loops set). Control actions honor the same safety gates as automated runs
@@ -32,7 +32,7 @@ export function registerStatus(program: Command): void {
       const attention: Record<string, number> = {};
       // Off-ramps + the resilience holds (quarantine, approval) — anything
       // waiting on a human (M19 · 0091).
-      for (const label of [...OFF_RAMP_LABELS, QUARANTINE_LABEL, 'looper:needs-approval']) {
+      for (const label of [...OFF_RAMP_LABELS, QUARANTINE_LABEL, 'loopdog:needs-approval']) {
         const items = await gh.listIssuesByLabel(repo, label);
         if (items.length) attention[label] = items.length;
       }
@@ -42,7 +42,7 @@ export function registerStatus(program: Command): void {
         (r) => r.outcome.status === 'failed' || r.outcome.status === 'escalated',
       ).length;
       const killSwitch = Boolean(
-        process.env[config.config?.root.kill_switch.variable ?? 'LOOPER_KILL'],
+        process.env[config.config?.root.kill_switch.variable ?? 'LOOPDOG_KILL'],
       );
 
       if (opts.json) {
@@ -84,8 +84,8 @@ export function registerStatus(program: Command): void {
     .option('--repo <owner/name>', 'target repo')
     .action(async (opts: { repo?: string }) => {
       const { repo } = await connect(opts.repo);
-      await setRepoVariable(repo, 'LOOPER_KILL', '1');
-      console.log('■ kill switch ON — all loops halted. Resume with `looper resume-all`.');
+      await setRepoVariable(repo, 'LOOPDOG_KILL', '1');
+      console.log('■ kill switch ON — all loops halted. Resume with `loopdog resume-all`.');
     });
 
   program
@@ -94,7 +94,7 @@ export function registerStatus(program: Command): void {
     .option('--repo <owner/name>', 'target repo')
     .action(async (opts: { repo?: string }) => {
       const { repo } = await connect(opts.repo);
-      await setRepoVariable(repo, 'LOOPER_KILL', '');
+      await setRepoVariable(repo, 'LOOPDOG_KILL', '');
       console.log('▶ kill switch OFF — loops may dispatch again.');
     });
 
@@ -119,21 +119,21 @@ export function registerStatus(program: Command): void {
   program
     .command('approve')
     .argument('<item>', 'issue/PR number to release')
-    .description('release a parked item (apply looper:approved as you, a trusted actor)')
+    .description('release a parked item (apply loopdog:approved as you, a trusted actor)')
     .option('--repo <owner/name>', 'target repo')
     .action(async (item: string, opts: { repo?: string }) => {
       const { gh, repo } = await connect(opts.repo);
       const ref = { ...repo, number: Number(item) };
       const labels = await gh.getItemLabels(ref);
-      if (!labels.includes('looper:needs-approval')) {
+      if (!labels.includes('loopdog:needs-approval')) {
         console.log(`#${item} is not held for approval — nothing to release.`);
         return;
       }
-      await gh.addLabels(ref, ['looper:approved']);
-      await gh.removeLabel(ref, 'looper:needs-approval');
+      await gh.addLabels(ref, ['loopdog:approved']);
+      await gh.removeLabel(ref, 'loopdog:needs-approval');
       const who = await gh.getAuthenticatedActor();
-      await gh.createComment(ref, `✅ looper: released by ${who.login} via \`looper approve\`.`);
-      console.log(`✓ released #${item} (looper:approved applied; hold cleared).`);
+      await gh.createComment(ref, `✅ loopdog: released by ${who.login} via \`loopdog approve\`.`);
+      console.log(`✓ released #${item} (loopdog:approved applied; hold cleared).`);
     });
 
   program
@@ -145,7 +145,7 @@ export function registerStatus(program: Command): void {
       const { gh, repo } = await connect(opts.repo);
       const ref = { ...repo, number: Number(item) };
       const labels = await gh.getItemLabels(ref);
-      if (!labels.includes(QUARANTINE_LABEL) && !labels.includes('looper:needs-human')) {
+      if (!labels.includes(QUARANTINE_LABEL) && !labels.includes('loopdog:needs-human')) {
         console.log(`#${item} is not quarantined/escalated — nothing to retry.`);
         return;
       }
@@ -153,9 +153,9 @@ export function registerStatus(program: Command): void {
       for (const l of labels) {
         if (
           l === QUARANTINE_LABEL ||
-          l === 'looper:needs-human' ||
-          l.startsWith('looper:attempts/') ||
-          l.startsWith('looper:not-before/')
+          l === 'loopdog:needs-human' ||
+          l.startsWith('loopdog:attempts/') ||
+          l.startsWith('loopdog:not-before/')
         ) {
           await gh.removeLabel(ref, l);
         }
@@ -163,7 +163,7 @@ export function registerStatus(program: Command): void {
       const who = await gh.getAuthenticatedActor();
       await gh.createComment(
         ref,
-        `🔄 looper: released from quarantine by ${who.login} via \`looper retry\` — attempts reset.`,
+        `🔄 loopdog: released from quarantine by ${who.login} via \`loopdog retry\` — attempts reset.`,
       );
       console.log(`✓ released #${item} from quarantine (attempt counters cleared).`);
     });
@@ -171,12 +171,12 @@ export function registerStatus(program: Command): void {
   const budget = program.command('budget').description('budget/quota controls');
   budget
     .command('set')
-    .description('set global budget ceilings in looper.yml')
+    .description('set global budget ceilings in loopdog.yml')
     .option('--path <dir>', 'repo root', '.')
     .option('--daily <n>', 'max dispatches per window')
     .option('--usd <n>', 'max usd per window')
     .action(async (opts: { path: string; daily?: string; usd?: string }) => {
-      const file = join(opts.path, '.looper', 'looper.yml');
+      const file = join(opts.path, '.loopdog', 'loopdog.yml');
       let text = await readFile(file, 'utf8');
       if (opts.daily !== undefined) {
         text = upsertYamlScalar(
@@ -191,7 +191,7 @@ export function registerStatus(program: Command): void {
       await writeFile(file, text);
       const result = await loadConfig(opts.path);
       if (!result.ok) {
-        console.error('budget edit left the config invalid — review .looper/looper.yml');
+        console.error('budget edit left the config invalid — review .loopdog/loopdog.yml');
         process.exitCode = 1;
         return;
       }
@@ -205,7 +205,7 @@ async function setLoopMode(
   path: string,
   verb: string,
 ): Promise<void> {
-  const file = join(path, '.looper', 'loops', loopName, 'loop.yml');
+  const file = join(path, '.loopdog', 'loops', loopName, 'loop.yml');
   let text: string;
   try {
     text = await readFile(file, 'utf8');

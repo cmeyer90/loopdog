@@ -1,13 +1,13 @@
 import type { Command } from 'commander';
-import type { RunRecord } from '@looper/core';
-import { aggregateOutcomes } from '@looper/runtime';
-import { OctokitGitHub, resolveGitHubAuth } from '@looper/github';
-import { TelemetryBranchStore } from '@looper/runtime';
+import type { RunRecord } from '@loopdog/core';
+import { aggregateOutcomes } from '@loopdog/runtime';
+import { OctokitGitHub, resolveGitHubAuth } from '@loopdog/github';
+import { TelemetryBranchStore } from '@loopdog/runtime';
 
 /**
- * `looper runs list|show` (task 0069): trace what ran — item, dispatched
+ * `loopdog runs list|show` (task 0069): trace what ran — item, dispatched
  * brief, steps, provider session + PR, cost/quota, outcome. Reads the
- * run-record ledger (the `looper/telemetry` orphan branch); secret-scrubbing
+ * run-record ledger (the `loopdog/telemetry` orphan branch); secret-scrubbing
  * is applied at the store's egress (M07), so records read here are clean.
  */
 export function registerRuns(program: Command): void {
@@ -160,7 +160,7 @@ async function resolveRepo(repoArg: string | undefined): Promise<{ owner: string
     if (!owner || !repo) throw new Error(`--repo must be owner/name, got '${repoArg}'`);
     return { owner, repo };
   }
-  const { parseRepoFromRemoteUrl } = await import('@looper/github');
+  const { parseRepoFromRemoteUrl } = await import('@loopdog/github');
   const { execFile } = await import('node:child_process');
   const { promisify } = await import('node:util');
   const { stdout } = await promisify(execFile)('git', ['remote', 'get-url', 'origin']);

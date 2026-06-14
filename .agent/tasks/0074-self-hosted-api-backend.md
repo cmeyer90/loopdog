@@ -24,8 +24,8 @@ than the provider's cloud — so it is also the only path with a direct model AP
 call (deliberately off the primary path; see the constraint). See
 [architecture](../../docs/architecture.md) "Self-hosted / API backend (secondary)"
 and "Identity & secrets (two planes)" — and [codebase](../../docs/codebase.md):
-this lands in `@looper/backends` (`backends/src/self-hosted/`), implementing the
-`Backend` port in `@looper/core`. Correlation/ingest is the shared primitive
+this lands in `@loopdog/backends` (`backends/src/self-hosted/`), implementing the
+`Backend` port in `@loopdog/core`. Correlation/ingest is the shared primitive
 (0073); the runner that calls it is the transition runner (M03 · 0012); selection
 + the API-key `SecretRef` are resolved upstream (0023). Decision-of-record:
 support both backends, subscription-cloud is the default, this is first-class but
@@ -37,14 +37,14 @@ never the happy path (architecture, 2026-06-08).
 - **Full-capability** metadata (`secret_phase: full`, `network: on`, no provider
   rate cap) so the runner stops routing secret/network gates away.
 - Dispatch as **adopter-side execution**: trigger a dedicated, adopter-owned
-  worker workflow (`looper-self-hosted-worker`) that runs the agent CLI in the
+  worker workflow (`loopdog-self-hosted-worker`) that runs the agent CLI in the
   adopter's runner/container with their API key, branches per the run, and opens a
   PR — versus the provider-cloud async-mention model.
 - Ingest the resulting PR via the shared 0073 correlation (same branch/trailer/
   issue-ref scheme — providers are interchangeable to the ingest path).
 - The runner shape: which agent CLI to invoke (`claude`/`codex exec`), how the
   model API key is read (lazily, from a `SecretRef`) and scrubbed from logs.
-- Onboarding artifact: a `templates/workflows/looper-self-hosted-worker.yml` the
+- Onboarding artifact: a `templates/workflows/loopdog-self-hosted-worker.yml` the
   adopter installs once.
 
 ### Technical detail
@@ -79,13 +79,13 @@ logs it. The controller dispatching the worker still acts as the `GITHUB_TOKEN`
 
 **Dispatch** (`dispatch(brief, context) -> DispatchHandle`): because the work cell
 is adopter-owned, dispatch starts an **adopter-side worker run** rather than
-poking a provider. Concretely: trigger the `looper-self-hosted-worker` workflow via
+poking a provider. Concretely: trigger the `loopdog-self-hosted-worker` workflow via
 the GitHub port (`workflow_dispatch`/`repository_dispatch`) with inputs
 `{ run_id, loop, issue, brief_ref, agent: claude|codex, api_key_secret }`. The
 worker job: checks out the repo, resolves the API-key `SecretRef`, runs the chosen
 agent CLI non-interactively against the composed brief (`claude -p` headless /
-`codex exec`), then **branches `looper/<loop>/<issue>-<run_id>`, includes the
-`looper-run: <run_id>` PR trailer, references `#<issue>`, and opens the PR** — the
+`codex exec`), then **branches `loopdog/<loop>/<issue>-<run_id>`, includes the
+`loopdog-run: <run_id>` PR trailer, references `#<issue>`, and opens the PR** — the
 identical correlation contract every backend produces (0073), so ingest is
 provider-agnostic. The `DispatchHandle` carries the `run_id`, the dispatched
 workflow-run id (the CLI `runs show` session link, 0069), and the expected branch.
@@ -109,10 +109,10 @@ pr}` boundary — so adding/swapping a CLI is a one-module change (no
 model call stay in the worker). Exit-non-zero → reported failure, not a silent
 no-PR.
 
-**Worker template** (`templates/workflows/looper-self-hosted-worker.yml`):
-`workflow_dispatch`-triggered, references `secrets.LOOPER_MODEL_API_KEY`
+**Worker template** (`templates/workflows/loopdog-self-hosted-worker.yml`):
+`workflow_dispatch`-triggered, references `secrets.LOOPDOG_MODEL_API_KEY`
 (adopter-named via config), and is the adopter's one-time install — documented as
-"the escape hatch for ZDR / no-subscription / live-secret tests." `looper init`
+"the escape hatch for ZDR / no-subscription / live-secret tests." `loopdog init`
 scaffolds it only when a self-hosted backend is configured.
 
 **Edge cases**: missing/unresolvable API-key secret → fail pre-flight with a
@@ -141,14 +141,14 @@ rejected with a directive *to this backend* (0020/0023).
 - [x] `dispatch` triggers the adopter-owned worker workflow via the GitHub port
       with the run inputs, resolving the model API key only as a `SecretRef`
       (lazily, inside the worker) and never logging it.
-- [x] The worker produces a PR on branch `looper/<loop>/<issue>-<run_id>` with the
-      `looper-run: <run_id>` trailer and `#<issue>` ref, so `ingest` correlates it
+- [x] The worker produces a PR on branch `loopdog/<loop>/<issue>-<run_id>` with the
+      `loopdog-run: <run_id>` trailer and `#<issue>` ref, so `ingest` correlates it
       via 0073 exactly like the subscription backends; unrelated events → `null`.
 - [x] A gate requiring live secrets / agent-phase network — a mismatch against
       Codex (0021) — passes against this backend (no mismatch flagged).
 - [x] A failed/crashed worker run (non-zero exit or no PR within the lease) is
       reported and escalated via 0073/0076, not stranded.
-- [x] `looper init` scaffolds `looper-self-hosted-worker.yml` only when a
+- [x] `loopdog init` scaffolds `loopdog-self-hosted-worker.yml` only when a
       self-hosted backend is configured; a missing worker workflow is an actionable
       validate/doctor error.
 - [x] `self-hosted` is registered in the backend registry (0023) and selectable
@@ -164,10 +164,10 @@ rejected with a directive *to this backend* (0020/0023).
       lazy `SecretRef` resolution + log scrubbing.
 - [x] Implement `ingest` delegating to the 0073 matcher + the `null` / failure /
       `workflow_run`-failure paths.
-- [x] Add `templates/workflows/looper-self-hosted-worker.yml` + wire `looper init`
+- [x] Add `templates/workflows/loopdog-self-hosted-worker.yml` + wire `loopdog init`
       to scaffold it when configured.
 - [x] Register `self-hosted` in the backend registry; add a fake self-hosted
-      backend + worker simulation to `@looper/testing`.
+      backend + worker simulation to `@loopdog/testing`.
 
 ## Test Plan
 
@@ -197,7 +197,7 @@ model call**.
   mismatches Codex passes here; ingest correlates the worker PR identically
   to the subscription backends.
 - 2026-06-09: worker template authored (`templates/workflows/
-  looper-self-hosted-worker.yml`); `looper init` deliberately skips it
+  loopdog-self-hosted-worker.yml`); `loopdog init` deliberately skips it
   (opt-in escape hatch).
 
 ## Decisions
@@ -211,8 +211,8 @@ model call**.
   drift is a one-place fix.
 - API-key custody: the secret NAME flows through dispatch; the VALUE resolves
   only inside the worker job's env (`secrets[inputs.api_key_secret]`), never
-  in looper code or logs.
-- Worker template is opt-in: init skips it; `looper connect default
+  in loopdog code or logs.
+- Worker template is opt-in: init skips it; `loopdog connect default
   self-hosted` is the path that introduces it (validate/doctor check lands
   with M16).
 

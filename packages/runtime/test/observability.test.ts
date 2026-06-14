@@ -6,9 +6,9 @@ import {
   reviewerFor,
   routeBackend,
   runLoopOnce,
-} from '@looper/runtime';
-import type { PreflightConfig, RunnerDeps } from '@looper/runtime';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@looper/testing';
+} from '@loopdog/runtime';
+import type { PreflightConfig, RunnerDeps } from '@loopdog/runtime';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@loopdog/testing';
 import {
   DEFAULT_TRANSITION_TABLE,
   backoffUntil,
@@ -18,8 +18,8 @@ import {
   quotaGate,
   renderCriteriaBlock,
   stateLabel,
-} from '@looper/core';
-import type { LoopDefinition, RunRecord, TriggerEvent } from '@looper/core';
+} from '@loopdog/core';
+import type { LoopDefinition, RunRecord, TriggerEvent } from '@loopdog/core';
 
 const repo = { owner: 'o', repo: 'r' };
 const ref = { ...repo, number: 1 };
@@ -31,7 +31,7 @@ const GROOMED = [
   renderCriteriaBlock([
     { text: 'works', validation: { kind: 'test', ref: 'a.test.ts' }, met: false },
   ]),
-  '<!-- looper:scope -->bounded<!-- /looper:scope -->',
+  '<!-- loopdog:scope -->bounded<!-- /loopdog:scope -->',
 ].join('\n');
 
 function fakeRecord(partial: Partial<RunRecord>): RunRecord {
@@ -55,7 +55,7 @@ const PREFLIGHT_CONFIG: PreflightConfig = {
     per_loop: { max_dispatches: 0, max_usd: 0 },
     on_exceeded: 'park',
   },
-  kill_switch: { variable: 'LOOPER_KILL', label: 'looper:stop' },
+  kill_switch: { variable: 'LOOPDOG_KILL', label: 'loopdog:stop' },
   quota: { window: 'daily', on_exceeded: 'defer' },
 };
 
@@ -148,14 +148,14 @@ describe('pre-flight wiring (M12) — behavioral', () => {
         backends: new Map([['claude', backend]]),
         repo,
         config: PREFLIGHT_CONFIG,
-        env: { LOOPER_KILL: '1' } as NodeJS.ProcessEnv,
+        env: { LOOPDOG_KILL: '1' } as NodeJS.ProcessEnv,
         now: () => NOW,
       }),
     };
     const out = await runLoopOnce(deps, implementLoop(), repo, CRON);
     expect(out[0]!.outcome.status).toBe('parked');
     expect(backend.dispatched).toEqual([]);
-    expect((await gh.getIssue(ref)).labels).toContain('looper:parked');
+    expect((await gh.getIssue(ref)).labels).toContain('loopdog:parked');
   });
 
   it('quota exhaustion defers with retryAfter; the sweep unparks after it passes', async () => {
@@ -194,7 +194,7 @@ describe('pre-flight wiring (M12) — behavioral', () => {
     const out = await runLoopOnce(deps, loop, repo, CRON);
     expect(out[0]!.outcome.status).toBe('parked');
     expect(backend.dispatched).toEqual([]);
-    const holdComment = (await gh.listComments(ref)).find((c) => c.body.includes('looper:hold'));
+    const holdComment = (await gh.listComments(ref)).find((c) => c.body.includes('loopdog:hold'));
     expect(holdComment!.body).toContain('2026-06-09T13:00:00.000Z');
   });
 });
@@ -319,10 +319,10 @@ describe('ensemble & judge (0055)', () => {
     expect(judgeMention!.instructions).toContain('Pick exactly ONE winner');
 
     // tick 3: the judge verdict picks the claude attempt's PR
-    const prs = await gh.listPullRequestsByHeadPrefix(repo, 'looper/implement/');
+    const prs = await gh.listPullRequestsByHeadPrefix(repo, 'loopdog/implement/');
     expect(prs).toHaveLength(2);
     const winner = prs[0]!;
-    codex.resultVerdict = `looper-winner: #${winner.ref.number}`;
+    codex.resultVerdict = `loopdog-winner: #${winner.ref.number}`;
     const final = await runLoopOnce(deps, loop, repo, CRON);
     expect(final[0]!.outcome).toMatchObject({
       status: 'done',
@@ -332,7 +332,7 @@ describe('ensemble & judge (0055)', () => {
     expect((await gh.getIssue(ref)).labels).toContain(stateLabel('in-review'));
     expect((await gh.getPullRequest(winner.ref)).labels).toContain(stateLabel('in-review'));
     const loser = prs[1]!;
-    expect((await gh.getPullRequest(loser.ref)).labels).toContain('looper:abandoned');
+    expect((await gh.getPullRequest(loser.ref)).labels).toContain('loopdog:abandoned');
     expect(
       (await gh.listComments(loser.ref)).some((c) => c.body.includes('ensemble judge selected')),
     ).toBe(true);

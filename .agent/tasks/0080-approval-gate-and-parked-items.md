@@ -7,7 +7,7 @@ Branch: claude/laughing-johnson-8a7944
 
 When a trigger isn't authorized (0079), **acknowledge but park** the item for a
 trusted human's approval instead of spending — and provide the release path
-(`looper:approved` label / `looper approve`), audited.
+(`loopdog:approved` label / `loopdog approve`), audited.
 
 ## Background
 
@@ -19,23 +19,23 @@ the subscription or reaching an acting work cell. See
 ## Scope
 
 - Implement `on_unauthorized` behavior: `park` (default) | `ignore` | `comment`.
-- The `looper:needs-approval` hold marker + the gate that blocks dispatch while held.
+- The `loopdog:needs-approval` hold marker + the gate that blocks dispatch while held.
 - The release path: a trusted human applies `approval_label` or runs
-  `looper approve <item>`; the item resumes its intended transition.
+  `loopdog approve <item>`; the item resumes its intended transition.
 - Audit every park/approve/deny (who/when/what) in the run record + a comment.
 
 ### Technical detail
 
-- `looper:needs-approval` is an **operational hold label** (not a lifecycle state):
+- `loopdog:needs-approval` is an **operational hold label** (not a lifecycle state):
   the item stays in its natural state but the pre-flight gate refuses to claim/
   dispatch while the hold is present and `approval_label` is absent.
 - On an untrusted trigger (per 0079) with `on_unauthorized: park`: add the hold,
   post a short comment ("held for maintainer approval — a collaborator can apply
-  `looper:approved` or run `looper approve`"), and **do not dispatch**.
+  `loopdog:approved` or run `loopdog approve`"), and **do not dispatch**.
 - **Release authorization:** applying `approval_label` only counts when done by a
   *trusted* actor (re-check via 0079 on the item-label event:
   `issues.labeled` or `pull_request.labeled`) — otherwise an untrusted user could
-  self-approve. `looper approve <item>` (CLI) does the same, authed via the
+  self-approve. `loopdog approve <item>` (CLI) does the same, authed via the
   operator's identity.
 - On release: remove the hold, record the approver, and let the item proceed on the
   next event/sweep.
@@ -48,19 +48,19 @@ the subscription or reaching an acting work cell. See
 
 ## Acceptance Criteria
 
-- [x] An unauthorized trigger with `park` adds `looper:needs-approval`, comments,
+- [x] An unauthorized trigger with `park` adds `loopdog:needs-approval`, comments,
       and dispatches nothing.
-- [x] Applying `approval_label` **by a trusted actor** (or `looper approve`) releases
+- [x] Applying `approval_label` **by a trusted actor** (or `loopdog approve`) releases
       the item; an untrusted self-approval does **not** release it.
 - [x] `ignore` and `comment` modes behave as specified.
 - [x] Every park/approve/deny is recorded (approver + timestamp) and surfaced to the
-      CLI (`looper status` shows parked items).
+      CLI (`loopdog status` shows parked items).
 
 ## Implementation Checklist
 
 - [x] Implement the hold marker + the pre-flight block while held.
 - [x] Implement `on_unauthorized` modes (park/ignore/comment).
-- [x] Implement trusted-only release via label + `looper approve` CLI.
+- [x] Implement trusted-only release via label + `loopdog approve` CLI.
 - [x] Audit + surface parked items in the CLI.
 
 ## Test Plan
@@ -83,18 +83,18 @@ the subscription or reaching an acting work cell. See
 
 ## Decisions
 
-- `looper:needs-approval` is an operational hold (the park verdict's
+- `loopdog:needs-approval` is an operational hold (the park verdict's
   holdLabel); the runner's standardChecks treat it as blocking UNLESS
-  `looper:approved` is also present. `on_unauthorized`: park (default, holds
+  `loopdog:approved` is also present. `on_unauthorized`: park (default, holds
   + comments), ignore (skip silently), comment (advisory). 
 - Trusted-only release: the controller intercepts `issues.labeled`/
   `pull_request.labeled` adding the approval label and, if the labeler is
   untrusted (0079), STRIPS it + comments — so an untrusted self-approval can't
-  release. `looper approve <item>` (CLI) applies the label as the operator's
+  release. `loopdog approve <item>` (CLI) applies the label as the operator's
   (trusted) identity. The approval-label event itself re-runs the loops, so
   release and dispatch happen in one step.
 - Audit: park/approve are recorded as run records (status: parked) + sticky
-  `looper:hold` marker comments + the release comment; `looper status` lists
+  `loopdog:hold` marker comments + the release comment; `loopdog status` lists
   off-ramp/hold items.
 
 ## Risks / Rollback
@@ -106,5 +106,5 @@ presence.
 ## Final Summary
 
 Untrusted triggers park (needs-approval) with no spend; only a trusted
-human's `looper:approved` (or `looper approve`) releases them — untrusted
+human's `loopdog:approved` (or `loopdog approve`) releases them — untrusted
 self-approval is revoked. Every park/release is audited and CLI-visible.
