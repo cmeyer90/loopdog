@@ -2,10 +2,17 @@ import type { Command } from 'commander';
 import { readFile, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadConfig } from '@loopdog/config';
-import { DEFAULT_STATES, OFF_RAMP_LABELS, QUARANTINE_LABEL, stateLabel } from '@loopdog/core';
-import { aggregateOutcomes, TelemetryBranchStore } from '@loopdog/runtime';
+import {
+  DEFAULT_STATES,
+  DEPLOY_STATES,
+  OFF_RAMP_LABELS,
+  QUARANTINE_LABEL,
+  stateLabel,
+} from '@loopdog/core';
+import { TelemetryBranchStore } from '@loopdog/runtime';
 import { OctokitGitHub, parseRepoFromRemoteUrl, resolveGitHubAuth } from '@loopdog/github';
 import type { GitHubPort, RepoRef, RunRecord } from '@loopdog/core';
+import { buildLoopRows, renderStatus, type StatusView } from '../render/status-view.js';
 
 /**
  * `loopdog status` + control verbs (task 0071): the fleet overview (pipeline
@@ -23,37 +30,84 @@ export function registerStatus(program: Command): void {
     .option('--json', 'machine output', false)
     .action(async (opts: { repo?: string; path: string; json: boolean }) => {
       const config = await loadConfig(opts.path);
-      const { gh, repo } = await connect(opts.repo);
-      const counts: Record<string, number> = {};
-      for (const state of DEFAULT_STATES) {
-        const items = await gh.listIssuesByLabel(repo, stateLabel(state));
-        if (items.length) counts[state] = items.length;
+      if (!config.ok || !config.config) {
+        console.error('config invalid — run `loopdog config validate`');
+        process.exitCode = 1;
+        return;
       }
-      const attention: Record<string, number> = {};
-      // Off-ramps + the resilience holds (quarantine, approval) — anything
-      // waiting on a human (M19 · 0091).
-      for (const label of [...OFF_RAMP_LABELS, QUARANTINE_LABEL, 'loopdog:needs-approval']) {
-        const items = await gh.listIssuesByLabel(repo, label);
-        if (items.length) attention[label] = items.length;
+      const loops = config.config.loops;
+      const backendDefault = config.config.root.backends.default;
+      const killSwitch = Boolean(process.env[config.config.root.kill_switch.variable]);
+
+      // Resolve the repo + fetch all live counts. Every GitHub read fans out in
+      // ONE parallel batch (was ~17 serial round-trips, the old slowness), and
+      // any auth/network failure degrades to a config-only render so `status` is
+      // never a hard failure for a read-only overview.
+      let live = true;
+      let liveError: string | undefined;
+      let repoLabel = '(unknown repo)';
+      let stateCounts: Record<string, number> = {};
+      let attentionCounts: Record<string, number> = {};
+      let records: RunRecord[] = [];
+      try {
+        const repo = await resolveRepo(opts.repo);
+        repoLabel = `${repo.owner}/${repo.repo}`;
+        const auth = await resolveGitHubAuth();
+        const gh = new OctokitGitHub({ token: auth.token });
+        const states = [...DEFAULT_STATES, ...DEPLOY_STATES];
+        // Off-ramps + the resilience holds (quarantine, approval) — anything
+        // waiting on a human (M19 · 0091).
+        const attentionLabels = [...OFF_RAMP_LABELS, QUARANTINE_LABEL, 'loopdog:needs-approval'];
+        const [statePairs, attentionPairs, recs] = await Promise.all([
+          Promise.all(
+            states.map(
+              async (s) => [s, (await gh.listIssuesByLabel(repo, stateLabel(s))).length] as const,
+            ),
+          ),
+          Promise.all(
+            attentionLabels.map(
+              async (l) => [l, (await gh.listIssuesByLabel(repo, l)).length] as const,
+            ),
+          ),
+          loadRecentRecords(gh, repo, 1),
+        ]);
+        stateCounts = Object.fromEntries(statePairs);
+        attentionCounts = Object.fromEntries(attentionPairs.filter(([, n]) => n > 0));
+        records = recs;
+      } catch (err) {
+        live = false;
+        // Keep the note to one line (git/octokit errors carry multi-line stderr).
+        liveError = (err instanceof Error ? err.message : String(err)).split('\n')[0];
       }
-      const records = await loadRecentRecords(gh, repo, 1);
+
       const done = records.filter((r) => r.outcome.status === 'done').length;
       const failed = records.filter(
         (r) => r.outcome.status === 'failed' || r.outcome.status === 'escalated',
       ).length;
-      const killSwitch = Boolean(
-        process.env[config.config?.root.kill_switch.variable ?? 'LOOPDOG_KILL'],
-      );
+
+      const view: StatusView = {
+        repo: repoLabel,
+        killSwitch,
+        backendDefault,
+        loops: buildLoopRows(loops, stateCounts, live),
+        attention: Object.entries(attentionCounts).map(([label, count]) => ({ label, count })),
+        throughput: { runs24h: records.length, done, failed },
+        live,
+        liveError,
+      };
 
       if (opts.json) {
         console.log(
           JSON.stringify(
             {
-              repo,
+              repo: repoLabel,
               killSwitch,
-              pipeline: counts,
-              attention,
-              throughput: { runs24h: records.length, done, failed },
+              backendDefault,
+              live,
+              pipeline: Object.fromEntries(Object.entries(stateCounts).filter(([, n]) => n > 0)),
+              attention: attentionCounts,
+              loops: view.loops,
+              throughput: view.throughput,
             },
             null,
             2,
@@ -61,19 +115,7 @@ export function registerStatus(program: Command): void {
         );
         return;
       }
-      console.log(
-        `${repo.owner}/${repo.repo}   loops: ${config.config?.loops.length ?? '?'}   ` +
-          `kill-switch: ${killSwitch ? 'ON' : 'OFF'}`,
-      );
-      console.log('\nPIPELINE');
-      for (const [state, n] of Object.entries(counts)) console.log(`  ${state.padEnd(18)} ${n}`);
-      if (Object.keys(attention).length) {
-        console.log('\nATTENTION');
-        for (const [label, n] of Object.entries(attention))
-          console.log(`  ${label.padEnd(22)} ${n}`);
-      }
-      console.log(`\nRecent: ${records.length} runs/24h · ${done} ✓ · ${failed} ✗`);
-      void aggregateOutcomes;
+      console.log(renderStatus(view));
     });
 
   // ---- control verbs ----

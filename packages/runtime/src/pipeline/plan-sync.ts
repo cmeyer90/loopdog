@@ -17,7 +17,7 @@ import { linkedIssue } from './loop-actions.js';
  * (0016). All writes flow through the mode EffectGate. Optional: a runner
  * without a plan store configured simply skips plan upkeep.
  *
- * The plan is always bound to the SOURCE ISSUE, never the PR (task 0097): a
+ * The plan is always bound to the SOURCE ISSUE, never the PR (task 0098): a
  * pull-request item (review, merge) resolves back to the issue it implements so
  * those loops update the one durable plan instead of minting a PR-numbered one.
  */

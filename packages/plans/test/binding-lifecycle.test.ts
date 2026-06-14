@@ -108,7 +108,7 @@ describe('issue <-> plan binding (0016)', () => {
   });
 });
 
-describe('plan-store fragmentation (0097)', () => {
+describe('plan-store fragmentation (0098)', () => {
   it('reuses the existing plan when a racing triage run lost the marker write', async () => {
     const { gh, files, issue } = await setup();
     // Run A binds: writes 0001 and appends the marker onto the live issue body.

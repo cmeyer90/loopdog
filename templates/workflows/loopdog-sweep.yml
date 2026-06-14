@@ -6,10 +6,13 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch: # manual/debug tick
 
+# Must grant at least what the reusable workflow declares — a called workflow
+# requesting more than the caller provides is a startup failure.
 permissions:
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
+  checks: read
 
 jobs:
   loopdog:
@@ -17,3 +20,9 @@ jobs:
     uses: cmeyer90/loopdog/.github/workflows/reusable-sweep.yml@v0
     with:
       loopdog-version: '0' # latest 0.x of @loopdog/cli (tracks the @v0 workflow)
+    # The sweep carries controller->controller handoffs, so it is the path that
+    # actually dispatches most loops — it needs the provider secrets too.
+    secrets:
+      claude_fire_url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
+      claude_fire_token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
+      codex_mention_token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}

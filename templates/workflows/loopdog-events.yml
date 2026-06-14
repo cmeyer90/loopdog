@@ -34,10 +34,13 @@ on:
   label:
     types: [created, edited, deleted]
 
+# Must grant at least what the reusable workflow declares — a called workflow
+# requesting more than the caller provides is a startup failure.
 permissions:
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
+  checks: read
 
 jobs:
   loopdog:
@@ -47,3 +50,10 @@ jobs:
     uses: cmeyer90/loopdog/.github/workflows/reusable-events.yml@v0
     with:
       loopdog-version: '0' # latest 0.x of @loopdog/cli (tracks the @v0 workflow)
+    # Forward the provider secrets the controller needs to dispatch in `act`
+    # mode. Unset secrets pass through as empty — dry-run/suggest loops and the
+    # deterministic triage loop never read them. Stored by `loopdog connect`.
+    secrets:
+      claude_fire_url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
+      claude_fire_token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
+      codex_mention_token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}

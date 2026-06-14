@@ -24,11 +24,16 @@ export function registerConfig(program: Command): void {
       }
       const loops = result.config!.loops;
       console.log(`config OK — ${loops.length} loop(s):`);
-      for (const l of loops) {
-        console.log(
-          `  ${l.name.padEnd(12)} ${l.transition.from} -> ${l.transition.to}  ` +
-            `[${l.mode}${l.expects ? `, ${l.expects} via ${l.backend}` : ', deterministic'}]`,
-        );
+      // Align name + transition columns to content so the [mode] column lines up.
+      const rows = loops.map((l) => ({
+        name: l.name,
+        transition: `${l.transition.from} -> ${l.transition.to}`,
+        tail: `[${l.mode}${l.expects ? `, ${l.expects} via ${l.backend}` : ', deterministic'}]`,
+      }));
+      const nameW = Math.max(...rows.map((r) => r.name.length));
+      const transW = Math.max(...rows.map((r) => r.transition.length));
+      for (const r of rows) {
+        console.log(`  ${r.name.padEnd(nameW)}  ${r.transition.padEnd(transW)}  ${r.tail}`);
       }
     });
 }

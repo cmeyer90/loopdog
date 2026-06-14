@@ -1,4 +1,4 @@
-# 0097 Plan-store fragmentation: one durable plan per issue
+# 0098 Plan-store fragmentation: one durable plan per issue
 
 Status: implemented  
 Branch: claude/optimistic-shamir-17b43f

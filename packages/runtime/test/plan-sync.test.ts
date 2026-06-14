@@ -100,7 +100,7 @@ function recordFor(loop: string, item: ItemRef): RunRecord {
   };
 }
 
-describe('the plan binds to the source issue, never the PR (0097)', () => {
+describe('the plan binds to the source issue, never the PR (0098)', () => {
   it('a PR transition updates the issue plan; Issue: stays the source, no PR-numbered plan', async () => {
     const { gh, planFiles, deps } = await setup();
     gh.seedIssue({

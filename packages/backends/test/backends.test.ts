@@ -173,6 +173,63 @@ describe('claude backend (0020)', () => {
     });
     await expect(backend.dispatch(brief)).rejects.toThrow(/429.*backing off/);
   });
+
+  it('ingests a comment result posted AS THE USER, never the dispatch marker', async () => {
+    const gh = new FakeGitHub();
+    const backend = new ClaudeBackend({
+      gh,
+      env: {
+        LOOPDOG_CLAUDE_FIRE_URL: 'https://x/fire',
+        LOOPDOG_CLAUDE_FIRE_TOKEN: 't',
+      } as NodeJS.ProcessEnv,
+      fetchImpl: (async () =>
+        new Response(JSON.stringify({ session_id: 's1' }), { status: 200 })) as typeof fetch,
+      now: () => new Date('2026-06-09T12:00:00Z'),
+    });
+    const h = await backend.dispatch({ ...brief, expectation: 'plan-update' });
+
+    // The dispatch marker carries the trailer but no verdict — must NOT match.
+    gh.actor = { login: 'github-actions[bot]', type: 'Bot' };
+    await gh.createComment(item, `🛰️ dispatched\n\n${brief.expectedTrailer}`);
+    expect(await backend.ingest(h)).toEqual({ status: 'pending' });
+
+    // A Claude routine posts its result as the USER (not a bot), ending in the
+    // verdict line — that is the completion signal.
+    gh.actor = { login: 'dana', type: 'User' };
+    await gh.createComment(item, `Groomed.\n\n${brief.expectedTrailer}\n\nloopdog-verdict: ready`);
+    const result = await backend.ingest(h);
+    expect(result.status).toBe('completed');
+  });
+
+  it('ingests a verdict from a formal PR review, not just issue comments', async () => {
+    const gh = new FakeGitHub();
+    const backend = new ClaudeBackend({
+      gh,
+      env: {
+        LOOPDOG_CLAUDE_FIRE_URL: 'https://x/fire',
+        LOOPDOG_CLAUDE_FIRE_TOKEN: 't',
+      } as NodeJS.ProcessEnv,
+      fetchImpl: (async () =>
+        new Response(JSON.stringify({ session_id: 's1' }), { status: 200 })) as typeof fetch,
+      now: () => new Date('2026-06-09T12:00:00Z'),
+    });
+    const h = await backend.dispatch({ ...brief, item, expectation: 'comment' });
+    expect(await backend.ingest(h)).toEqual({ status: 'pending' });
+
+    // A reviewer submits a GitHub PR review (the idiomatic way) rather than an
+    // issue comment — the verdict must still be read.
+    gh.setReviews(item, [
+      {
+        author: { login: 'dana', type: 'User' },
+        state: 'COMMENTED',
+        submittedAt: '2026-06-09T12:05:00Z',
+        body: `Intent-diff complete.\n\n${brief.expectedTrailer}\n\nloopdog-verdict: approve`,
+      },
+    ]);
+    const result = await backend.ingest(h);
+    expect(result.status).toBe('completed');
+    if (result.status === 'completed') expect(result.verdict).toContain('loopdog-verdict: approve');
+  });
 });
 
 describe('codex backend (0021)', () => {
