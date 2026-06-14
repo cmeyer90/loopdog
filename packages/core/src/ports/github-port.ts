@@ -10,9 +10,9 @@ import type {
 } from './types.js';
 
 /**
- * The GitHub port (task 0094): every read/write looper performs against GitHub
- * goes through this interface. Implemented by `@looper/github` (Octokit over
- * `GITHUB_TOKEN`) and by `@looper/testing`'s in-memory fake (0083).
+ * The GitHub port (task 0094): every read/write loopdog performs against GitHub
+ * goes through this interface. Implemented by `@loopdog/github` (Octokit over
+ * `GITHUB_TOKEN`) and by `@loopdog/testing`'s in-memory fake (0083).
  *
  * Composed from small capability interfaces so fakes and partial consumers can
  * implement exactly what they use.
@@ -71,7 +71,7 @@ export interface ChecksPort {
 
 /**
  * Repo file IO over the contents API. Used by the plan store (M04, default
- * branch) and the run-record store (0053, orphan `looper/telemetry` branch).
+ * branch) and the run-record store (0053, orphan `loopdog/telemetry` branch).
  */
 export interface RepoFilesPort {
   /** Ensure a branch exists; `orphan: true` creates it with an empty root commit. */

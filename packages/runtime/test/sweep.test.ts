@@ -1,9 +1,9 @@
 import { describe, expect, it } from 'vitest';
-import { runSweep } from '@looper/runtime';
-import type { RunnerDeps, SweepOptions } from '@looper/runtime';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@looper/testing';
-import { DEFAULT_TRANSITION_TABLE, claimLabel, leaseLabel, stateLabel } from '@looper/core';
-import type { LoopDefinition } from '@looper/core';
+import { runSweep } from '@loopdog/runtime';
+import type { RunnerDeps, SweepOptions } from '@loopdog/runtime';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@loopdog/testing';
+import { DEFAULT_TRANSITION_TABLE, claimLabel, leaseLabel, stateLabel } from '@loopdog/core';
+import type { LoopDefinition } from '@loopdog/core';
 
 const repo = { owner: 'o', repo: 'r' };
 const NOW = new Date('2026-06-09T12:00:00Z');
@@ -15,10 +15,10 @@ const OPTS: SweepOptions = {
 
 const GROOMED = [
   'Body.',
-  '<!-- looper:acceptance-criteria -->',
+  '<!-- loopdog:acceptance-criteria -->',
   '- [ ] works (test: a.test.ts)',
-  '<!-- /looper:acceptance-criteria -->',
-  '<!-- looper:scope -->bounded<!-- /looper:scope -->',
+  '<!-- /loopdog:acceptance-criteria -->',
+  '<!-- loopdog:scope -->bounded<!-- /loopdog:scope -->',
 ].join('\n');
 
 function mergeLoop(): LoopDefinition {
@@ -28,7 +28,7 @@ function mergeLoop(): LoopDefinition {
     transition: { from: 'verified', to: 'merged' },
     backend: 'claude',
     gates: { requireDor: false, requireCi: true, tier: 'core' },
-    promptPath: '.looper/loops/merge/prompt.md',
+    promptPath: '.loopdog/loops/merge/prompt.md',
     mode: 'act',
   };
 }
@@ -84,11 +84,11 @@ describe('cron reconcile sweep (0076)', () => {
   it('skips off-ramps, holds, quarantine, parked, and malformed items with reasons', async () => {
     const { gh, deps } = setup();
     const cases: Array<[number, string[]]> = [
-      [1, [stateLabel('verified'), 'looper:needs-human']],
-      [2, [stateLabel('verified'), 'looper:quarantine']],
-      [3, [stateLabel('verified'), 'looper:stop']],
-      [4, [stateLabel('verified'), 'looper:needs-approval']],
-      [5, [stateLabel('verified'), 'looper:parked']],
+      [1, [stateLabel('verified'), 'loopdog:needs-human']],
+      [2, [stateLabel('verified'), 'loopdog:quarantine']],
+      [3, [stateLabel('verified'), 'loopdog:stop']],
+      [4, [stateLabel('verified'), 'loopdog:needs-approval']],
+      [5, [stateLabel('verified'), 'loopdog:parked']],
       [6, [stateLabel('verified'), stateLabel('merged')]], // malformed: two states
     ];
     for (const [n, labels] of cases) {
@@ -102,7 +102,7 @@ describe('cron reconcile sweep (0076)', () => {
     gh.seedIssue({
       ref: { ...repo, number: 7 },
       body: GROOMED,
-      labels: [stateLabel('verified'), 'looper:needs-approval', 'looper:approved'],
+      labels: [stateLabel('verified'), 'loopdog:needs-approval', 'loopdog:approved'],
     });
     const second = await runSweep(deps, [mergeLoop()], repo, OPTS);
     expect(second.processed.map((p) => p.item)).toEqual([7]);

@@ -5,9 +5,9 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Make looper's own `main` branch trustworthy: require the CI checks (0003) and a
+Make loopdog's own `main` branch trustworthy: require the CI checks (0003) and a
 review to merge, and put a human gate (via `CODEOWNERS`) on the workflow and
-identity paths an autonomous loop must never be able to edit away — so looper is
+identity paths an autonomous loop must never be able to edit away — so loopdog is
 itself built to the verification-ladder standard it enforces on adopters.
 
 ## Background
@@ -15,12 +15,12 @@ itself built to the verification-ladder standard it enforces on adopters.
 Part of
 [Milestone 01](../milestones/milestone-01-project-foundation-and-oss-scaffolding.md)
 (its Definition of Done: "branch protection requires checks + review; CODEOWNERS
-gates looper's own workflow/identity files"). This is rung 2 of the verification
-ladder applied to looper itself — "**CI the agent cannot edit away** — the
+gates loopdog's own workflow/identity files"). This is rung 2 of the verification
+ladder applied to loopdog itself — "**CI the agent cannot edit away** — the
 adopter's required checks + branch protection + CODEOWNERS" (see
 [architecture](../../docs/architecture.md), "The verification ladder"). It builds
 directly on the CI pipeline (0003), which defines the `lint` / `test` / `build`
-check jobs run on every `pull_request`. It is also dogfooding: when looper later
+check jobs run on every `pull_request`. It is also dogfooding: when loopdog later
 dispatches cloud agents against *this* repo, these are the exact rules that keep a
 self-merging lineage from rubber-stamping its own work (architecture, "graduated
 autonomy": keep `tier:core` human-gated via CODEOWNERS forever).
@@ -37,7 +37,7 @@ autonomy": keep `tier:core` human-gated via CODEOWNERS forever).
 
 ### Technical detail
 
-This task touches **no `@looper/*` package** — it is repo-governance config under
+This task touches **no `@loopdog/*` package** — it is repo-governance config under
 `.github/` plus a small idempotent apply script. Keep it out of the published
 packages.
 
@@ -46,17 +46,17 @@ change. Last-match-wins, so order specific rules after the catch-all:
 
 ```
 # Default: any maintainer review satisfies (no forced owner)
-*                                   @looper-org/maintainers
+*                                   @loopdog-org/maintainers
 
 # Identity & gates the agent must not edit away (rung 2 of the ladder)
-/.github/workflows/                 @looper-org/maintainers
-/.github/CODEOWNERS                 @looper-org/maintainers
-/.github/branch-protection.yml      @looper-org/maintainers
-/templates/workflows/              @looper-org/maintainers   # reusable callers looper ships
-/packages/github/src/identity/      @looper-org/maintainers   # GITHUB_TOKEN identity
-/packages/runtime/src/loops-builtin/ @looper-org/maintainers  # built-in loop briefs/gates
-/AGENTS.md                          @looper-org/maintainers
-/.agent/                            @looper-org/maintainers   # durable plans/protocol
+/.github/workflows/                 @loopdog-org/maintainers
+/.github/CODEOWNERS                 @loopdog-org/maintainers
+/.github/branch-protection.yml      @loopdog-org/maintainers
+/templates/workflows/              @loopdog-org/maintainers   # reusable callers loopdog ships
+/packages/github/src/identity/      @loopdog-org/maintainers   # GITHUB_TOKEN identity
+/packages/runtime/src/loops-builtin/ @loopdog-org/maintainers  # built-in loop briefs/gates
+/AGENTS.md                          @loopdog-org/maintainers
+/.agent/                            @loopdog-org/maintainers   # durable plans/protocol
 ```
 
 (The owning team is a placeholder; record the real handle in Decisions. Use a team
@@ -97,7 +97,7 @@ Actions `GITHUB_TOKEN` does **not** have — so the apply step runs with a
 **maintainer-provided admin PAT** in a repo secret (e.g. `ADMIN_TOKEN`) at
 bootstrap, or is run locally by a maintainer via the CLI's existing `gh`/git auth.
 This is a **one-time/occasional governance action by a human**, *not* part of the
-controller's primary path — it does not reintroduce a looper GitHub App and does
+controller's primary path — it does not reintroduce a loopdog GitHub App and does
 not put keys on the model path. Document this plainly in `AGENTS.md`. The
 controller's normal label/PR/claim writes (M03 · 0013, github package) still use
 the keyless `GITHUB_TOKEN`.
@@ -114,8 +114,8 @@ a no-op until `main` exists — guard for that.
 - The CI workflow itself (0003) — this only *requires* its checks.
 - Release/publish protections and tag protection (0005).
 - The adopter-facing branch-protection that loops set on *target* repos and the
-  risk-tier graduated auto-merge engine (M10) — this task is looper's own repo only.
-- A looper GitHub App or any new bot identity (post-V1 per architecture).
+  risk-tier graduated auto-merge engine (M10) — this task is loopdog's own repo only.
+- A loopdog GitHub App or any new bot identity (post-V1 per architecture).
 
 ## Acceptance Criteria
 

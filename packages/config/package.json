@@ -1,7 +1,7 @@
 {
-  "name": "@looper/config",
+  "name": "@loopdog/config",
   "version": "0.1.0",
-  "description": "Looper config package",
+  "description": "Loopdog config package",
   "license": "Apache-2.0",
   "type": "module",
   "private": true,
@@ -22,6 +22,6 @@
   "dependencies": {
     "zod": "^3.25.0",
     "yaml": "^2.8.0",
-    "@looper/core": "0.1.0"
+    "@loopdog/core": "0.1.0"
   }
 }

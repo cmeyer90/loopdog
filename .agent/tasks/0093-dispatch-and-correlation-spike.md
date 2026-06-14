@@ -5,7 +5,7 @@ Branch: claude/laughing-johnson-8a7944 (spike artifacts; live trials pending ope
 
 ## Goal
 
-Prove — on real subscriptions, with throwaway code — that looper's load-bearing
+Prove — on real subscriptions, with throwaway code — that loopdog's load-bearing
 dispatch primitives actually work headlessly: a Claude routine `/fire`, a `@codex`
 round-trip, and reliable correlation of the resulting PR back to the run.
 
@@ -23,7 +23,7 @@ instantly" assumption (0008) is unverified. Building M05 on an unvalidated `/fir
 Claude has two easily-confused public surfaces: Claude Code GitHub Actions, which
 is documented around a GitHub App plus `ANTHROPIC_API_KEY`, and Claude Code
 routines, which are subscription/cloud sessions triggered by a per-routine bearer
-token. Looper's primary path depends on the second surface only.
+token. Loopdog's primary path depends on the second surface only.
 
 **Resolved finding (2026-06 docs review):** public Claude docs support headless
 `/fire` after a routine already exists, but routine API triggers and tokens are
@@ -31,7 +31,7 @@ created from the Claude web UI and the CLI cannot create or revoke those API
 tokens. Therefore V1 should implement **manual routine token import**, not
 automated Claude routine provisioning. The remaining spike work is to prove that
 an imported routine can be fired from GitHub Actions, can access the intended repo
-and environment, and can produce a branch/PR that Looper can correlate.
+and environment, and can produce a branch/PR that Loopdog can correlate.
 
 ## Scope
 
@@ -42,12 +42,12 @@ and environment, and can produce a branch/PR that Looper can correlate.
 - **Claude bootstrap reality:** treat routine creation, API-trigger creation,
   token generation/revocation, repo selection, cloud environment selection, setup
   script, and branch-push permissions as **user-managed Claude web UI setup** for
-  V1. Looper records/imports the resulting fire URL/token refs and verifies the
+  V1. Loopdog records/imports the resulting fire URL/token refs and verifies the
   runtime behavior; it does not automate these setup steps unless future public
   docs add a supported API.
 - **Claude cloud environment:** for routines, project-specific env vars/setup
   scripts are configured in Claude's cloud environment, not forwarded from GitHub
-  Actions at `/fire` time. Looper should track expected env var names and warn
+  Actions at `/fire` time. Loopdog should track expected env var names and warn
   when sensitive/live credentials imply self-hosted instead.
 - **Claude surface separation:** prove the above uses neither
   `anthropics/claude-code-action` nor `ANTHROPIC_API_KEY`; if the only viable path
@@ -56,7 +56,7 @@ and environment, and can produce a branch/PR that Looper can correlate.
 - **Codex:** post an `@codex` mention/assignment, confirm a correlatable PR/comment
   results, note what identity opens it and whether *any* dispatch-time handle exists.
 - **Correlation:** over N runs per provider, measure how often the agent honors the
-  branch-name (`looper/<loop>/<issue>-<run_id>`) and PR-trailer (`looper-run:`)
+  branch-name (`loopdog/<loop>/<issue>-<run_id>`) and PR-trailer (`loopdog-run:`)
   instructions; identify a **non-agent-dependent** signal (e.g. the `/fire` session
   id mapped via provider API) if compliance is unreliable.
 - **Events:** confirm a provider-App-opened PR actually fires the adopter's
@@ -73,7 +73,7 @@ and environment, and can produce a branch/PR that Looper can correlate.
       as GitHub Actions secret refs, produces a branch or PR (or a documented
       blocker), with token rotation/re-import behavior understood.
 - [ ] The Claude routine bootstrap path is implemented as manual routine token
-      import for V1; downstream tasks 0010/0020/0023/0030/0077 reflect that Looper
+      import for V1; downstream tasks 0010/0020/0023/0030/0077 reflect that Loopdog
       does not create routines/tokens or push Claude env vars at dispatch time.
 - [ ] The Claude path is confirmed to avoid `ANTHROPIC_API_KEY` and the Claude Code
       GitHub Action, or the blocker is documented as a V1 go/no-go issue.
@@ -131,15 +131,15 @@ Throwaway scripts against real test repos + real subscriptions; capture transcri
 
 - Claude bootstrap decision (2026-06-10, from docs): V1 uses manual
   routine/API-trigger import. Secret-ref names standardized by the spike kit:
-  `LOOPER_CLAUDE_FIRE_URL` / `LOOPER_CLAUDE_FIRE_TOKEN` (spike uses a
-  `LOOPER_SPIKE_`-prefixed pair). Operator steps are RUNBOOK §1 and are the
-  draft copy for `looper connect claude` (0010/0077).
+  `LOOPDOG_CLAUDE_FIRE_URL` / `LOOPDOG_CLAUDE_FIRE_TOKEN` (spike uses a
+  `LOOPDOG_SPIKE_`-prefixed pair). Operator steps are RUNBOOK §1 and are the
+  draft copy for `loopdog connect claude` (0010/0077).
 - **Correlation design decision (2026-06-09, adopted without waiting for live
   honor-rates):** 0073 MUST implement **dual-signal correlation** — the
   **dispatch-time, non-agent-dependent signal is authoritative** (Claude: the
   `/fire` response session id/URL recorded at dispatch; Codex: the mention
   comment id + time window + provider-App actor), and the agent-obeyed signals
-  (branch `looper/<loop>/<issue>-<run_id>`, PR trailer `looper-run: <run_id>`)
+  (branch `loopdog/<loop>/<issue>-<run_id>`, PR trailer `loopdog-run: <run_id>`)
   are **accelerators, never the only key**. Rationale: LLM compliance is not a
   protocol; designing for the unreliable case is strictly safer and costs one
   extra recorded field per dispatch. Live trials can only *relax* this (they
@@ -160,7 +160,7 @@ Partial (agent-completable scope done; live trials operator-pending). Delivered
 the complete throwaway spike kit (`spikes/0093-dispatch-correlation/`: fire &
 mention dispatch scripts with dispatch-time signal capture, correlation
 trial/score harness, three Actions workflows incl. the provider-PR event probe,
-and the operator RUNBOOK that doubles as `looper connect` copy). Made the
+and the operator RUNBOOK that doubles as `loopdog connect` copy). Made the
 load-bearing design call downstream tasks needed from this spike — dual-signal
 correlation with the dispatch-time signal authoritative — so M05/0073 are not
 design-blocked on live honor-rate numbers. Remaining: the five OPERATOR items

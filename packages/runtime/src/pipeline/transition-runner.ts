@@ -11,7 +11,7 @@ import type {
   RunStep,
   TransitionTable,
   TriggerEvent,
-} from '@looper/core';
+} from '@loopdog/core';
 import {
   DOR_FAIL_ROUTE,
   QUARANTINE_LABEL,
@@ -32,9 +32,9 @@ import {
   stateOfLabels,
   toRetryPolicy,
   upsertCriteriaBlock,
-} from '@looper/core';
-import { acquireClaim, releaseClaim, upsertMarkedComment } from '@looper/github';
-import type { PromptSource } from '@looper/backends';
+} from '@loopdog/core';
+import { acquireClaim, releaseClaim, upsertMarkedComment } from '@loopdog/github';
+import type { PromptSource } from '@loopdog/backends';
 import { composeWorkBrief, promptSourceFromReader } from './brief.js';
 import {
   bumpAttempts,
@@ -60,7 +60,7 @@ import {
   verdictTarget,
 } from './loop-actions.js';
 import { syncPlanAfterTransition } from './plan-sync.js';
-import type { RepoPlanStoreFiles } from '@looper/plans';
+import type { RepoPlanStoreFiles } from '@loopdog/plans';
 import type { RunRecordStore } from '../telemetry/record-store.js';
 
 /**
@@ -242,11 +242,17 @@ async function processItem(
   switch (decision.verdict.kind) {
     case 'no-op':
     case 'skip':
+      // Sweeps stay silent (no record spam). But an explicit single-item
+      // `loopdog run` should tell the operator WHY nothing happened (e.g. the
+      // circuit breaker is open) instead of a generic "no eligible item".
+      if (trigger.kind === 'event' && trigger.name === 'manual.run') {
+        return record({ status: 'skipped', note: decision.verdict.reason });
+      }
       return null; // not an attempt — common on sweeps; no record spam
     case 'park': {
       const { reason, retryAfter, holdLabel } = decision.verdict;
-      const label = holdLabel ?? 'looper:parked';
-      const approvalHold = label === 'looper:needs-approval';
+      const label = holdLabel ?? 'loopdog:parked';
+      const approvalHold = label === 'loopdog:needs-approval';
       await gate.mutate('label', `add ${label} (${reason})`, () =>
         deps.gh.addLabels(item.ref, [label]),
       );
@@ -254,11 +260,11 @@ async function processItem(
         upsertMarkedComment(
           deps.gh,
           item.ref,
-          `looper:hold ${JSON.stringify({ reason, retryAfter: retryAfter ?? null })}`,
+          `loopdog:hold ${JSON.stringify({ reason, retryAfter: retryAfter ?? null })}`,
           (approvalHold
-            ? `🔒 looper held this item for maintainer approval: ${reason}\n\n` +
-              'A collaborator can apply `looper:approved` or run `looper approve`.'
-            : `⏸️ looper parked this item: ${reason}`) +
+            ? `🔒 loopdog held this item for maintainer approval: ${reason}\n\n` +
+              'A collaborator can apply `loopdog:approved` or run `loopdog approve`.'
+            : `⏸️ loopdog parked this item: ${reason}`) +
             (retryAfter ? `\n\nWill retry after ${retryAfter}.` : ''),
         ).then(() => {}),
       );
@@ -270,18 +276,18 @@ async function processItem(
         applyStateChange(deps, item, to),
       );
       await gate.comment('route notice', () =>
-        deps.gh.createComment(item.ref, `↩️ looper routed this item to \`${to}\`: ${reason}`),
+        deps.gh.createComment(item.ref, `↩️ loopdog routed this item to \`${to}\`: ${reason}`),
       );
       step('write', `routed to ${to}`);
       return record({ status: 'done', transition: `${loop.transition.from}->${to}` });
     }
     case 'escalate': {
       const reason = decision.verdict.reason;
-      await gate.mutate('label', 'add looper:needs-human', () =>
-        deps.gh.addLabels(item.ref, ['looper:needs-human']),
+      await gate.mutate('label', 'add loopdog:needs-human', () =>
+        deps.gh.addLabels(item.ref, ['loopdog:needs-human']),
       );
       await gate.comment('escalation notice', () =>
-        deps.gh.createComment(item.ref, `🚨 looper escalated: ${reason}`),
+        deps.gh.createComment(item.ref, `🚨 loopdog escalated: ${reason}`),
       );
       return record({ status: 'escalated', failure: { class: 'terminal', reason } });
     }
@@ -334,8 +340,8 @@ async function processItem(
         }
         if (gateResult === 'red') {
           if (!loop.transition.fallback) {
-            await gate.mutate('label', 'add looper:needs-human', () =>
-              deps.gh.addLabels(item.ref, ['looper:needs-human']),
+            await gate.mutate('label', 'add loopdog:needs-human', () =>
+              deps.gh.addLabels(item.ref, ['loopdog:needs-human']),
             );
             await gate.mutate('claim', 'release', () =>
               releaseClaim(deps.gh, item.ref, deps.botLogin ? { assignee: deps.botLogin } : {}),
@@ -365,7 +371,7 @@ async function processItem(
             await gate.comment('merge blocked notice', () =>
               deps.gh.createComment(
                 item.ref,
-                `🛑 looper merge blocked (DoD):\n${decision.reasons.map((r) => `- ${r}`).join('\n')}`,
+                `🛑 loopdog merge blocked (DoD):\n${decision.reasons.map((r) => `- ${r}`).join('\n')}`,
               ),
             );
             return record({ status: 'skipped' });
@@ -438,7 +444,7 @@ async function processItem(
     // the intermediate state. Ingest happens on a later invocation.
     const source = deps.promptSource ?? promptSourceFromReader(deps.readPrompt, loop);
     const discussion = (await deps.gh.listComments(item.ref))
-      .filter((c) => !c.body.includes('<!-- looper'))
+      .filter((c) => !c.body.includes('<!-- loopdog'))
       .slice(-10)
       .map((c) => ({ author: c.author.login, body: c.body.slice(0, 2000) }));
     const brief = await composeWorkBrief({
@@ -537,12 +543,12 @@ async function processItem(
       const ping = escalateTo(rc) ? ` ${escalateTo(rc)}` : '';
       if (mode === 'abandon') {
         await gate.mutate('label', 'abandon (on_failure)', () =>
-          deps.gh.addLabels(item.ref, ['looper:abandoned']),
+          deps.gh.addLabels(item.ref, ['loopdog:abandoned']),
         );
         await gate.comment('abandon notice', () =>
           deps.gh.createComment(
             item.ref,
-            `🛑 looper abandoned this item after ${attempts} failed attempts (on_failure: abandon).${ping} Last error: ${reason}`,
+            `🛑 loopdog abandoned this item after ${attempts} failed attempts (on_failure: abandon).${ping} Last error: ${reason}`,
           ),
         );
         return record({ status: 'failed', failure: { class: 'poisoned', reason } });
@@ -557,13 +563,13 @@ async function processItem(
       }
       // default (needs-human): quarantine the poisoned item + escalate.
       await gate.mutate('label', 'quarantine + needs-human', () =>
-        deps.gh.addLabels(item.ref, [QUARANTINE_LABEL, 'looper:needs-human']),
+        deps.gh.addLabels(item.ref, [QUARANTINE_LABEL, 'loopdog:needs-human']),
       );
       await gate.comment('quarantine notice', () =>
         deps.gh.createComment(
           item.ref,
-          `🚨 looper quarantined this item after ${attempts} failed attempts — needs a human.${ping} ` +
-            `Last error: ${reason}\n\nRelease it with \`looper retry\` once the cause is fixed.`,
+          `🚨 loopdog quarantined this item after ${attempts} failed attempts — needs a human.${ping} ` +
+            `Last error: ${reason}\n\nRelease it with \`loopdog retry\` once the cause is fixed.`,
         ),
       );
       return record({ status: 'escalated', failure: { class: 'poisoned', reason } });
@@ -629,12 +635,12 @@ async function ingestPhase(
       if (responseFor(cls).kind === 'quarantine' && onFailureMode(rc) !== 'retry') {
         const ping = escalateTo(rc) ? ` ${escalateTo(rc)}` : '';
         await gate.mutate('label', 'quarantine + needs-human', () =>
-          deps.gh.addLabels(item.ref, [QUARANTINE_LABEL, 'looper:needs-human']),
+          deps.gh.addLabels(item.ref, [QUARANTINE_LABEL, 'loopdog:needs-human']),
         );
         await gate.comment('timeout quarantine notice', () =>
           deps.gh.createComment(
             item.ref,
-            `🚨 looper: the work cell produced no PR within \`dispatch_timeout\` after ${attempts} attempts — quarantined.${ping} Release with \`looper retry\`.`,
+            `🚨 loopdog: the work cell produced no PR within \`dispatch_timeout\` after ${attempts} attempts — quarantined.${ping} Release with \`loopdog retry\`.`,
           ),
         );
         return record({ status: 'escalated', failure: { class: 'poisoned', reason } });
@@ -667,8 +673,8 @@ async function ingestPhase(
     const attempts =
       (await gate.mutate('label', 'bump attempts', () => bumpAttempts(deps.gh, item.ref))) ?? 1;
     if (attempts >= (deps.maxAttempts ?? 3)) {
-      await gate.mutate('label', 'add looper:needs-human', () =>
-        deps.gh.addLabels(item.ref, ['looper:needs-human']),
+      await gate.mutate('label', 'add loopdog:needs-human', () =>
+        deps.gh.addLabels(item.ref, ['loopdog:needs-human']),
       );
     }
     return record({ status: 'failed', failure: { class: 'transient', reason: result.reason } });
@@ -690,13 +696,13 @@ async function ingestPhase(
           ),
         );
       }
-      await gate.mutate('label', 'add looper:needs-human', () =>
-        deps.gh.addLabels(item.ref, ['looper:needs-human']),
+      await gate.mutate('label', 'add loopdog:needs-human', () =>
+        deps.gh.addLabels(item.ref, ['loopdog:needs-human']),
       );
       await gate.comment('blast-radius escalation', () =>
         deps.gh.createComment(
           item.ref,
-          `🚨 looper halted: ${violation.reason}. PR #${result.pr!.ref.number} needs a human ` +
+          `🚨 loopdog halted: ${violation.reason}. PR #${result.pr!.ref.number} needs a human ` +
             'decision (split the work or widen the loop limits consciously).',
         ),
       );
@@ -787,14 +793,14 @@ async function suggestAdvisory(
   action: string,
 ): Promise<void> {
   if (gate.mode !== 'suggest') return;
-  const marker = `looper-suggest:${loop.name}:${loop.transition.from}->${loop.transition.to}`;
+  const marker = `loopdog-suggest:${loop.name}:${loop.transition.from}->${loop.transition.to}`;
   await gate.comment(`suggest advisory (${marker})`, () =>
     upsertMarkedComment(
       deps.gh,
       item.ref,
       marker,
-      `💡 looper (\`${loop.name}\`, suggest mode) would ${action}.\n\n` +
-        `Promote with \`looper promote ${loop.name} --to act\` when ready.`,
+      `💡 loopdog (\`${loop.name}\`, suggest mode) would ${action}.\n\n` +
+        `Promote with \`loopdog promote ${loop.name} --to act\` when ready.`,
     ).then(() => {}),
   );
 }

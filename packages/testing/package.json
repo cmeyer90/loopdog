@@ -1,7 +1,7 @@
 {
-  "name": "@looper/testing",
+  "name": "@loopdog/testing",
   "version": "0.1.0",
-  "description": "Looper testing package",
+  "description": "Loopdog testing package",
   "license": "Apache-2.0",
   "type": "module",
   "private": true,
@@ -20,9 +20,9 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@looper/core": "0.1.0",
-    "@looper/config": "0.1.0",
-    "@looper/runtime": "0.1.0",
+    "@loopdog/core": "0.1.0",
+    "@loopdog/config": "0.1.0",
+    "@loopdog/runtime": "0.1.0",
     "yaml": "^2.8.0"
   }
 }

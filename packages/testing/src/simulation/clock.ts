@@ -1,9 +1,9 @@
-import type { Clock } from '@looper/core';
+import type { Clock } from '@loopdog/core';
 
 /**
  * Deterministic virtual clock (task 0086). The runtime never blocks (no
  * sleep), so a clock is just an injectable `now()` — the `Clock` seam in
- * `@looper/core`, which the runner, sweep, preflight, controller, and
+ * `@loopdog/core`, which the runner, sweep, preflight, controller, and
  * FakeGitHub already accept. The simulation owns all advancement, so
  * time-based behavior (backoff, lease expiry, quota windows, schedule
  * windows) is fully reproducible.

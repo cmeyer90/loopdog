@@ -17,14 +17,14 @@ the fix-and-revalidate sub-loop (0044) rather than to verified.
 Part of [Milestone 10](../milestones/milestone-10-review-verification-ladder-and-merge-loop.md).
 The verification ladder and "how we know the request was satisfied" in
 [architecture](../../docs/architecture.md#the-verification-ladder-trust) define the
-contract: criteria live in a `<!-- looper:acceptance-criteria -->` marker block
+contract: criteria live in a `<!-- loopdog:acceptance-criteria -->` marker block
 (M03 · 0014), `test:` ones reduce to "do the acceptance tests pass?", and the rest
 are judged by a cross-provider intent-diff (rung 3). This task turns that
 one-liner into a concrete brief contract + verdict schema + checkbox state machine.
 The cross-model reviewer cell (0042) provides the *who* (a provider ≠ implementer)
 and dispatch; 0043 provides the *what to ask and how to read the answer*. Pure
-judgment-mapping logic lands in `@looper/core/gates`; the brief asset + ingest
-wiring land in `@looper/runtime`. The DoD gate (0014) consumes the resulting
+judgment-mapping logic lands in `@loopdog/core/gates`; the brief asset + ingest
+wiring land in `@loopdog/runtime`. The DoD gate (0014) consumes the resulting
 checkbox state.
 
 ## Scope
@@ -53,7 +53,7 @@ criteria so the reviewer never re-litigates what CI already owns:
   brief states that free-form prose is ignored — only the block is read.
 
 **Per-criterion verdict schema** (parsed from the reviewer's PR comment; types in
-`@looper/core`):
+`@loopdog/core`):
 
 ```ts
 type CriterionStatus = 'met' | 'unmet' | 'uncertain';
@@ -132,10 +132,10 @@ block → parse failure → fail closed → route to 0044/escalation, never to v
 ## Implementation Checklist
 
 - [x] Add `CriterionVerdict` / `IntentDiff` types + the verdict→checkbox mapper to
-      `@looper/core/gates` (pure, IO-free).
+      `@loopdog/core/gates` (pure, IO-free).
 - [x] Implement the `allMet` predicate + split-routing decision in `core`.
 - [x] Author `templates/loops/review/intent-diff.prompt.md` (the brief asset) in
-      `@looper/runtime`.
+      `@loopdog/runtime`.
 - [x] Wire ingest (0073) → parse `intent-diff` block → apply checkbox mapping →
       update issue + plan → route to verified or 0044.
 - [x] Enforce: only `manual:` rows mutated; parse/schema failure → fail closed.

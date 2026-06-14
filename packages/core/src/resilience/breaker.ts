@@ -1,6 +1,6 @@
 /**
  * Concurrency ceiling + circuit breaker (task 0090): two pure pre-flight gates
- * that keep looper from overrunning itself or a sick provider. No IO — the
+ * that keep loopdog from overrunning itself or a sick provider. No IO — the
  * runtime supplies the in-flight count + persisted breaker state and applies
  * the decisions (defer / pause-loop).
  */

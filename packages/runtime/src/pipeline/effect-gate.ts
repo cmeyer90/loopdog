@@ -1,11 +1,11 @@
-import type { EffectPolicy, Mode, PlannedAction } from '@looper/core';
-import { allowedEffects } from '@looper/core';
+import type { EffectPolicy, Mode, PlannedAction } from '@loopdog/core';
+import { allowedEffects } from '@loopdog/core';
 
 /**
  * The single effect boundary (task 0009): every outward effect in the
  * transition pipeline flows through this gate. In `act` the effect runs; in
  * `dry-run`/`suggest` it is recorded as a `PlannedAction` instead — so the run
- * record always carries what looper did or would have done.
+ * record always carries what loopdog did or would have done.
  */
 export class EffectGate {
   readonly mode: Mode;

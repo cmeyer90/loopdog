@@ -2,9 +2,9 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — "The state
+> Background: [Loopdog Architecture](../../docs/architecture.md) — "The state
 > machine" and the core principle (controller vs. work cell). Lands mostly in
-> `@looper/core` (pure logic) + `@looper/runtime` (effectful pipeline) — see
+> `@loopdog/core` (pure logic) + `@loopdog/runtime` (effectful pipeline) — see
 > [Codebase Layout](../../docs/codebase.md).
 
 ## Objective
@@ -32,7 +32,7 @@ per-area serialization, and machine-checkable Definition-of-Ready / Done gates.
 
 | ID | Status | Branch | Title | Primary Deliverable |
 |---:|---|---|---|---|
-| 0094 | verified | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store | (Build step 1) The five `@looper/core` port interfaces as real TS + the run-record store decision. |
+| 0094 | verified | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store | (Build step 1) The five `@loopdog/core` port interfaces as real TS + the run-record store decision. |
 | 0011 | verified | task/0011-label-state-machine-spec | Label State Machine Spec | Configurable label set + legal-transition table applied to a repo. |
 | 0012 | verified | task/0012-transition-runner | Stateless Transition Runner | The worker shell: read state → run one idempotent transition → write back; safe under event or sweep invocation. |
 | 0013 | verified | task/0013-atomic-claiming-and-serialization | Atomic Claiming & Serialization | Lock protocol preventing double-pick and same-area collisions. |

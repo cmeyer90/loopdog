@@ -2,7 +2,7 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — "The loops"
+> Background: [Loopdog Architecture](../../docs/architecture.md) — "The loops"
 > (grooming). The first, lowest-blast-radius loop; proves the platform end to end.
 
 ## Objective

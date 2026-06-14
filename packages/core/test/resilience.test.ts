@@ -17,7 +17,7 @@ import {
   type FailureClass,
   type FailureSignal,
   type RetryPolicy,
-} from '@looper/core';
+} from '@loopdog/core';
 
 /**
  * Resilience pure cores (M19 · 0088/0089/0090): the failure taxonomy classifier

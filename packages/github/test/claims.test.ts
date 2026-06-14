@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
-import { FakeGitHub } from '@looper/testing';
-import { acquireClaim, clearExpiredClaim, releaseClaim, renewLease } from '@looper/github';
-import { claimLabel, leaseLabel, lockLabel, stateLabel } from '@looper/core';
+import { FakeGitHub } from '@loopdog/testing';
+import { acquireClaim, clearExpiredClaim, releaseClaim, renewLease } from '@loopdog/github';
+import { claimLabel, leaseLabel, lockLabel, stateLabel } from '@loopdog/core';
 
 const NOW = new Date('2026-06-09T12:00:00Z');
 const repo = { owner: 'o', repo: 'r' };
@@ -60,7 +60,7 @@ describe('atomic claiming (0013)', () => {
     const cleared = await clearExpiredClaim(gh, ref, later);
     expect(cleared).toBe(true);
     const labels = await gh.getItemLabels(ref);
-    expect(labels.filter((l) => l.startsWith('looper:claimed-by/'))).toEqual([]);
+    expect(labels.filter((l) => l.startsWith('loopdog:claimed-by/'))).toEqual([]);
 
     const reclaim = await acquireClaim(gh, ref, 'run-c', { now: later });
     expect(reclaim.acquired).toBe(true);
@@ -98,7 +98,7 @@ describe('atomic claiming (0013)', () => {
     });
     expect(until).toBe('2026-06-09T12:50:00.000Z');
     const labels = await gh.getItemLabels(ref);
-    expect(labels.filter((l) => l.startsWith('looper:lease/'))).toEqual([
+    expect(labels.filter((l) => l.startsWith('loopdog:lease/'))).toEqual([
       leaseLabel('2026-06-09T12:50:00.000Z'),
     ]);
   });

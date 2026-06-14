@@ -5,7 +5,7 @@ import type {
   GitHubPort,
   IngestResult,
   WorkBrief,
-} from '@looper/core';
+} from '@loopdog/core';
 import { ingestViaCorrelation } from '../correlation/correlate.js';
 
 /**

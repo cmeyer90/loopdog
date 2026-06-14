@@ -2,7 +2,7 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — "The
+> Background: [Loopdog Architecture](../../docs/architecture.md) — "The
 > verification ladder" and cross-model review. Depends on Milestone 01 (trusted
 > CI) and Milestone 05 (multiple providers).
 

@@ -1,13 +1,13 @@
 import type { Command } from 'commander';
-import { loadConfig } from '@looper/config';
+import { loadConfig } from '@loopdog/config';
 
-/** `looper config validate` (task 0006): per-field errors with file + path. */
+/** `loopdog config validate` (task 0006): per-field errors with file + path. */
 export function registerConfig(program: Command): void {
   const config = program.command('config').description('configuration tools');
 
   config
     .command('validate')
-    .description('validate .looper/looper.yml + every loop folder')
+    .description('validate .loopdog/loopdog.yml + every loop folder')
     .option('--path <dir>', 'repo root', '.')
     .action(async (opts: { path: string }) => {
       const result = await loadConfig(opts.path);

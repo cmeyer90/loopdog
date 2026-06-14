@@ -2,11 +2,11 @@
 
 One issue, end to end: filed → groomed → implemented → reviewed → merged →
 deployed — driven by Dana's Claude subscription. Labels are the state machine;
-looper's controller dispatches each step to a Claude cloud agent and gates the
+loopdog's controller dispatches each step to a Claude cloud agent and gates the
 result.
 
 Assumes Dana has [connected her accounts](connecting-accounts.md) and attached
-looper (loops in `dry-run`/`suggest` until promoted).
+loopdog (loops in `dry-run`/`suggest` until promoted).
 
 ## 0. The ticket
 
@@ -24,7 +24,7 @@ the Claude grooming routine** with the issue as context. The Claude cloud sessio
   - [ ] per-API-key limiting at 100 req/min
   - [ ] returns HTTP 429 + `Retry-After` when exceeded
   - [ ] limit configurable via env
-- creates the durable plan `.looper/plans/tasks/0001-api-rate-limiting.md` bound
+- creates the durable plan `.loopdog/plans/tasks/0001-api-rate-limiting.md` bound
   to #142, and posts a **plan-as-contract** comment.
 
 It hits one ambiguity and, per the assume-or-block policy, states an assumption
@@ -42,19 +42,19 @@ limiting, writes a test per acceptance criterion, runs `npm test`, and opens PR
 #143** referencing #142 with the plan contract.
 
 Guardrail: the change stays under `max_diff`; a 40-file refactor would
-**halt and escalate** instead. Looper **ingests** PR #143, updates the plan
+**halt and escalate** instead. Loopdog **ingests** PR #143, updates the plan
 (checklist, verification log), label → `in-review`.
 
 ## 3. Review, verification ladder & merge (Milestone 10)
 
 1. **Rung 2 — Dana's own CI** runs on PR #143: the acceptance tests (`429 +
-   Retry-After`, etc.) execute. This is the trustworthy gate looper **cannot
+   Retry-After`, etc.) execute. This is the trustworthy gate loopdog **cannot
    edit**, authoritative regardless of where the work cell ran.
 2. **Intent-diff** — a **cross-provider reviewer** (different model than the
    implementer) checks each acceptance criterion was delivered — not "does it
    compile." Unmet criteria → the fix-and-revalidate sub-loop.
 3. **Definition-of-Done** — every criterion met + CI green + review approved.
-   the merge loop's `mode: suggest`, so looper posts "ready to merge" and Dana clicks; once
+   the merge loop's `mode: suggest`, so loopdog posts "ready to merge" and Dana clicks; once
    trusted she promotes `tier:safe` to auto-merge. Label → `merged`; plan
    `Status` → `merged`.
 
@@ -72,20 +72,20 @@ Post-deploy **smoke/health checks** gate promotion; a failure triggers the
 She mostly reads and tunes via the CLI:
 
 ```
-$ looper status                     # pipeline + quota burn
-$ looper runs show run_91c          # item, dispatched brief, steps, session+PR, cost
-$ looper loops show implement       # config, the exact brief, the steps it drives
-$ looper prompts edit implement     # tune how it's prompted
+$ loopdog status                     # pipeline + quota burn
+$ loopdog runs show run_91c          # item, dispatched brief, steps, session+PR, cost
+$ loopdog loops show implement       # config, the exact brief, the steps it drives
+$ loopdog prompts edit implement     # tune how it's prompted
 ```
 
 Safety nets she rarely thinks about: after K failures an item routes to
-`needs-human` with backoff; the `looper:stop` label halts everything.
+`needs-human` with backoff; the `loopdog:stop` label halts everything.
 
 ## In one line
 
 > **Label change → controller `/fire`s the right Claude routine on Dana's
-> subscription → the Claude cloud agent does the work and opens a PR → looper
+> subscription → the Claude cloud agent does the work and opens a PR → loopdog
 > ingests and gates it against Dana's own CI → merge → deploy → the plan records
-> it all.** Looper never makes a model API call and never asks for
+> it all.** Loopdog never makes a model API call and never asks for
 > `ANTHROPIC_API_KEY`; project secrets live only where Dana configured them
 > (Claude cloud environment or her own CI/self-hosted path).

@@ -26,19 +26,19 @@ The sibling task 0050 owns the kill switch + token/dispatch **budgets** and defi
 the shared `GuardVerdict` discriminated union and the cheap→expensive composition
 order (kill-switch → budget → **quota (this task)** → circuit (M19)). This task fills
 the `quota` arm of that union. The quota window is provider-defined and per-backend,
-so the cap data comes from the **backend capability descriptor** in `@looper/backends`
-(M05), not from `looper.yml` defaults alone. Outage pausing stays in the circuit
+so the cap data comes from the **backend capability descriptor** in `@loopdog/backends`
+(M05), not from `loopdog.yml` defaults alone. Outage pausing stays in the circuit
 breaker (M19); this gate only handles *staying under a healthy provider's cap*.
 
 ## Scope
 
-- A pure `quotaGate(state, candidate): GuardVerdict` in `@looper/core` and its
-  effectful counterpart in `@looper/runtime` preflight.
+- A pure `quotaGate(state, candidate): GuardVerdict` in `@loopdog/core` and its
+  effectful counterpart in `@loopdog/runtime` preflight.
 - A **per-backend quota model**: window length + max dispatches per window, defaulted
-  from the backend capability descriptor (M05) and overridable in `looper.yml`.
+  from the backend capability descriptor (M05) and overridable in `loopdog.yml`.
 - **Throttle/queue, not fail**: a candidate that would exceed the cap is parked
-  with the operational hold label `looper:parked`, `guard: 'quota'`, and a
-  `retryAfter` = next window slot. Its existing `looper:state/*` label stays in
+  with the operational hold label `loopdog:parked`, `guard: 'quota'`, and a
+  `retryAfter` = next window slot. Its existing `loopdog:state/*` label stays in
   place, so the sweep (0076) re-attempts the same transition — dispatch is
   *deferred*, never *failed*.
 - Counting from the **run-record ledger** (0012): dispatch events per backend within
@@ -47,11 +47,11 @@ breaker (M19); this gate only handles *staying under a healthy provider's cap*.
 
 ### Technical detail
 
-**Lands in:** pure predicate + types in `@looper/core` (`core/src/gates/`); the
-ledger-reading impl in `@looper/runtime` (`runtime/src/pipeline/preflight/`); cap
-defaults on the backend descriptor in `@looper/backends`; `quota` config schema in
-`@looper/config`. **No new package, no new IO port, no provider quota API call** —
-quota is *estimated locally* from looper's own dispatch ledger, because neither
+**Lands in:** pure predicate + types in `@loopdog/core` (`core/src/gates/`); the
+ledger-reading impl in `@loopdog/runtime` (`runtime/src/pipeline/preflight/`); cap
+defaults on the backend descriptor in `@loopdog/backends`; `quota` config schema in
+`@loopdog/config`. **No new package, no new IO port, no provider quota API call** —
+quota is *estimated locally* from loopdog's own dispatch ledger, because neither
 provider exposes a reliable remaining-quota endpoint on the subscription path.
 
 **Backend capability descriptor (M05 · 0019), extended:**
@@ -72,7 +72,7 @@ Defaults shipped with the backends: `codex → { window: '1h', max_dispatches: 5
 'calendar' }`; `self-hosted → undefined` (no provider cap; bounded only by budget
 (0050) + `max_in_flight` (M19)).
 
-**Config override (`looper.yml`), validated by zod in `@looper/config`:**
+**Config override (`loopdog.yml`), validated by zod in `@loopdog/config`:**
 
 ```yaml
 quota:
@@ -82,7 +82,7 @@ quota:
   on_exceeded: defer            # defer (default) — sweep re-attempts at retryAfter
 ```
 
-The effective cap is `looper.yml` override ∪ backend descriptor default (override
+The effective cap is `loopdog.yml` override ∪ backend descriptor default (override
 wins; if neither present and `self-hosted`, quota is unbounded → `{ allowed: true }`).
 
 **Counting (the ledger is the only source).** The gate counts dispatch steps in the
@@ -102,7 +102,7 @@ moment the cap admits one more dispatch:
   frees when the oldest run ages out).
 - `calendar`: `retryAfter = next window boundary` (next UTC day/hour).
 
-The verdict carries `retryAfter`; the runner parks the item with `looper:parked`
+The verdict carries `retryAfter`; the runner parks the item with `loopdog:parked`
 and the sweep (0076) re-evaluates it at/after `retryAfter` using the still-present
 lifecycle state label — this *is* the queue. No in-memory queue, no timer: the
 parked hold + `retryAfter` + sweep is the durable, crash-safe throttle. Items
@@ -156,7 +156,7 @@ concurrency guard, and `max_in_flight` (M19) bounds worst-case overshoot within 
 - [x] The cron sweep (0076) re-attempts a quota-parked item at/after `retryAfter`
       with no manual nudge; items drain in claim order.
 - [x] Cap is per **backend** (shared across loops), defaulted from the backend
-      descriptor and overridable in `looper.yml`; self-hosted with no cap is unbounded.
+      descriptor and overridable in `loopdog.yml`; self-hosted with no cap is unbounded.
 - [x] Quota deferral does **not** increment the failure/attempt counter (no
       interaction with stuck-detection (0051)).
 - [x] The verdict composes after budget (0050) and before circuit (M19); first denial
@@ -167,14 +167,14 @@ concurrency guard, and `max_in_flight` (M19) bounds worst-case overshoot within 
 
 - [x] Add the `quota` block to the backend capability descriptor (M05 · 0019) with
       `codex`/`claude`/`self-hosted` defaults.
-- [x] Add the `quota` schema + overrides to `@looper/config` (zod) and merge logic
+- [x] Add the `quota` schema + overrides to `@loopdog/config` (zod) and merge logic
       (override ∪ descriptor default).
 - [x] Implement the pure `quotaGate(state, candidate): GuardVerdict` in
       `core/src/gates/` (rolling + calendar window math, `retryAfter`).
 - [x] Implement the runtime reader: per-backend ledger aggregation (incl. in-flight)
       over the window from the telemetry sink (0052/0053).
 - [x] Wire `quotaGate` into the preflight composition (0050) after budget, before
-      circuit (M19); park with `looper:parked` + `retryAfter`, preserve the
+      circuit (M19); park with `loopdog:parked` + `retryAfter`, preserve the
       lifecycle state label, and do not bump attempts.
 - [x] Ensure the sweep (0076) un-parks quota holds at `retryAfter`.
 
@@ -207,12 +207,12 @@ pnpm vitest run packages/core packages/runtime
 
 ## Decisions
 
-- Quota is estimated LOCALLY from looper's own dispatch ledger (no provider
+- Quota is estimated LOCALLY from loopdog's own dispatch ledger (no provider
   quota API exists on the subscription path); per-backend models come from
   capability descriptors (codex 5/hr rolling) with config overrides
   (quota.backends.<id>.{window,max_dispatches}); claude daily caps are
   config-declared (calendar UTC window).
-- Exhaustion defers: looper:parked + retryAfter = the next window slot
+- Exhaustion defers: loopdog:parked + retryAfter = the next window slot
   (rolling: now+window; calendar: next UTC midnight); the sweep unparks once
   it passes and the transition re-evaluates through pre-flight.
 

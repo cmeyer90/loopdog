@@ -6,7 +6,7 @@ import type {
   CommandRunner,
   ProjectAdapter,
   RepoFs,
-} from '@looper/core';
+} from '@loopdog/core';
 
 /**
  * Adapter conformance kit (task 0028): drives every clause of the 0024

@@ -1,4 +1,4 @@
-// @looper/plans — the durable plan store: portable format, issue<->plan
+// @loopdog/plans — the durable plan store: portable format, issue<->plan
 // binding, lifecycle automation, and index maintenance (M04).
 export {
   appendToSection,

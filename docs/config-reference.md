@@ -1,12 +1,12 @@
 # Config Reference
 
-Looper is configured by a root `.looper/looper.yml` (global defaults) and a
-per-loop `.looper/loops/<name>/loop.yml`. Both are validated by the
-`@looper/config` schema (`looper init` scaffolds valid defaults; `looper`
+Loopdog is configured by a root `.loopdog/loopdog.yml` (global defaults) and a
+per-loop `.loopdog/loops/<name>/loop.yml`. Both are validated by the
+`@loopdog/config` schema (`loopdog init` scaffolds valid defaults; `loopdog`
 commands re-validate on every edit). This page documents **every** field; the
 schema is the source of truth (`packages/config/src/schema/`).
 
-> No field here references a Looper GitHub App, a model API key on the primary
+> No field here references a Loopdog GitHub App, a model API key on the primary
 > path, or a database/queue — by design. The only key-holding path is the opt-in
 > `backends.self_hosted` escape hatch.
 
@@ -18,7 +18,7 @@ merge is **strictest-wins** — a loop may only be made *safer*, never laxer.
 Authorization merges strictest-wins too (a loop can tighten WHO/WHAT/WHEN, never
 loosen it).
 
-## Root `looper.yml`
+## Root `loopdog.yml`
 
 | Field | Type | Default | Notes |
 |---|---|---|---|
@@ -27,8 +27,8 @@ loosen it).
 | `backends.review` | same | — | reviewer backend (cross-provider review, M13) |
 | `backends.zdr` | bool | `false` | Zero-Data-Retention org → Claude cloud routines excluded |
 | `backends.self_hosted.agent` | `claude \| codex` | `claude` | agent the self-hosted runner runs |
-| `backends.self_hosted.api_key_secret` | string | `LOOPER_MODEL_API_KEY` | Actions secret name (self-hosted only — the one key-holding path) |
-| `plan_store` | string \| `{ path, format_version }` | `.looper/plans`, fmt 1 | durable plan location (a string is shorthand for `path`) |
+| `backends.self_hosted.api_key_secret` | string | `LOOPDOG_MODEL_API_KEY` | Actions secret name (self-hosted only — the one key-holding path) |
+| `plan_store` | string \| `{ path, format_version }` | `.loopdog/plans`, fmt 1 | durable plan location (a string is shorthand for `path`) |
 | `sweep.interval` | cron string | `*/5 * * * *` | reconcile cadence |
 | `sweep.max_candidates_per_tick` | int ≥1 | `20` | global per-tick cap |
 | `sweep.max_candidates_per_state` | int ≥1 | `10` | per-state cap |
@@ -36,8 +36,8 @@ loosen it).
 | `budgets.window` | `daily \| weekly \| monthly` | `monthly` | spend window |
 | `budgets.global` / `.per_loop` | `{ max_dispatches, max_usd }` | `0` (unlimited) | `0` = no ceiling |
 | `budgets.on_exceeded` | `park \| needs-human` | `park` | what a budget breach does |
-| `kill_switch.variable` | string | `LOOPER_KILL` | repo variable that halts all dispatch |
-| `kill_switch.label` | string | `looper:stop` | per-item halt label |
+| `kill_switch.variable` | string | `LOOPDOG_KILL` | repo variable that halts all dispatch |
+| `kill_switch.label` | string | `loopdog:stop` | per-item halt label |
 | `quota.window` | `daily \| weekly \| monthly` | `monthly` | subscription-quota window |
 | `quota.on_exceeded` | `defer \| park` | `defer` | throttle vs hold |
 | `quota.backends.<id>` | `{ window?, max_dispatches? }` | — | per-backend cap override (raise for higher tiers) |
@@ -67,7 +67,7 @@ loosen it).
 | `actors` | `anyone \| org-members \| collaborators \| allowlist` | `collaborators` | WHO may trigger acting loops |
 | `allow` / `deny` | string[] | `[]` | allowlist / denylist (deny wins) |
 | `on_unauthorized` | `park \| ignore \| comment` | `park` | untrusted trigger → needs-approval (park), drop, or comment |
-| `approval_label` | string | `looper:approved` | a trusted collaborator applies this to release a parked item |
+| `approval_label` | string | `loopdog:approved` | a trusted collaborator applies this to release a parked item |
 | `allowed_bots` | string[] | `[]` | bots need explicit allow |
 | `trigger_sources` | string[] | — | WHAT: extra event selectors the loop acts on |
 | `bots.allow` / `.deny` | string[] | `[]` | per-loop bot allow/deny |
@@ -103,7 +103,7 @@ loosen it).
 | `serialize_by` | string | — | same-area serialization key |
 | `requires.{live_secrets,network}` | bool | — | work-cell needs, checked vs backend capabilities |
 | `ensemble.{enabled,judge}` | — | `false` | dual-attempt + judge (expensive; `tier:core` only) |
-| `mode` | `dry-run \| suggest \| act` | root default | per-loop mode (promote with `looper promote`) |
+| `mode` | `dry-run \| suggest \| act` | root default | per-loop mode (promote with `loopdog promote`) |
 | `declares.states` / `.edges` | — | `[]` | custom states/edges this loop adds to the state machine |
 
 ## Validator behavior on edge cases

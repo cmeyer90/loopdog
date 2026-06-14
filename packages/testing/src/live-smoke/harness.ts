@@ -4,7 +4,7 @@ import type {
   GitHubPort,
   ItemRef,
   WorkBrief,
-} from '@looper/core';
+} from '@loopdog/core';
 import { classifyDrift, type DriftReport, type ExpectedShape } from './drift-report.js';
 
 /**
@@ -142,15 +142,15 @@ function isRateCap(text: string): boolean {
   return /rate.?limit|quota|429|too many requests|cap(ped|acity)/i.test(text);
 }
 
-/** True if the scratch item carries a looper state label (advanced one edge). */
+/** True if the scratch item carries a loopdog state label (advanced one edge). */
 async function advancedOneEdge(gh: GitHubPort, item: ItemRef): Promise<boolean> {
   const labels = await gh.getItemLabels(item);
-  return labels.some((l) => l.startsWith('looper:state/'));
+  return labels.some((l) => l.startsWith('loopdog:state/'));
 }
 
 /**
  * Best-effort scratch cleanup so nightly runs don't accrete dead state. Call
- * from a `finally`/post step. The hermetic part (clearing looper's own labels)
+ * from a `finally`/post step. The hermetic part (clearing loopdog's own labels)
  * uses the port; closing PRs/issues + deleting branches is provider-specific
  * and outside the port, so the operator passes a `closer` closure for it.
  */
@@ -166,9 +166,9 @@ export async function cleanupScratch(
       // best-effort: a cleanup failure must not mask the smoke result.
     }
   };
-  // Remove looper's own labels from the scratch item.
+  // Remove loopdog's own labels from the scratch item.
   const labels = await gh.getItemLabels(item).catch(() => [] as string[]);
-  for (const l of labels.filter((x) => x.startsWith('looper:'))) {
+  for (const l of labels.filter((x) => x.startsWith('loopdog:'))) {
     await safe(() => gh.removeLabel(item, l));
   }
   if (closer) await safe(closer);

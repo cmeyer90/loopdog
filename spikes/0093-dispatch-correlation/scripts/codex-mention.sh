@@ -18,7 +18,7 @@ RUN_ID="${SPIKE_RUN_ID:-${GITHUB_RUN_ID:-$(date +%s)}}"
 OUT_DIR="${SPIKE_OUT:-./spike-runs}"
 mkdir -p "$OUT_DIR"
 
-BRANCH="looper/spike/${ISSUE}-${RUN_ID}"
+BRANCH="loopdog/spike/${ISSUE}-${RUN_ID}"
 
 BODY=$(cat <<EOF
 @codex Spike trial ${RUN_ID}. Create a file spike-output/trial-${RUN_ID}.txt
@@ -26,7 +26,7 @@ containing the single line "spike ${RUN_ID}", on a NEW branch named exactly
 "${BRANCH}", and open a pull request titled "spike: trial ${RUN_ID}" whose body
 ends with the exact trailer line:
 
-looper-run: ${RUN_ID}
+loopdog-run: ${RUN_ID}
 
 Do nothing else. Do not modify any other file.
 EOF
@@ -44,7 +44,7 @@ jq -n \
   --arg comment_id "$COMMENT_ID" \
   --arg comment_at "$COMMENT_AT" \
   '{provider: "codex", run_id: $run_id, issue: $issue,
-    expected_branch: $branch, expected_trailer: ("looper-run: " + $run_id),
+    expected_branch: $branch, expected_trailer: ("loopdog-run: " + $run_id),
     dispatch_comment_id: $comment_id, fired_at: $comment_at}' \
   > "$OUT_DIR/dispatch-${RUN_ID}.json"
 

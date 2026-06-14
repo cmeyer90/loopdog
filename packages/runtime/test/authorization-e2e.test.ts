@@ -1,13 +1,13 @@
 import { describe, expect, it } from 'vitest';
-import { handleEvent } from '@looper/runtime';
-import type { ControllerOptions } from '@looper/runtime';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@looper/testing';
+import { handleEvent } from '@loopdog/runtime';
+import type { ControllerOptions } from '@loopdog/runtime';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore } from '@loopdog/testing';
 import { mkdtemp, readFile, rm, writeFile, mkdir } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { buildScaffoldPlan } from '../../cli/src/commands/init.js';
-import { renderCriteriaBlock, stateLabel } from '@looper/core';
+import { renderCriteriaBlock, stateLabel } from '@loopdog/core';
 
 /**
  * Authorization & trigger control (M17): untrusted triggers on a public repo
@@ -19,7 +19,7 @@ const ref = { ...repo, number: 1 };
 const dirs: string[] = [];
 
 async function scaffoldActRepo(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'looper-authz-'));
+  const dir = await mkdtemp(join(tmpdir(), 'loopdog-authz-'));
   dirs.push(dir);
   const templatesDir = fileURLToPath(new URL('../../../templates/', import.meta.url));
   const plan = await buildScaffoldPlan(templatesDir, dir);
@@ -28,7 +28,7 @@ async function scaffoldActRepo(): Promise<string> {
     await mkdir(join(target, '..'), { recursive: true });
     await writeFile(target, await readFile(file.source, 'utf8'));
   }
-  const rootYml = join(dir, '.looper', 'looper.yml');
+  const rootYml = join(dir, '.loopdog', 'loopdog.yml');
   await writeFile(rootYml, (await readFile(rootYml, 'utf8')).replace('mode: dry-run', 'mode: act'));
   return dir;
 }
@@ -52,7 +52,7 @@ const GROOMED = [
   renderCriteriaBlock([
     { text: 'works', validation: { kind: 'test', ref: 'a.test.ts' }, met: false },
   ]),
-  '<!-- looper:scope -->bounded<!-- /looper:scope -->',
+  '<!-- loopdog:scope -->bounded<!-- /loopdog:scope -->',
 ].join('\n');
 
 describe('authorization gate (M17, public-repo safe-by-default)', () => {
@@ -71,30 +71,30 @@ describe('authorization gate (M17, public-repo safe-by-default)', () => {
     });
     expect(backend.dispatched).toEqual([]); // never spent
     const parked = await gh.getIssue(ref);
-    expect(parked.labels).toContain('looper:needs-approval');
+    expect(parked.labels).toContain('loopdog:needs-approval');
     expect(untrusted.records.some((r) => r.outcome.status === 'parked')).toBe(true);
 
     // an UNTRUSTED self-approval does NOT release it
-    await gh.addLabels(ref, ['looper:approved']);
+    await gh.addLabels(ref, ['loopdog:approved']);
     await handleEvent(opts, 'issues', {
       action: 'labeled',
       issue: { number: 1, author_association: 'NONE' },
-      label: { name: 'looper:approved' },
+      label: { name: 'loopdog:approved' },
       sender: { login: 'stranger', type: 'User' },
     });
-    expect((await gh.getIssue(ref)).labels).not.toContain('looper:approved'); // revoked
+    expect((await gh.getIssue(ref)).labels).not.toContain('loopdog:approved'); // revoked
     expect(backend.dispatched).toEqual([]);
 
-    // a TRUSTED collaborator applies looper:approved — the label event both
+    // a TRUSTED collaborator applies loopdog:approved — the label event both
     // releases the hold AND re-runs the loop, which now dispatches.
-    await gh.addLabels(ref, ['looper:approved']);
+    await gh.addLabels(ref, ['loopdog:approved']);
     const released = await handleEvent(opts, 'issues', {
       action: 'labeled',
       issue: { number: 1, author_association: 'COLLABORATOR' },
-      label: { name: 'looper:approved' },
+      label: { name: 'loopdog:approved' },
       sender: { login: 'dana', type: 'User' },
     });
-    expect((await gh.getIssue(ref)).labels).toContain('looper:approved'); // stuck (trusted)
+    expect((await gh.getIssue(ref)).labels).toContain('loopdog:approved'); // stuck (trusted)
     expect(backend.dispatched).toHaveLength(1); // released → dispatched
     expect(released.records.some((r) => r.outcome.status === 'pending')).toBe(true);
   });
@@ -111,7 +111,7 @@ describe('authorization gate (M17, public-repo safe-by-default)', () => {
       sender: { login: 'owner', type: 'User' },
     });
     expect(backend.dispatched).toHaveLength(1);
-    expect((await gh.getIssue(ref)).labels).not.toContain('looper:needs-approval');
+    expect((await gh.getIssue(ref)).labels).not.toContain('loopdog:needs-approval');
   });
 });
 

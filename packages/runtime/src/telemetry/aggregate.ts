@@ -1,4 +1,4 @@
-import type { RunRecord } from '@looper/core';
+import type { RunRecord } from '@loopdog/core';
 
 /**
  * Per-provider outcome telemetry (task 0053): aggregate the run-record ledger

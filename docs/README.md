@@ -1,19 +1,19 @@
-# Looper Documentation
+# Loopdog Documentation
 
-Looper attaches to a GitHub repo and runs the software lifecycle — triage, groom,
+Loopdog attaches to a GitHub repo and runs the software lifecycle — triage, groom,
 implement, review, merge, deploy — as loops over your Claude/Codex **subscription**.
 The controller lives in your Actions, labels are the state machine, and it's
 **safe by default**.
 
-> **New here? → [Quickstart](quickstart.md)** — attach Looper in ~10 minutes.
+> **New here? → [Quickstart](quickstart.md)** — attach Loopdog in ~10 minutes.
 
 ## Reference
 
-- [Config Reference](config-reference.md) — every `looper.yml` / `loop.yml` field.
+- [Config Reference](config-reference.md) — every `loopdog.yml` / `loop.yml` field.
 - [Resilience & Failure Policy](resilience.md) — retries, timeouts, ceiling,
   circuit breaker, quarantine.
-- [Benchmarks](benchmarks.md) — per-loop/provider cost/latency/success (`looper bench`).
-- [Upgrading](UPGRADING.md) — the config version contract + `looper upgrade`.
+- [Benchmarks](benchmarks.md) — per-loop/provider cost/latency/success (`loopdog bench`).
+- [Upgrading](UPGRADING.md) — the config version contract + `loopdog upgrade`.
 
 ## Install & Release
 
@@ -22,12 +22,12 @@ The controller lives in your Actions, labels are the state machine, and it's
 
 ## Guides
 
-- [Write a project adapter](guides/adapters.md) — teach Looper a new stack.
+- [Write a project adapter](guides/adapters.md) — teach Loopdog a new stack.
 - [Write a model provider / backend](guides/providers.md) — add a provider.
 
 ## Examples
 
-- [Examples](examples.md) — `examples/node-todo`, a forkable repo Looper is
+- [Examples](examples.md) — `examples/node-todo`, a forkable repo Loopdog is
   attached to (validated + exercised offline in CI).
 
 ## Trust

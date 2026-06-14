@@ -1,12 +1,12 @@
-// @looper/config — root looper.yml + per-loop loop.yml schemas, discovery,
-// validation, and resolution into @looper/core domain shapes.
+// @loopdog/config — root loopdog.yml + per-loop loop.yml schemas, discovery,
+// validation, and resolution into @loopdog/core domain shapes.
 export { rootConfigSchema, authorizationSchema, resilienceSchema } from './schema/root.js';
 export type { RootConfig } from './schema/root.js';
 export { loopConfigSchema } from './schema/loop.js';
 export type { LoopConfig } from './schema/loop.js';
 export { isCronDue, normalizeCron, validateCron } from './schema/cron.js';
 export type { CronCheck } from './schema/cron.js';
-export { LOOPER_DIR, discoverConfig } from './load/discover.js';
+export { LOOPDOG_DIR, discoverConfig } from './load/discover.js';
 export type { DiscoveredLoop, DiscoveredTree } from './load/discover.js';
 export { parseDuration, validateConfig } from './validate/validate.js';
 export type {

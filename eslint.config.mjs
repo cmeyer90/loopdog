@@ -22,9 +22,9 @@ export default tseslint.config(
         {
           patterns: [
             {
-              group: ['@looper/*/*'],
+              group: ['@loopdog/*/*'],
               message:
-                "Import other packages only via their public barrel ('@looper/<name>'), never package internals.",
+                "Import other packages only via their public barrel ('@loopdog/<name>'), never package internals.",
             },
           ],
         },

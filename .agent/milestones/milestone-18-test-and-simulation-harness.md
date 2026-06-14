@@ -5,19 +5,19 @@ Status: verified
 > Background: [Codebase Layout](../../docs/codebase.md) "Testing strategy." Closes
 > a production gap: how do you e2e-test an autonomous dispatcher **without burning
 > subscription quota or hitting real GitHub**? The modular design makes this cheap
-> — IO is behind ports (interfaces in `@looper/core`), so fakes are drop-ins.
+> — IO is behind ports (interfaces in `@loopdog/core`), so fakes are drop-ins.
 
 ## Objective
 
 A deterministic, offline test harness that exercises whole loops end-to-end
 against a **fake GitHub** and **fake/replay backends** — plus a simulation layer
-for storms/races/crashes — so looper's behavior and invariants are provable in CI
+for storms/races/crashes — so loopdog's behavior and invariants are provable in CI
 with zero quota spent and no network.
 
 ## Guiding Decisions
 
 - **Ports make fakes free.** Because `GitHubPort`, `Backend`, `ProjectAdapter`, and
-  `PlanStore` are interfaces in `@looper/core`, the harness injects in-memory fakes
+  `PlanStore` are interfaces in `@loopdog/core`, the harness injects in-memory fakes
   and runs the *real* controller unchanged.
 - **No real quota in per-PR CI.** Provider calls are scripted fakes or **recorded
   cassettes** (record-once/replay); a tiny live smoke against a real subscription
@@ -29,13 +29,13 @@ with zero quota spent and no network.
 - **Simulate the hard cases**: a deterministic clock + fault injection for event
   storms, event↔sweep races, dropped webhooks, and mid-run crashes — asserting the
   invariants (no double-dispatch, no stranded items, idempotent ingest).
-- The harness lives in a **dev-only `@looper/testing` package** (fakes + scenario
+- The harness lives in a **dev-only `@loopdog/testing` package** (fakes + scenario
   + simulation runner + fixtures); it is not shipped.
 
 Test tiers:
 
 ```
-1 unit        @looper/core pure logic — no fakes needed (IO-free)
+1 unit        @loopdog/core pure logic — no fakes needed (IO-free)
 2 component   each port impl vs. a fake/recorded counterpart (backend/adapter conformance)
 3 scenario    whole loops on fake-GitHub + fake/replay backend → golden end-state
 4 simulation  deterministic clock + fault injection → invariants hold
@@ -50,7 +50,7 @@ Test tiers:
 | 0084 | verified | task/0084-fake-and-replay-backends | Fake & Replay Backends | Scripted `FakeBackend` + cassette `ReplayBackend` + capability presets + `runBackendConformance` — no quota. |
 | 0085 | verified | task/0085-scenario-runner-and-goldens | Scenario Runner & Golden Assertions | Declarative scenarios → canonical digest-redacted golden (labels/PRs/comments/plan/run-records). |
 | 0086 | verified | task/0086-simulation-and-fault-injection | Simulation & Fault Injection | `VirtualClock` + storms/races/drops/crashes + 5 invariants + seeded fuzz/shrink. |
-| 0087 | verified | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke | `LOOPER_TIER` selector + network/secret hermeticity guards + two CI workflows; live smoke operator-pending. |
+| 0087 | verified | task/0087-tiered-ci-and-live-smoke | Tiered CI Wiring & Live Smoke | `LOOPDOG_TIER` selector + network/secret hermeticity guards + two CI workflows; live smoke operator-pending. |
 
 ## Definition Of Done
 
@@ -63,15 +63,15 @@ Test tiers:
 
 ## Verification Log
 
-- 2026-06-12: M18 complete (0083–0087 verified). The dev-only `@looper/testing`
+- 2026-06-12: M18 complete (0083–0087 verified). The dev-only `@loopdog/testing`
   package now drives the UNMODIFIED runtime through all five tiers offline, zero
   quota: the `FakeGitHub` + `FakeBackend`/`ReplayBackend` (+ capability presets +
   `runBackendConformance`), the scenario runner with committed digest-redacted
   goldens, and a `VirtualClock`-driven simulation engine that asserts five
   invariants under storms/races/drops/crashes with a seeded fuzz/shrink mode.
-  Tier selection (`LOOPER_TIER`) + the hermeticity guards (network guard +
-  secret-absence, self-gated on `LOOPER_HERMETIC=1`) keep the live tier out of
-  per-PR CI; `looper-ci.yml` runs tiers 1–4 and `looper-live-smoke.yml` gates the
+  Tier selection (`LOOPDOG_TIER`) + the hermeticity guards (network guard +
+  secret-absence, self-gated on `LOOPDOG_HERMETIC=1`) keep the live tier out of
+  per-PR CI; `loopdog-ci.yml` runs tiers 1–4 and `loopdog-live-smoke.yml` gates the
   real-subscription smoke to manual/nightly. Repo-wide: 226 tests across 31 files
   green, lint + build clean. DoD met for tiers 1–4 + simulation; the live-smoke
   EXECUTION (real subscription) + cassette `--rerecord` are operator-pending (an

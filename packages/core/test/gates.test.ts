@@ -5,8 +5,8 @@ import {
   parseCriteriaBlock,
   renderCriteriaBlock,
   upsertCriteriaBlock,
-} from '@looper/core';
-import type { AcceptanceCriterion, CheckRunSnapshot, ReviewSnapshot } from '@looper/core';
+} from '@loopdog/core';
+import type { AcceptanceCriterion, CheckRunSnapshot, ReviewSnapshot } from '@loopdog/core';
 
 const CRITERIA: AcceptanceCriterion[] = [
   {
@@ -22,9 +22,9 @@ const READY_BODY = [
   '',
   renderCriteriaBlock(CRITERIA),
   '',
-  '<!-- looper:scope -->',
+  '<!-- loopdog:scope -->',
   'Only the api/ratelimit module; no schema changes.',
-  '<!-- /looper:scope -->',
+  '<!-- /loopdog:scope -->',
 ].join('\n');
 
 describe('criteria block (0014)', () => {
@@ -36,11 +36,11 @@ describe('criteria block (0014)', () => {
 
   it('parses deterministically from a larger body and flags malformed lines', () => {
     const body = [
-      '<!-- looper:acceptance-criteria -->',
+      '<!-- loopdog:acceptance-criteria -->',
       '- [x] tagged fine (manual)',
       '- [ ] untagged line — no validation tag',
       'not even a checkbox',
-      '<!-- /looper:acceptance-criteria -->',
+      '<!-- /loopdog:acceptance-criteria -->',
     ].join('\n');
     const { criteria, malformed } = parseCriteriaBlock(body);
     expect(criteria).toHaveLength(1);
@@ -56,7 +56,7 @@ describe('criteria block (0014)', () => {
     const updated = upsertCriteriaBlock(READY_BODY, [{ ...CRITERIA[0]!, met: true }]);
     expect(updated).toContain('- [x] rate limit at 100 req/min');
     expect(updated).not.toContain('- [ ] rate limit');
-    expect(updated).toContain('looper:scope'); // rest of body intact
+    expect(updated).toContain('loopdog:scope'); // rest of body intact
 
     const appended = upsertCriteriaBlock('plain body', CRITERIA);
     expect(appended.startsWith('plain body')).toBe(true);
@@ -77,16 +77,16 @@ describe('DoR gate (0014)', () => {
 
   it('blocks on empty criteria, malformed lines, or missing scope (fail closed)', () => {
     const empty = [
-      '<!-- looper:acceptance-criteria -->',
-      '<!-- /looper:acceptance-criteria -->',
+      '<!-- loopdog:acceptance-criteria -->',
+      '<!-- /loopdog:acceptance-criteria -->',
     ].join('\n');
     expect(evaluateDor(empty).pass).toBe(false);
 
     const malformed = [
-      '<!-- looper:acceptance-criteria -->',
+      '<!-- loopdog:acceptance-criteria -->',
       '- [ ] untagged criterion',
-      '<!-- /looper:acceptance-criteria -->',
-      '<!-- looper:scope -->bounded<!-- /looper:scope -->',
+      '<!-- /loopdog:acceptance-criteria -->',
+      '<!-- loopdog:scope -->bounded<!-- /loopdog:scope -->',
     ].join('\n');
     const r = evaluateDor(malformed);
     expect(r.pass).toBe(false);

@@ -5,7 +5,7 @@ import { TodoList } from '../src/todo.js';
 test('adds items and counts remaining', () => {
   const list = new TodoList();
   list.add('write the quickstart');
-  list.add('attach looper');
+  list.add('attach loopdog');
   assert.equal(list.remaining(), 2);
 });
 

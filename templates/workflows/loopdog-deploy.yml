@@ -1,10 +1,10 @@
 # Adapter-driven deploy + smoke + rollback (tasks 0046-0048) — runs in YOUR CI
-# with YOUR deploy secrets (bring-your-own; looper bakes no cloud creds).
+# with YOUR deploy secrets (bring-your-own; loopdog bakes no cloud creds).
 # Reports the `deploy`, `deploy-smoke`, and `rollback` checks the deploy-smoke
 # and rollback loops gate on. Replace the run: lines with your project
-# adapter's commands (`looper config validate` prints them) or keep the
+# adapter's commands (`loopdog config validate` prints them) or keep the
 # adapter_options.commands you configured.
-name: looper-deploy
+name: loopdog-deploy
 on:
   push:
     branches: [main]

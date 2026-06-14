@@ -12,7 +12,7 @@ for orientation.
 
 ## Project
 
-Looper is a **generic, open-source autonomous-SDLC engine you attach to any
+Loopdog is a **generic, open-source autonomous-SDLC engine you attach to any
 GitHub repository.** Control loops watch a repo's issues and PRs and drive work
 through the lifecycle (groom → implement → review → merge → deploy), writing
 durable plans into the repo as they go. Everything project-specific is pluggable:
@@ -21,13 +21,13 @@ secrets (bring-your-own). See [`docs/architecture.md`](docs/architecture.md) for
 the full design and [`.agent/milestones.md`](.agent/milestones.md) for the V1
 roadmap.
 
-- What this repository is: the looper engine itself (the tool), not a product
+- What this repository is: the loopdog engine itself (the tool), not a product
   built with it.
 - Runtime model: V1 runs inside the **target repo's own GitHub Actions** on the
   adopter's **Claude/Codex subscriptions** (provider cloud agents) — no API keys
-  on the primary path, zero looper-hosted infrastructure.
+  on the primary path, zero loopdog-hosted infrastructure.
 - Stack: **TypeScript (strict) on Node 20+, an npm-workspaces monorepo** of small
-  `@looper/*` packages. Module boundaries, filetree, and build order are defined
+  `@loopdog/*` packages. Module boundaries, filetree, and build order are defined
   in [`docs/codebase.md`](docs/codebase.md) (ratified by M01 · 0001).
 - Standard commands (run from the repo root, Node 20+):
   - `npm install` — install workspace dependencies.
@@ -67,13 +67,13 @@ without reason.
 
 ## Code Structure & Modularity
 
-Looper is an npm-workspaces monorepo of small, single-purpose packages. See
+Loopdog is an npm-workspaces monorepo of small, single-purpose packages. See
 [`docs/codebase.md`](docs/codebase.md) for the package set, dependency direction,
 filetree, and build order. Rules:
 
 - **Respect package boundaries.** Import other packages only via their public
   `index.ts`; never reach into another package's `src` internals. Port interfaces
-  live in `@looper/core`; implementations live in their own package.
+  live in `@loopdog/core`; implementations live in their own package.
 - **One responsibility per package and per file.** No `utils.ts`, `helpers/`,
   `common/`, or `misc/` dumping grounds — a homeless helper is a missing concept,
   not a junk drawer.
@@ -81,7 +81,7 @@ filetree, and build order. Rules:
   or a folder past ~8–10 files is a smell to split (guideline, not a gate).
 - **Loops are data, not code.** Behavior is `templates/loops/<name>/` config +
   prompts run by the generic runtime — don't add per-loop modules.
-- **Production intent, pragmatic scope.** Tests colocate per package; `@looper/core`
+- **Production intent, pragmatic scope.** Tests colocate per package; `@loopdog/core`
   stays IO-free. Don't add frameworks (DI, plugin loaders, queues, a database) —
   GitHub is the store and bus — and don't over-split into micro-packages.
 

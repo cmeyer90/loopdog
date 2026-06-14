@@ -1,4 +1,4 @@
-import type { GitHubPort, ItemRef } from '@looper/core';
+import type { GitHubPort, ItemRef } from '@loopdog/core';
 
 /**
  * Idempotent marked-comment upsert: exactly one comment per marker, updated in

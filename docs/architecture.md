@@ -1,4 +1,4 @@
-# Looper — Architecture & Vision
+# Loopdog — Architecture & Vision
 
 > North-star design doc. The V1 roadmap that implements it lives as milestones
 > under [`.agent/milestones.md`](../.agent/milestones.md); this doc is the
@@ -8,9 +8,9 @@
 > · creating a loop); for the module boundaries and filetree, see
 > [codebase.md](codebase.md).
 
-## What Looper Is
+## What Loopdog Is
 
-Looper is a **generic, open-source orchestrator of autonomous SDLC loops that you
+Loopdog is a **generic, open-source orchestrator of autonomous SDLC loops that you
 attach to any GitHub repository — driven by your _existing_ Claude Code and Codex
 subscriptions.** Control loops watch a repo's issues and PRs and drive work
 through the lifecycle (groom → implement → review → merge → deploy), writing
@@ -18,14 +18,14 @@ durable plans into the repo as they go.
 
 The defining choice (verified against provider docs, 2026-06): **the model work
 runs in the provider's own cloud agent, on the user's subscription, dispatched
-through GitHub — not via pay-per-token API keys and not in a looper-owned
-runner.** Looper itself is pure orchestration: it manipulates GitHub state,
+through GitHub — not via pay-per-token API keys and not in a loopdog-owned
+runner.** Loopdog itself is pure orchestration: it manipulates GitHub state,
 dispatches work to provider cloud agents, ingests the PRs they produce, and gates
 them. It makes no direct model API calls on the primary path.
 
 The adopter's job shifts from *manually prompting an agent* to *managing and
 tuning loops*: dogfood the product, file tickets, set policy, act as escalation
-authority. Looper does the SDLC labor using the subscriptions the team already
+authority. Loopdog does the SDLC labor using the subscriptions the team already
 pays for.
 
 ### Who it's for
@@ -38,18 +38,18 @@ with humans retained for taste, ambiguity, and high-blast-radius decisions.
 
 - **Subscription-native.** Primary execution is the provider's cloud agent on the
   user's Claude/Codex subscription. No required API keys, no per-token billing on
-  the happy path. Auth starts with a **browser login via the CLI** (`looper
+  the happy path. Auth starts with a **browser login via the CLI** (`loopdog
   login`); Claude additionally imports a per-routine `/fire` URL + bearer-token
   secret ref from the Claude web UI. This is a subscription routine token, not a
   Claude Platform API key or PAT.
 - **Generic by default.** No assumptions about language, framework, cloud, or CI
   beyond "it's a GitHub repo." Specifics arrive through config and adapters.
-- **Zero-infra to adopt.** The provider hosts the agent sandbox; looper's thin
+- **Zero-infra to adopt.** The provider hosts the agent sandbox; loopdog's thin
   controller runs in the adopter's GitHub Actions (or via the CLI). Nothing
-  looper-hosted to trust or pay for.
+  loopdog-hosted to trust or pay for.
 - **GitHub is the substrate _and_ the dispatch bus.** Issues, labels, PRs, and
   comments are the database, the message bus, the state machine — and the way
-  looper triggers provider cloud agents.
+  loopdog triggers provider cloud agents.
 - **Safe by default, autonomous by promotion.** New installs run dry-run /
   human-gated; autonomy is granted per risk tier as loops earn trust.
 - **Everything-as-artifact.** Config, prompts/briefs, policies, and plans live in
@@ -57,9 +57,9 @@ with humans retained for taste, ambiguity, and high-blast-radius decisions.
 
 ## Execution model: orchestrate provider cloud agents over GitHub
 
-The single most important architectural fact. Looper splits cleanly:
+The single most important architectural fact. Loopdog splits cleanly:
 
-- **Controller (looper code, deterministic):** triggering, claiming/locking,
+- **Controller (loopdog code, deterministic):** triggering, claiming/locking,
   composing the task brief, **dispatching** to a provider cloud agent,
   **ingesting** the resulting PR, running gates, merge authority, budgets,
   retries. Runs cheaply in the adopter's Actions or from the CLI. No model calls.
@@ -73,7 +73,7 @@ The single most important architectural fact. Looper splits cleanly:
 GitHub (substrate + dispatch bus)
    │  labels = state · issues/PRs = items · comments/mentions = dispatch
    ▼
-looper controller  (Actions or CLI; deterministic; NO model calls)
+loopdog controller  (Actions or CLI; deterministic; NO model calls)
    │  claim → compose brief → DISPATCH ───────────────┐
    │                                                   ▼
    │                            provider cloud agent (subscription)
@@ -91,36 +91,36 @@ merge (policy + risk tier)  →  durable plan updated in the repo
 
 | Provider | Subscription cloud feature | Unattended dispatch surface |
 |---|---|---|
-| **Claude** | "Claude Code on the web" sessions + **Routines** | Primary V1: imported routine **API `/fire`** URL + per-routine bearer token. Claude-native schedule/GitHub triggers exist, but are configured in Claude's web UI and are not Looper's primary dispatch path. |
+| **Claude** | "Claude Code on the web" sessions + **Routines** | Primary V1: imported routine **API `/fire`** URL + per-routine bearer token. Claude-native schedule/GitHub triggers exist, but are configured in Claude's web UI and are not Loopdog's primary dispatch path. |
 | **Codex** | **Codex cloud** (per-task container) | **GitHub `@codex` mention / assignment only** — no REST API for cloud tasks; `@codex review` for reviews |
 
 The backend contract normalizes these different subscription-native dispatch
 surfaces: Claude is called by `/fire`, Codex by GitHub mention/assignment, and the
-optional self-hosted runner by a local/API execution path. Looper hides those
+optional self-hosted runner by a local/API execution path. Loopdog hides those
 differences behind one **execution-backend interface** so loops are written once
 and run on either provider.
 
 ### The honest constraints (these shape V1)
 
-- **Secrets for tests live in the _provider's_ cloud, not looper's.** "Everything
+- **Secrets for tests live in the _provider's_ cloud, not loopdog's.** "Everything
   it needs to run tests" = configuring the provider's sandbox (setup scripts +
   env vars). For Claude routines, that means the adopter configures the Claude
-  cloud environment in Claude's web UI; Looper does **not** forward GitHub
+  cloud environment in Claude's web UI; Loopdog does **not** forward GitHub
   Actions secrets to Claude at `/fire` time. The adopter's code and those secrets
   reside in Anthropic/OpenAI infrastructure. That is the trust boundary, and it
   must be stated plainly.
 - **Codex strips secrets before the agent phase and disables agent-phase internet
   by default.** Tests needing live credentials or network may not run inside
-  Codex's agent phase. Looper therefore treats the **adopter's own GitHub Actions
+  Codex's agent phase. Loopdog therefore treats the **adopter's own GitHub Actions
   CI as the trustworthy verification gate** (ladder rung 2) regardless of where
   the work cell ran — the provider sandbox is for *producing* the change, not for
   *trusting* it.
 - **Subscription rate limits, not just dollars.** Codex cloud is capped (~5
-  tasks/hr on lower tiers); Claude routines have daily caps. Looper's budgeting
+  tasks/hr on lower tiers); Claude routines have daily caps. Loopdog's budgeting
   must model quota/throughput, not only token cost.
-- **No model API key on the primary path** means looper cannot make arbitrary
+- **No model API key on the primary path** means loopdog cannot make arbitrary
   model calls itself; *every* model-driven step (including grooming) is a
-  dispatched provider-cloud task. Looper's own code stays deterministic.
+  dispatched provider-cloud task. Loopdog's own code stays deterministic.
 - **ToS is an open question.** Whether a third-party tool may programmatically
   drive a user's subscription quota at scale is not squarely answered by either
   provider's public docs. Flagged as an adoption risk to verify, not assumed.
@@ -146,7 +146,7 @@ execution backend differs.
 
 ## The operator interface: the CLI
 
-Because the adopter's job is now *running the loops*, the **CLI is looper's
+Because the adopter's job is now *running the loops*, the **CLI is loopdog's
 primary human surface** (not just `init`). It must answer, at a glance: what loops
 exist, what each one runs, **how it's prompted**, **what its specific steps are**,
 what ran recently, what it cost, and what's stuck — and let the operator trigger,
@@ -156,7 +156,7 @@ sources of truth as everything else: GitHub state (live), the durable plan store
 
 Two CLI capabilities matter most for first-touch and extensibility:
 
-- **`looper login` — the keyless connector.** A browser login — GitHub OAuth
+- **`loopdog login` — the keyless connector.** A browser login — GitHub OAuth
   **device flow** via a public OAuth-App *client_id* (no private key, no server to
   host), *or* simply reusing the user's existing `gh`/git auth — authenticates the
   user locally and connects the provider subscription, storing tokens in the OS
@@ -166,7 +166,7 @@ Two CLI capabilities matter most for first-touch and extensibility:
   controller needs no login at all — it uses the workflow's `GITHUB_TOKEN` plus
   those already-imported secret refs.** (Model API keys exist only on the optional
   self-hosted backend.)
-- **`looper loops new` — author a custom loop** via a short questionnaire that
+- **`loopdog loops new` — author a custom loop** via a short questionnaire that
   generates a per-loop template file and shows you where to edit it (below).
 
 ## The state machine (GitHub as substrate)
@@ -182,7 +182,7 @@ new → needs-grooming → needs-clarification ⇄ ready-for-agent
 
 A loop queries items in one state, dispatches/advances them, and is otherwise
 stateless. This is what makes providers interchangeable: Claude and Codex are just
-GitHub-citizens whose cloud agents looper dispatches against the same labels.
+GitHub-citizens whose cloud agents loopdog dispatches against the same labels.
 
 ### Triggering: events for latency, cron for resilience
 
@@ -210,7 +210,7 @@ item is safe.
 
 **The `GITHUB_TOKEN` mechanic (why the sweep is load-bearing).** GitHub's default
 `GITHUB_TOKEN` deliberately does **not** re-trigger workflows, so a state change
-looper's controller writes (a label, a comment) won't fire the *next* loop's
+loopdog's controller writes (a label, a comment) won't fire the *next* loop's
 event. **The cron sweep is exactly what carries those controller→controller
 handoffs** — it picks the item up in its new state on the next tick. This is why
 **no GitHub App is required** (V1): the sweep dissolves the recursion problem.
@@ -218,12 +218,12 @@ Handoffs that are *not* from `GITHUB_TOKEN` — a human's comment/label, or a
 **provider** agent (Anthropic's/OpenAI's App) opening a PR — still fire their
 event instantly, so only controller→controller steps run at sweep pace. Adopters
 who want those instant too can drop a fine-grained PAT into a repo secret; a
-looper GitHub App is a post-V1 option (see Identity & secrets), never a V1
+loopdog GitHub App is a post-V1 option (see Identity & secrets), never a V1
 requirement.
 
 ## Durable planning store (plans-as-memory)
 
-Looper productizes a durable planning system (the milestones+tasks shape this repo
+Loopdog productizes a durable planning system (the milestones+tasks shape this repo
 uses on itself). **Every body of work — a GitHub issue/epic — gets a milestone and
 a task (or subtasks) written into the target repo:** grooming creates the plan,
 the implementation work cell keeps it accurate, review/merge advances its
@@ -233,12 +233,12 @@ are configurable.
 
 ## Generic-ness, in three plugin systems
 
-1. **Config.** A root `looper.yml` holds global defaults (label scheme, risk
+1. **Config.** A root `loopdog.yml` holds global defaults (label scheme, risk
    tiers, blast-radius limits, budgets/quota, **provider + execution backend**,
    plan-store location). Each loop is then its **own file** under
-   `.looper/loops/<name>/` — never one monolithic config everything piles into.
+   `.loopdog/loops/<name>/` — never one monolithic config everything piles into.
 2. **Project adapters.** A small `detect / build / test / lint / run / deploy`
-   interface so looper can describe an arbitrary project to the work cell (and run
+   interface so loopdog can describe an arbitrary project to the work cell (and run
    verification in the adopter's CI). Auto-detection + a generic command escape
    hatch so no project is unsupported.
 3. **Model providers / execution backends.** One worker contract satisfied by the
@@ -266,17 +266,17 @@ Each is a deterministic controller wrapping a dispatched work cell:
 
 The four above are *built-in defaults*, not a closed set. **A loop is data, not
 core code** — and each loop is its **own file**, never a stanza in one giant
-`looper.yml`. A loop lives under `.looper/loops/<name>/` as a small `loop.yml`
+`loopdog.yml`. A loop lives under `.loopdog/loops/<name>/` as a small `loop.yml`
 (trigger, transition, backend, gates) plus a co-located `prompt.md` (its brief):
 
 ```
-.looper/loops/dep-update/
+.loopdog/loops/dep-update/
 ├── loop.yml      # trigger, transition, backend, gates
 └── prompt.md     # the versioned brief
 ```
 
 ```yaml
-# .looper/loops/dep-update/loop.yml
+# .loopdog/loops/dep-update/loop.yml
 name: dep-update
 trigger: { cron: "weekly" }        # the only two trigger kinds: cron or github_event
 transition: { from: scheduled, to: in-review }
@@ -286,12 +286,12 @@ blast_radius: { max_files: 5 }
 ```
 
 Because the trigger space is small (**GitHub events + cron, nothing else**) and
-the rest is a short set of choices, **`looper loops new` is a questionnaire, not a
+the rest is a short set of choices, **`loopdog loops new` is a questionnaire, not a
 syntax exercise**: it asks the few questions (trigger kind + which event/schedule,
 from→to transition, backend, gates), then **generates the loop folder from a
 template, prints its path, and tells the user to edit `prompt.md`**. It validates
 the transition against the state machine (M03) and offers a dry-run. The generic
-runner (M03) executes any declared loop. This is the fourth axis of looper's
+runner (M03) executes any declared loop. This is the fourth axis of loopdog's
 genericity, alongside config, project adapters, and providers.
 
 ## The verification ladder (trust)
@@ -316,7 +316,7 @@ human-gated by default; promote `tier:safe` to auto-merge as it earns trust; kee
 ### How we know the request was satisfied
 
 The ladder validates *correctness and safety*. Validating that the work satisfied
-**what the user asked for** is a separate, harder question, and looper answers it
+**what the user asked for** is a separate, harder question, and loopdog answers it
 with one principle: **you cannot validate satisfaction until the request is
 machine-checkable.** So validation is a chain that begins at grooming, not review:
 
@@ -344,25 +344,25 @@ machine-checkable.** So validation is a chain that begins at grooming, not revie
 6. **Human backstop (rung 5).** Dogfooding catches the deepest failure: when the
    *criteria themselves* were wrong (the request was mis-groomed). That's why the
    human confirms acceptance criteria at grooming and stays the escalation
-   authority — looper validates against the target, but a human owns the target.
+   authority — loopdog validates against the target, but a human owns the target.
 
 The honest limit: steps 1–2 are load-bearing. If the acceptance criteria don't
 capture the real intent, every downstream check validates the wrong thing
-confidently. Looper's defense is to make the criteria explicit, testable, and
+confidently. Loopdog's defense is to make the criteria explicit, testable, and
 human-confirmable — so a wrong target is visible and fixable, not buried.
 
 ## Identity & secrets (two planes)
 
-One rule: **looper never serializes a long-lived credential into prompts, plans,
+One rule: **loopdog never serializes a long-lived credential into prompts, plans,
 comments, run records, or other GitHub/model-visible artifacts it controls.**
 Project secrets may still reside in a provider cloud environment or a self-hosted
 container when a backend needs them; that residency is explicit and gated.
 
-**Looper's own repo identity** (to read/write labels, PRs, comments, claims) is
+**Loopdog's own repo identity** (to read/write labels, PRs, comments, claims) is
 the Actions **`GITHUB_TOKEN`** — free, zero-setup, auto-scoped to the repo. The
 loop-to-loop handoffs `GITHUB_TOKEN` won't re-trigger are carried by the cron
-sweep (above), so **no looper GitHub App is required for V1** — an optional PAT
-buys instant handoff, and a full looper App (a distinct `looper[bot]` identity,
+sweep (above), so **no loopdog GitHub App is required for V1** — an optional PAT
+buys instant handoff, and a full loopdog App (a distinct `loopdog[bot]` identity,
 org-wide install) is a deliberately post-V1 enhancement. The local CLI authenticates
 the user via OAuth device flow (a public OAuth-App *client_id*, no hosted backend)
 or the user's existing `gh`/git auth. This is separate from the two secret planes:
@@ -372,13 +372,13 @@ or the user's existing `gh`/git auth. This is separate from the two secret plane
   creates/edits the routine in Claude's web UI, selects the repo and cloud
   environment, adds an API trigger, and imports the `/fire` URL + per-routine
   bearer token as secret refs. For Codex, the user authorizes the provider's
-  GitHub App. There is usually **no model API key** for looper to store.
+  GitHub App. There is usually **no model API key** for loopdog to store.
 - **Project-secret plane** — the secrets the work cell needs to build/test/deploy.
   On the primary path these are configured into the **provider's** cloud
   environment (for Claude, manually in Claude's cloud environment; for Codex,
   according to Codex's setup/env constraints); on the self-hosted backend they are
-  injected into the adopter's own runner. Looper does not bridge GitHub Actions
-  secrets into Claude at `/fire` time. Either way looper scrubs secrets from
+  injected into the adopter's own runner. Loopdog does not bridge GitHub Actions
+  secrets into Claude at `/fire` time. Either way loopdog scrubs secrets from
   anything model-visible it controls, and documents the residency/trust boundary
   honestly (provider-cloud on the primary path).
 
@@ -396,7 +396,7 @@ or the user's existing `gh`/git auth. This is separate from the two secret plane
 
 On a public repo, *anyone* can open an issue or comment — so without a gate, a
 stranger could drive acting loops on the maintainer's subscription (quota drain +
-injection vector). Looper adds an **authorization gate** evaluated in the runner's
+injection vector). Loopdog adds an **authorization gate** evaluated in the runner's
 pre-flight, before any claim/dispatch — the access-control sibling of budget and
 the kill switch. Maintainers control **who / what / when** (M17):
 
@@ -407,8 +407,8 @@ the kill switch. Maintainers control **who / what / when** (M17):
 - **When** — per-actor + global trigger rate caps and optional schedule windows.
 
 **Safe by default:** an untrusted trigger is *acknowledged but parked* —
-`looper:needs-approval`, no dispatch, no spend — until a **trusted** human releases
-it (`looper:approved` / `looper approve`; a self-approval by the untrusted actor
+`loopdog:needs-approval`, no dispatch, no spend — until a **trusted** human releases
+it (`loopdog:approved` / `loopdog approve`; a self-approval by the untrusted actor
 doesn't count). Parking untrusted content before it reaches an acting work cell
 also shrinks the injection surface. Config is repo-wide and per-loop; the strictest
 rule wins.
@@ -425,7 +425,7 @@ pause/park) — and maintainers tune the knobs (repo-wide + per-loop):
 resilience:
   retries: { max: 2, backoff: exponential, base: 30s, cap: 10m }
   dispatch_timeout: 30m
-  max_attempts_per_item: 3            # exhausted → looper:quarantine
+  max_attempts_per_item: 3            # exhausted → loopdog:quarantine
   max_in_flight: { global: 10, per_loop: 4 }
   circuit_breaker: { consecutive_failures: 5, cooldown: 1h }   # pause on provider outage
   on_failure: needs-human            # needs-human | retry | abandon
@@ -434,8 +434,8 @@ resilience:
 
 A **circuit breaker** beats blind retries during a provider outage (pause, don't
 burn quota); a load spike **defers** past `max_in_flight` rather than overrunning;
-and nothing is silently dropped — an exhausted item lands in `looper:quarantine`
-with its failure recorded and a human-releasable path (`looper retry`).
+and nothing is silently dropped — an exhausted item lands in `loopdog:quarantine`
+with its failure recorded and a human-releasable path (`loopdog retry`).
 
 ## V1 scope
 
@@ -447,12 +447,12 @@ auto-merge; two-plane secrets; budgets/quota/kill-switch/stuck-detection; a
 **loop management & observability CLI**; docs + ≥1 real external dogfood repo;
 semver `1.0.0`.
 
-**Out (post-V1):** a hosted looper service / managed backend; non-GitHub forges;
+**Out (post-V1):** a hosted loopdog service / managed backend; non-GitHub forges;
 a large adapter/provider marketplace; advanced ensemble/routing beyond the basics;
 web analytics product.
 
 **Non-negotiable for V1:** subscription path works end-to-end; human-gated by
-default; secrets never in model-visible context looper controls; looper never able
+default; secrets never in model-visible context loopdog controls; loopdog never able
 to edit the checks that gate it; and the provider-cloud trust boundary stated
 plainly to adopters.
 

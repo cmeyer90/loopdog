@@ -45,9 +45,9 @@ helper in the pipeline.
 ### Technical detail
 
 **Package(s):** the loop ships in `runtime` as `templates/loops/review/` assets
-(scaffolded into adopters by `looper init`). Reviewer-selection logic lands in
-`@looper/runtime` (pipeline) as a pure helper; the backend `capabilities` field it
-reads is defined on the `Backend` port in `@looper/core` / `@looper/backends`
+(scaffolded into adopters by `loopdog init`). Reviewer-selection logic lands in
+`@loopdog/runtime` (pipeline) as a pure helper; the backend `capabilities` field it
+reads is defined on the `Backend` port in `@loopdog/core` / `@loopdog/backends`
 (M05 · 0019). No new package.
 
 **`loop.yml`:**
@@ -55,7 +55,7 @@ reads is defined on the `Backend` port in `@looper/core` / `@looper/backends`
 ```yaml
 # templates/loops/review/loop.yml
 name: review
-trigger: { github_event: pull_request }     # opened/synchronize on a looper PR
+trigger: { github_event: pull_request }     # opened/synchronize on a loopdog PR
 transition: { from: in-review, to: verified }   # findings → changes-requested
 backend: cross-model                         # sentinel: resolve ≠ implementer at dispatch
 gates: { require_criteria_block: true }      # DoR for review: no criteria → escalate
@@ -64,7 +64,7 @@ gates: { require_criteria_block: true }      # DoR for review: no criteria → e
 `backend: cross-model` is a sentinel resolved by the pipeline (not a literal
 provider). Resolution: load the run record for the PR (via 0073 correlation) →
 read `backend` of the implement run = the implementer provider → choose the
-configured review backend (`looper.yml` `review.backend`, or the first provider in
+configured review backend (`loopdog.yml` `review.backend`, or the first provider in
 the registry whose `capabilities.can_review` is true) such that
 `reviewer.provider !== implementer.provider`. If the only available provider equals
 the implementer → record `status: escalated` and route to `needs-human` (never
@@ -74,16 +74,16 @@ self-review; ladder Guiding Decision "a loop never rubber-stamps its own lineage
 - **Codex:** post `@codex review` on the PR (no REST API; GitHub-native mention).
 - **Claude:** `/fire` a routine with the review brief targeting the PR.
 - Correlation: the review verdict is ingested from the resulting
-  `pull_request_review` / `issue_comment` carrying the `looper-run:<run_id>` trailer
+  `pull_request_review` / `issue_comment` carrying the `loopdog-run:<run_id>` trailer
   (0073), so the verdict ties back to this review run.
 
 **The brief (`prompt.md`)** instructs the reviewer to, for **each** acceptance
-criterion in the PR's `<!-- looper:acceptance-criteria -->` block (both `test:` and
+criterion in the PR's `<!-- loopdog:acceptance-criteria -->` block (both `test:` and
 `manual:` tags), state met / not-met / unsure with a one-line file/line citation,
 then emit a fenced verdict block 0043 parses:
 
 ```yaml
-# looper:review-verdict
+# loopdog:review-verdict
 verdict: approve | changes-requested
 criteria:
   - id: ac-1
@@ -95,7 +95,7 @@ findings: [ { criterion: ac-3, severity: blocker|nit, note } ]
 
 `test:` criteria are validated objectively by the adopter's CI (rung 2) and the
 reviewer only confirms presence/coverage — it must not claim a `test:` criterion
-passed; CI is the trustworthy gate looper cannot edit. The cell **writes the verdict
+passed; CI is the trustworthy gate loopdog cannot edit. The cell **writes the verdict
 into the run record + durable plan** (criteria checklist) and sets the label:
 `approve` → `verified`, else `changes-requested`. `unsure`/blocker findings count as
 not-met (route to 0044).
@@ -122,7 +122,7 @@ verdict within the lease → sweep escalates (0073 timeout path).
 - [x] When no distinct provider is available, the run is **escalated** to
       `needs-human`, not self-reviewed.
 - [x] The brief drives a per-criterion intent-diff and the cell stores a
-      `looper:review-verdict` block consumable by 0043 in the run record + plan.
+      `loopdog:review-verdict` block consumable by 0043 in the run record + plan.
 - [x] `approve` → label `verified`; any not-met/blocker → `changes-requested`.
 - [x] A PR with no acceptance-criteria block escalates (review-DoR), never auto-approves.
 - [x] A golden scenario test proves cross-model selection + verdict-driven labeling.
@@ -135,7 +135,7 @@ verdict within the lease → sweep escalates (0073 timeout path).
 - [x] Implement the `cross-model` reviewer-selection helper in `runtime` (read implementer from run record, pick distinct `can_review` backend, escalate if none).
 - [x] Wire review dispatch to `Backend.dispatch` for Claude (`/fire`) and Codex (`@codex review`).
 - [x] Parse/store the verdict into the run record + durable plan and set the `verified`/`changes-requested` label.
-- [x] Register `review` in the built-in loop assets and `looper init` scaffold.
+- [x] Register `review` in the built-in loop assets and `loopdog init` scaffold.
 - [x] Add the golden scenario test + fixtures.
 
 ## Test Plan
@@ -145,7 +145,7 @@ Tests run via the repo's `vitest` runner; behavioral tests use the M18 fakes
 
 ```bash
 # from repo root, run the runtime package suite
-pnpm -F @looper/runtime test
+pnpm -F @loopdog/runtime test
 # golden scenario: Claude-implemented PR → review selects Codex → @codex review →
 # verdict ingested → criteria met → label verified; unmet → changes-requested;
 # single-provider config → escalate; no-criteria PR → escalate.
@@ -165,7 +165,7 @@ pnpm -F @looper/runtime test
   pairing comes from selection (loop backend / root backends.review) — e.g.
   `backend: codex` posts `@codex review` on the PR (the Codex backend's
   review mode), a Claude implement / Codex review pairing with no code change.
-- The verdict contract (`looper-verdict: approve|changes-requested`) is in
+- The verdict contract (`loopdog-verdict: approve|changes-requested`) is in
   the review prompt and parsed generically.
 
 ## Risks / Rollback

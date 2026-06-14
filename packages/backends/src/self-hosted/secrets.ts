@@ -1,6 +1,6 @@
 /**
  * Self-hosted secret stores (task 0031). On the **self-hosted** backend only,
- * looper resolves the adopter's own project secrets at dispatch time — from the
+ * loopdog resolves the adopter's own project secrets at dispatch time — from the
  * worker's injected env (`actions`), a Vault KV-v2 path (`vault`), or the
  * Doppler API (`doppler`). `oidc` performs no cloud-specific token exchange
  * itself; it returns explicit guidance to run your cloud's exchange action in
@@ -225,7 +225,7 @@ export function dopplerSecretStore(options: DopplerStoreOptions = {}): SecretSto
 }
 
 /**
- * `oidc` store — looper performs no cloud-specific token exchange itself. Run
+ * `oidc` store — loopdog performs no cloud-specific token exchange itself. Run
  * your cloud's official OIDC exchange action in the worker job to mint a
  * short-lived credential, expose it as an env var, and read it via the
  * `actions` store. Resolving here always fails closed with that guidance.
@@ -239,7 +239,7 @@ export function oidcSecretStore(): SecretStore {
         new SecretResolutionError(
           refs[0]?.name ?? '*',
           'oidc',
-          `looper does not perform cloud-specific OIDC exchanges. Run your cloud's OIDC ` +
+          `loopdog does not perform cloud-specific OIDC exchanges. Run your cloud's OIDC ` +
             `token-exchange action in the worker job to mint short-lived credentials for ` +
             `${names}, expose them as env vars, and resolve them with store: actions`,
         ),

@@ -1,4 +1,4 @@
-import type { IssueSnapshot, LoopDefinition, TriggerEvent } from '@looper/core';
+import type { IssueSnapshot, LoopDefinition, TriggerEvent } from '@loopdog/core';
 
 /**
  * Event → loop matching (task 0008): which declared loops does a normalized

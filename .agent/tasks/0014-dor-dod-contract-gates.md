@@ -32,18 +32,18 @@ Criteria checklist; it is mirrored to the issue body in a fenced marker block so
 the gate can parse it from GitHub state alone:
 
 ```
-<!-- looper:acceptance-criteria -->
+<!-- loopdog:acceptance-criteria -->
 - [ ] per-API-key limiting at 100 req/min            (test: api/ratelimit.test.ts)
 - [ ] returns 429 + Retry-After when exceeded         (test: …)
 - [ ] limit configurable via env                      (manual)
-<!-- /looper:acceptance-criteria -->
+<!-- /loopdog:acceptance-criteria -->
 ```
 
 **DoR gate** passes when: ≥1 acceptance criterion present, scope bounds present,
 and a test plan present (each criterion tagged `test:` or `manual:`). Missing →
 the runner routes the item to `needs-grooming` (or `needs-human`) instead of
 dispatching. A loop may set `require_dor: false` to opt out (the runner emits the
-warning surfaced by `looper loops validate`).
+warning surfaced by `loopdog loops validate`).
 
 **DoD gate** passes when: every acceptance criterion is checked, required CI
 checks are green, review is approved, and (if the loop deploys) deploy smoke
@@ -67,7 +67,7 @@ status + review state from GitHub + the criteria block.
       (round-trip + malformed-line tests; untagged criteria are malformed).
 - [x] Per-loop `require_dor`/`require_ci`/`tier` config is honored by the
       runner (`GateConfig`); the `require_dor: false` warning surfaces in
-      config validation (`looper loops validate`, M02 · 0006 wiring).
+      config validation (`loopdog loops validate`, M02 · 0006 wiring).
 
 ## Implementation Checklist
 
@@ -95,11 +95,11 @@ status + review state from GitHub + the criteria block.
 
 ## Decisions
 
-- Block format exactly as specced (`<!-- looper:acceptance-criteria -->` fenced
+- Block format exactly as specced (`<!-- loopdog:acceptance-criteria -->` fenced
   checklist). Tagging: `(test: <path>)` or `(manual)` suffix per criterion; an
   UNTAGGED criterion is malformed → **fail closed** (DoR blocks), because an
   untagged criterion has no validation plan.
-- Scope bounds use a sibling `<!-- looper:scope -->` block; DoR requires it
+- Scope bounds use a sibling `<!-- loopdog:scope -->` block; DoR requires it
   non-empty.
 - DoD treats `manual:` criteria as strictly as `test:` ones — both must be
   checked. Who may check them differs (CI flips test-tagged boxes objectively;
@@ -117,7 +117,7 @@ the marker format simple and validated; default to *blocking* on parse failure
 
 ## Final Summary
 
-DoR/DoD are machine-checkable in `@looper/core/gates/`: a deterministic,
+DoR/DoD are machine-checkable in `@loopdog/core/gates/`: a deterministic,
 fail-closed criteria marker-block parser (with render/upsert for grooming to
 write through), the DoR predicate (criteria + per-criterion validation tags +
 scope) with `needs-grooming` routing, and the DoD predicate (all criteria

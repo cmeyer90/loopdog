@@ -6,7 +6,7 @@ import { deleteStoredToken, readStoredToken, storeToken } from '../src/auth/toke
 
 let dirs: string[] = [];
 async function home(): Promise<string> {
-  const dir = await mkdtemp(join(tmpdir(), 'looper-home-'));
+  const dir = await mkdtemp(join(tmpdir(), 'loopdog-home-'));
   dirs.push(dir);
   return dir;
 }
@@ -16,11 +16,11 @@ afterEach(async () => {
 });
 
 describe('token store (0077)', () => {
-  it('file fallback writes 0600 ~/.looper/auth.json and round-trips', async () => {
+  it('file fallback writes 0600 ~/.loopdog/auth.json and round-trips', async () => {
     const dir = await home();
     const where = await storeToken('tok-secret-123', 'github', { home: dir });
     expect(where).toBe('file');
-    const file = join(dir, '.looper', 'auth.json');
+    const file = join(dir, '.loopdog', 'auth.json');
     const mode = (await stat(file)).mode & 0o777;
     expect(mode).toBe(0o600);
     expect(await readStoredToken({ home: dir })).toBe('tok-secret-123');
@@ -37,9 +37,9 @@ describe('token store (0077)', () => {
   it('never stores the token anywhere but the auth file (no repo-relative writes)', async () => {
     const dir = await home();
     await storeToken('tok-abc', 'github', { home: dir });
-    const written = await readFile(join(dir, '.looper', 'auth.json'), 'utf8');
+    const written = await readFile(join(dir, '.loopdog', 'auth.json'), 'utf8');
     expect(written).toContain('tok-abc');
     // the only artifact is under the (test) home dir — nothing in cwd
-    await expect(stat(join(process.cwd(), '.looper', 'auth.json'))).rejects.toThrow();
+    await expect(stat(join(process.cwd(), '.loopdog', 'auth.json'))).rejects.toThrow();
   });
 });

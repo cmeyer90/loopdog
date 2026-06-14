@@ -9,8 +9,8 @@ import {
   leaseLabel,
   standardChecks,
   stateLabel,
-} from '@looper/core';
-import type { IssueSnapshot, LoopDefinition } from '@looper/core';
+} from '@loopdog/core';
+import type { IssueSnapshot, LoopDefinition } from '@loopdog/core';
 
 const NOW = new Date('2026-06-09T12:00:00Z');
 
@@ -20,7 +20,7 @@ const implementLoop: LoopDefinition = {
   transition: { from: 'ready-for-agent', to: 'in-progress' },
   backend: 'claude',
   gates: { requireDor: true, requireCi: true, tier: 'default' },
-  promptPath: '.looper/loops/implement/prompt.md',
+  promptPath: '.loopdog/loops/implement/prompt.md',
   mode: 'act',
 };
 
@@ -82,11 +82,11 @@ describe('transition decision (0012)', () => {
 
   it('skips on operational holds and off-ramps', () => {
     for (const hold of [
-      'looper:stop',
-      'looper:parked',
-      'looper:needs-approval',
-      'looper:quarantine',
-      'looper:needs-human',
+      'loopdog:stop',
+      'loopdog:parked',
+      'loopdog:needs-approval',
+      'loopdog:quarantine',
+      'loopdog:needs-human',
     ]) {
       const d = decideTransition(
         standardChecks(

@@ -22,10 +22,10 @@ verdict. It is the **rung-4 producer** for the verification ladder — see
 [architecture](../../docs/architecture.md) "The verification ladder (trust)" (rung
 4: deploy-time smoke/canary + health checks → auto-rollback) and "Deploy &
 operational verification." Assertions are described by the project adapter
-(`ProjectAdapter`, M06), so looper makes no assumptions about the target's infra;
-looper reads results, it does not invent checks. Lands in `@looper/runtime`
+(`ProjectAdapter`, M06), so loopdog makes no assumptions about the target's infra;
+loopdog reads results, it does not invent checks. Lands in `@loopdog/runtime`
 (the gate pipeline + brief/check wiring) consuming the `ProjectAdapter` port from
-`@looper/core` and adapter impls in `@looper/adapters`; the ladder slot it fills is
+`@loopdog/core` and adapter impls in `@loopdog/adapters`; the ladder slot it fills is
 defined in 0041, and the deploy it follows is 0046.
 
 ## Scope
@@ -41,7 +41,7 @@ defined in 0041, and the deploy it follows is 0046.
 - Feed the verdict into the DoD/promotion gate (0014): when the loop sets
   `deploy_smoke: true`, an un-passed gate blocks promotion of the deploy.
 - On a `fail` verdict, emit the failure signal the rollback loop (0048) triggers on
-  (a `looper:state/deploy-failed` label + run-record `outcome.status: failed`).
+  (a `loopdog:state/deploy-failed` label + run-record `outcome.status: failed`).
 - The optional adversarial deploy gate hook: allow smoke assertions to be authored
   by a second provider (one model proposes the deploy, another writes the smoke
   assertions) for `tier:core` / high-risk targets.
@@ -49,15 +49,15 @@ defined in 0041, and the deploy it follows is 0046.
 ### Technical detail
 
 **Package & placement.** The gate orchestration is IO + composition →
-`@looper/runtime` (`runtime/src/deploy/smoke.ts`), invoked by the transition runner
+`@loopdog/runtime` (`runtime/src/deploy/smoke.ts`), invoked by the transition runner
 (0012) on the deploy loop's post-deploy step. The `SmokeResult` type is pure
-domain → `@looper/core` (`core/src/run-record/` alongside the deploy verdict
+domain → `@loopdog/core` (`core/src/run-record/` alongside the deploy verdict
 types). Adapter `smoke`/`health`/canary command specs extend the `ProjectAdapter`
-port in `@looper/core/ports`; impls live in `@looper/adapters`. Check-run
-publishing is IO → `@looper/github` (`github/src/checks/`). The `gates.deploy_smoke`
-+ canary config schema lands in `@looper/config`. **No controller code executes the
+port in `@loopdog/core/ports`; impls live in `@loopdog/adapters`. Check-run
+publishing is IO → `@loopdog/github` (`github/src/checks/`). The `gates.deploy_smoke`
++ canary config schema lands in `@loopdog/config`. **No controller code executes the
 target's commands directly** — they run in the adopter's Actions deploy job (the
-same place 0046 runs the deploy) or the provider sandbox; looper reads the results.
+same place 0046 runs the deploy) or the provider sandbox; loopdog reads the results.
 
 **Adapter surface (extends the M06 port):**
 
@@ -78,7 +78,7 @@ interface CanaryPolicy {
 `not_applicable` and records it explicitly (honest about a weak rung), never a
 spurious `pass`.
 
-**Verdict type (`@looper/core`):**
+**Verdict type (`@loopdog/core`):**
 
 ```ts
 type SmokeStatus = 'pass' | 'fail' | 'pending' | 'not_applicable';
@@ -97,18 +97,18 @@ are not yet reported. The result is **only valid for `deploy.commit`** — a new
 deploy invalidates a prior verdict.
 
 **Flow (runner post-deploy step).** After 0046 moves the item to
-`looper:state/deploying`: (1) resolve the effective adapter (config-pin → detect →
+`loopdog:state/deploying`: (1) resolve the effective adapter (config-pin → detect →
 generic, same precedence as 0040) and its `SmokeSpec` + `CanaryPolicy`; (2) if a
 canary policy is set, the deploy targeted the canary slice — wait out
 `bake_seconds` via the **cron sweep** (0076), not an in-process sleep, so the run
 stays short and crash-safe; (3) read smoke/health results from the Actions deploy
-job's check-runs/outputs via `@looper/github`; (4) build `SmokeResult`; (5)
-publish a `looper/deploy-smoke` check-run on the merge commit + attach the `smoke`
+job's check-runs/outputs via `@loopdog/github`; (4) build `SmokeResult`; (5)
+publish a `loopdog/deploy-smoke` check-run on the merge commit + attach the `smoke`
 artifact to the run record (0012); (6) route by status (below). The bake/`pending`
 case **defers to the sweep** for re-evaluation rather than blocking.
 
 **Ladder + DoD wiring.** This task is the **producer** for rung 4; 0041 reads it.
-`evaluateLadder()` resolves `deploy_smoke` from the `looper/deploy-smoke` check-run
+`evaluateLadder()` resolves `deploy_smoke` from the `loopdog/deploy-smoke` check-run
 (primary) or the run-record `smoke` artifact (backup). The DoD gate (0014) already
 treats "deploy smoke passed (if the loop deploys)" as part of doneness; a loop
 opts in via `loop.yml`:
@@ -123,10 +123,10 @@ Default `deploy_smoke: false` (rung 4 `not_applicable`); the risk-tier policy
 (0045) may tighten it but never relaxes rung 2 (CI).
 
 **Routing.** A `pass` or explicit `not_applicable` verdict moves the item from
-`looper:state/deploying` to `looper:state/deployed`. A `pending` verdict leaves it
+`loopdog:state/deploying` to `loopdog:state/deployed`. A `pending` verdict leaves it
 in `deploying` for the sweep to re-check. A `fail` verdict sets
 `outcome.status: failed` on the run record and applies the
-`looper:state/deploy-failed` label — the **trigger the rollback loop (0048)
+`loopdog:state/deploy-failed` label — the **trigger the rollback loop (0048)
 consumes**. Because this is a controller→controller handoff that `GITHUB_TOKEN`
 won't re-trigger, the **cron sweep (0076)** carries it to the rollback loop on the
 next tick (an optional PAT makes it instant). The gate does not itself roll back —
@@ -159,16 +159,16 @@ rollback also fails → escalate via stuck-detection (M12 · 0051), do not loop.
 
 ## Acceptance Criteria
 
-- [x] After 0046 moves an item to `looper:state/deploying`, the adapter's
+- [x] After 0046 moves an item to `loopdog:state/deploying`, the adapter's
       `smoke`/`health` commands are resolved and their results read from GitHub
       Actions state — no target command is executed by controller code.
 - [x] A typed `SmokeResult` is produced and attached to the run record (0012), and
-      a `looper/deploy-smoke` check-run is published on the merge commit.
+      a `loopdog/deploy-smoke` check-run is published on the merge commit.
 - [x] `evaluateLadder()` (0041) resolves the `deploy_smoke` rung from that check-run
       / artifact; `mergeable`/promotion blocks when `deploy_smoke: true` and the
       verdict is not `pass`.
 - [x] A `fail` verdict sets `outcome.status: failed` and applies
-      `looper:state/deploy-failed`, arming the rollback loop (0048) via the sweep.
+      `loopdog:state/deploy-failed`, arming the rollback loop (0048) via the sweep.
 - [x] No `smoke`/`health` command → `not_applicable` recorded explicitly (not a
       spurious pass) and the item advances to `deployed`; results-not-yet-reported
       → `pending` (sweep re-checks while the item remains `deploying`).
@@ -180,14 +180,14 @@ rollback also fails → escalate via stuck-detection (M12 · 0051), do not loop.
 ## Implementation Checklist
 
 - [x] Extend the `ProjectAdapter` port with `smoke()`/`health()` + `CanaryPolicy`
-      in `@looper/core/ports`; add the `SmokeResult` type in `core/src/run-record/`.
-- [x] Implement `runSmokeGate()` in `@looper/runtime/src/deploy/smoke.ts` (resolve
+      in `@loopdog/core/ports`; add the `SmokeResult` type in `core/src/run-record/`.
+- [x] Implement `runSmokeGate()` in `@loopdog/runtime/src/deploy/smoke.ts` (resolve
       adapter → read results → build verdict → route by status).
-- [x] Publish the `looper/deploy-smoke` check-run via `@looper/github`
+- [x] Publish the `loopdog/deploy-smoke` check-run via `@loopdog/github`
       (`github/src/checks/`) and attach the `smoke` run-record artifact.
 - [x] Add `gates.deploy_smoke` + `gates.canary` + `smoke.adversarial` schema to
-      `@looper/config` (default `deploy_smoke: false`).
-- [x] Wire the `fail` path to apply `looper:state/deploy-failed` (0048 trigger) and
+      `@loopdog/config` (default `deploy_smoke: false`).
+- [x] Wire the `fail` path to apply `loopdog:state/deploy-failed` (0048 trigger) and
       the `pending`/bake path to defer to the sweep (0076).
 - [x] Wire the optional adversarial-assertion dispatch through the backend port.
 - [x] Update docs if loop authoring / `loop.yml` gate keys changed.
@@ -195,7 +195,7 @@ rollback also fails → escalate via stuck-detection (M12 · 0051), do not loop.
 ## Test Plan
 
 Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
-(`@looper/testing` fake-github + fake-adapter) — no real provider quota or live
+(`@loopdog/testing` fake-github + fake-adapter) — no real provider quota or live
 target.
 
 ```bash

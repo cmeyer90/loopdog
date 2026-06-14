@@ -1,6 +1,6 @@
 # Walkthroughs
 
-Concrete, end-to-end examples of using looper, distilled from the expected user
+Concrete, end-to-end examples of using loopdog, distilled from the expected user
 flows. They are illustrative (the product is pre-V1) but track the design in
 [`../architecture.md`](../architecture.md) and the roadmap in
 [`../../.agent/milestones.md`](../../.agent/milestones.md).
@@ -10,13 +10,13 @@ has a **Claude Max** subscription.
 
 | Flow | What it shows |
 |---|---|
-| [Connecting accounts](connecting-accounts.md) | `looper login` — keyless GitHub + Claude subscription connect |
+| [Connecting accounts](connecting-accounts.md) | `loopdog login` — keyless GitHub + Claude subscription connect |
 | [A ticket's lifecycle](ticket-lifecycle.md) | One issue from filed → groomed → implemented → reviewed → merged → deployed, on a subscription |
-| [Creating a loop](creating-a-loop.md) | `looper loops new` questionnaire → per-loop file → validate → dry-run → promote; plus the fast-path variant |
+| [Creating a loop](creating-a-loop.md) | `loopdog loops new` questionnaire → per-loop file → validate → dry-run → promote; plus the fast-path variant |
 
 ## The one-paragraph model
 
-Labels on GitHub issues/PRs are the state machine. Looper's **controller**
+Labels on GitHub issues/PRs are the state machine. Loopdog's **controller**
 (running in the adopter's GitHub Actions or via the CLI, deterministic, *no model
 calls*) watches that state on **GitHub events + a cron reconcile sweep**, and for
 each item it **claims** it, **composes a brief**, **dispatches** the work to a

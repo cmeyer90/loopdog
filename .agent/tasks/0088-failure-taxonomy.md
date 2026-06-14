@@ -43,7 +43,7 @@ caps) stays in M17 and is never classified here.
 
 ### Technical detail
 
-**Lands in `@looper/core`** (`core/src/resilience/` — alongside 0051's predicate;
+**Lands in `@loopdog/core`** (`core/src/resilience/` — alongside 0051's predicate;
 pure, no IO). The runtime (`runtime/src/pipeline/`) builds the `FailureSignal` from a
 failed step and acts on the returned `Response`; the runtime side is wired by
 0089–0091, not here. No new IO port.
@@ -98,7 +98,7 @@ in 0091):
 type Response =
   | { kind: 'retry' }        // transient   → hand to backoff (0089); ++attempt
   | { kind: 'escalate' }     // terminal    → needs-human (0051 escalation edge); ++attempt
-  | { kind: 'quarantine' }   // poisoned    → looper:quarantine (0091); record failure, no further retry
+  | { kind: 'quarantine' }   // poisoned    → loopdog:quarantine (0091); record failure, no further retry
   | { kind: 'defer' }        // overload    → skip this tick, no spend (0090); no ++attempt
   | { kind: 'pause' };       // budget      → park / pause loop (0050/0075/0090); no ++attempt
 ```
@@ -131,7 +131,7 @@ run record so a misclassification is debuggable.
 - Retry timing / `dispatch_timeout` / backoff schedule (0089).
 - `max_in_flight` accounting + the circuit-breaker state machine (0090); this task
   only *names* `overload`/`transient` — 0090 decides when a streak trips the breaker.
-- The `resilience:` config block, `looper:quarantine` label, `on_failure`/`escalate_to`
+- The `resilience:` config block, `loopdog:quarantine` label, `on_failure`/`escalate_to`
   routing, and CLI visibility (0091).
 - Reading GitHub state or config, posting comments, mutating labels — all runtime
   effects, wired by 0089–0091.
@@ -141,7 +141,7 @@ run record so a misclassification is debuggable.
 ## Acceptance Criteria
 
 - [x] A closed `FailureClass` enum + a pure `classify(signal, policy) → FailureClass`
-      lands in `@looper/core` with no IO and a total `switch` (no `default`).
+      lands in `@loopdog/core` with no IO and a total `switch` (no `default`).
 - [x] `responseFor` maps every class to exactly one deterministic `Response`, total
       over the enum.
 - [x] Classification precedence is honored: guard→budget, overCeiling→overload,
@@ -152,7 +152,7 @@ run record so a misclassification is debuggable.
 - [x] An absent/unknown `backendError` with attempts remaining classifies `transient`
       (fail-open), never `terminal`; with attempts exhausted, `poisoned`.
 - [x] The taxonomy table (class → trigger → response) is documented under `docs/`.
-- [x] `pnpm -F @looper/core test` passes.
+- [x] `pnpm -F @loopdog/core test` passes.
 
 ## Implementation Checklist
 
@@ -161,17 +161,17 @@ run record so a misclassification is debuggable.
 - [x] Implement `classify` with the documented precedence as a total `switch`.
 - [x] Implement `responseFor` and the attempt-increment contract helper.
 - [x] Specify the `FailureSignal`-build contract the runtime (0089–0091) implements
-      (a typed builder signature in `core`, called from `@looper/runtime`).
+      (a typed builder signature in `core`, called from `@loopdog/runtime`).
 - [x] Add the taxonomy doc table under `docs/` (cross-link from the M19 milestone).
 - [x] Table-driven unit tests over every class + precedence boundary.
 
 ## Test Plan
 
-Tests run via the repo's vitest runner; this task is pure `@looper/core` decision
+Tests run via the repo's vitest runner; this task is pure `@loopdog/core` decision
 logic, so tests are IO-free unit tests — no M18 fakes or backend, no real quota.
 
 ```bash
-pnpm -F @looper/core test
+pnpm -F @loopdog/core test
 #  - guard set → budget; overCeiling → overload; auth/invalid-input → terminal
 #  - count+1 == maxAttempts → poisoned; retryable 5xx w/ attempts left → transient
 #  - retryable but exhausted → poisoned (precedence), not infinite retry

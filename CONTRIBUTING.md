@@ -1,6 +1,6 @@
-# Contributing to Looper
+# Contributing to Loopdog
 
-Thanks for your interest! Looper is early; the most valuable contributions right
+Thanks for your interest! Loopdog is early; the most valuable contributions right
 now are issues describing real adoption needs, and PRs scoped to the active
 roadmap.
 
@@ -9,7 +9,7 @@ roadmap.
 - Read [`AGENTS.md`](AGENTS.md) first — it holds the durable operating rules
   (they apply to human and agent contributors alike) and the planning protocol.
 - Module boundaries are defined in [`docs/codebase.md`](docs/codebase.md).
-  Import other packages only via their public barrel (`@looper/<name>`); the
+  Import other packages only via their public barrel (`@loopdog/<name>`); the
   boundary check in CI enforces this.
 - Non-trivial work gets a task file under `.agent/tasks/` per
   [`.agent/PLANS.md`](.agent/PLANS.md) before implementation.

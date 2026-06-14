@@ -1,6 +1,6 @@
 import { Command } from 'commander';
 import { createRequire } from 'node:module';
-import type { ExecutionBackend } from '@looper/core';
+import type { ExecutionBackend } from '@loopdog/core';
 import { registerInit } from './commands/init.js';
 import { registerController } from './commands/controller.js';
 import { registerLogin } from './commands/login.js';
@@ -19,18 +19,18 @@ const require = createRequire(import.meta.url);
 const { version } = require('../package.json') as { version: string };
 
 /**
- * Builds the `looper` command tree. Execution backends are injected so the
- * registry (M05, `@looper/backends`) stays the single source for them.
+ * Builds the `loopdog` command tree. Execution backends are injected so the
+ * registry (M05, `@loopdog/backends`) stays the single source for them.
  */
 export function buildProgram(backends: ReadonlyMap<string, ExecutionBackend> = new Map()): Command {
   const program = new Command();
   program
-    .name('looper')
+    .name('loopdog')
     .description(
       'Autonomous-SDLC loops for any GitHub repository, driven by your existing ' +
         'Claude Code and Codex subscriptions.',
     )
-    .version(version, '-V, --version', 'output the looper version');
+    .version(version, '-V, --version', 'output the loopdog version');
 
   registerLogin(program);
   registerInit(program);

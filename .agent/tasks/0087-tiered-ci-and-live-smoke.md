@@ -5,7 +5,7 @@ Branch: task/0087-tiered-ci-and-live-smoke
 
 ## Goal
 
-Wire the five-tier test pyramid into looper's own CI so every PR runs tiers 1–4
+Wire the five-tier test pyramid into loopdog's own CI so every PR runs tiers 1–4
 deterministically, offline, with **zero subscription quota**, and add a tier-5
 **live smoke** — a tiny real-repo/real-subscription run behind a manual/nightly
 gate — to catch provider API drift without gating every PR on it.
@@ -25,12 +25,12 @@ catches). The live smoke exercises the **real** `dispatch → ingest` correlatio
 
 ## Scope
 
-- A **tier runner** in `@looper/testing` that classifies and selects tests by tier
+- A **tier runner** in `@loopdog/testing` that classifies and selects tests by tier
   (1 unit · 2 component · 3 scenario · 4 simulation · 5 live-smoke) so CI can run
   "tiers 1–4" cheaply and "tier 5" only when gated.
-- **CI wiring**: a `looper-ci.yml` GitHub Actions workflow running tiers 1–4 on
-  every PR/push — pinned to `LOOPER_CASSETTE=replay`, network-blocked, no secrets —
-  plus a separate `looper-live-smoke.yml` gated to manual dispatch + nightly cron.
+- **CI wiring**: a `loopdog-ci.yml` GitHub Actions workflow running tiers 1–4 on
+  every PR/push — pinned to `LOOPDOG_CASSETTE=replay`, network-blocked, no secrets —
+  plus a separate `loopdog-live-smoke.yml` gated to manual dispatch + nightly cron.
 - A **live-smoke harness**: a minimal end-to-end run (one safe loop, one scratch
   repo, one real subscription) that proves dispatch→ingest still works against the
   live provider, reports drift, and **never** gates per-PR CI.
@@ -39,17 +39,17 @@ catches). The live smoke exercises the **real** `dispatch → ingest` correlatio
 
 ### Technical detail
 
-**Package / files** (`@looper/testing`, dev-only): the tier registry +
+**Package / files** (`@loopdog/testing`, dev-only): the tier registry +
 classification live in `testing/src/tiers/{registry,select,index.ts}`; the live
 smoke in `testing/src/live-smoke/{harness,drift-report,index.ts}`. The CI workflows
-ship as repo-level assets under `.github/workflows/looper-ci.yml` and
-`.github/workflows/looper-live-smoke.yml` (looper's OWN CI, not the
+ship as repo-level assets under `.github/workflows/loopdog-ci.yml` and
+`.github/workflows/loopdog-live-smoke.yml` (loopdog's OWN CI, not the
 `templates/workflows/` adopters get).
 
 **Tier selection.** Tag tests by tier via a convention vitest can filter without a
 plugin — a per-tier `vitest.<tier>.config.ts` with an `include`/`exclude` glob
 (e.g. tier-5 lives only in `**/*.live.test.ts`, excluded from the default run), and
-an env switch `LOOPER_TIER=1-4|5|all` the tier runner maps to the right config(s).
+an env switch `LOOPDOG_TIER=1-4|5|all` the tier runner maps to the right config(s).
 Default (`vitest run`) = tiers 1–4. Tier 5 is opt-in only.
 
 ```ts
@@ -64,7 +64,7 @@ export interface TierSpec {
 
 **Hermeticity invariant (the load-bearing guarantee).** Tiers 1–4 must be provably
 offline and quota-free. Enforce, not just assume:
-- `LOOPER_CASSETTE=replay` pinned in `looper-ci.yml`; a missing cassette **fails
+- `LOOPDOG_CASSETTE=replay` pinned in `loopdog-ci.yml`; a missing cassette **fails
   loudly** (0084) — never falls through to network.
 - A **network guard** installed in the test setup for tiers 1–4 that throws on any
   outbound socket (real GitHub / provider host), so an accidental real-IO call is a
@@ -72,16 +72,16 @@ offline and quota-free. Enforce, not just assume:
 - No provider/`GITHUB_TOKEN` secrets present in the tiers-1–4 job env (assert their
   absence in a setup check).
 
-**CI workflow — `looper-ci.yml`** (looper's own repo): triggers `pull_request` +
-`push`; steps = install → build → lint → `LOOPER_TIER=1-4 vitest run` (which runs
+**CI workflow — `loopdog-ci.yml`** (loopdog's own repo): triggers `pull_request` +
+`push`; steps = install → build → lint → `LOOPDOG_TIER=1-4 vitest run` (which runs
 unit + the 0084 conformance suite in `replay` + the 0085 goldens + the 0086
 simulation invariants). This is a required check. No secrets, no network.
 
-**CI workflow — `looper-live-smoke.yml`**: triggers `workflow_dispatch` (manual) +
+**CI workflow — `loopdog-live-smoke.yml`**: triggers `workflow_dispatch` (manual) +
 `schedule` (nightly cron, e.g. `0 7 * * *`); reads the real subscription
 credential from a repo secret available only to this gated workflow; steps =
-build → `LOOPER_TIER=5 vitest run`. Failure here opens/updates a tracking issue
-(dogfooding looper's own escalation) but **does not** block merges. Concurrency-
+build → `LOOPDOG_TIER=5 vitest run`. Failure here opens/updates a tracking issue
+(dogfooding loopdog's own escalation) but **does not** block merges. Concurrency-
 guarded so nightly + manual don't overlap and double-spend quota.
 
 **Live-smoke harness** (`testing/src/live-smoke/harness.ts`): given a scratch repo
@@ -114,19 +114,19 @@ network guard makes it fail in PR CI, not nightly.
 - The fakes/cassettes themselves (0083/0084), the scenario runner & goldens (0085),
   and the simulation clock/fault injection (0086) — consumed here, not built.
 - The adopter-facing reusable workflows in `templates/workflows/` — this task wires
-  **looper's own** CI; the adopter's CI gate is the verification ladder, not this.
+  **loopdog's own** CI; the adopter's CI gate is the verification ladder, not this.
 - Any change that lets a real model API call onto the per-PR primary path.
 
 ## Acceptance Criteria
 
-- [x] A tier runner selects tests by tier; `LOOPER_TIER=1-4` runs unit + component
+- [x] A tier runner selects tests by tier; `LOOPDOG_TIER=1-4` runs unit + component
       (0084 conformance, `replay`) + scenario (0085 goldens) + simulation (0086)
-      and `LOOPER_TIER=5` runs only the live smoke.
-- [x] `looper-ci.yml` runs tiers 1–4 on every PR/push with **no secrets, no
-      network, and `LOOPER_CASSETTE=replay`**, and is a required check.
+      and `LOOPDOG_TIER=5` runs only the live smoke.
+- [x] `loopdog-ci.yml` runs tiers 1–4 on every PR/push with **no secrets, no
+      network, and `LOOPDOG_CASSETTE=replay`**, and is a required check.
 - [x] A network guard makes any outbound socket in tiers 1–4 a failing test, and a
       missing cassette fails loudly — so per-PR CI provably spends **zero quota**.
-- [x] `looper-live-smoke.yml` runs only on manual dispatch + nightly cron, uses the
+- [x] `loopdog-live-smoke.yml` runs only on manual dispatch + nightly cron, uses the
       real subscription secret, and never gates a PR merge.
 - [x] The live smoke harness runs one loop edge end-to-end (dispatch → provider
       PR → ingest → one-edge advance + run-record) and cleans up — logic verified
@@ -139,19 +139,19 @@ network guard makes it fail in PR CI, not nightly.
 
 ## Implementation Checklist
 
-- [x] Define the `TierSpec` registry + per-tier vitest configs + the `LOOPER_TIER`
+- [x] Define the `TierSpec` registry + per-tier vitest configs + the `LOOPDOG_TIER`
       selector in `testing/src/tiers/`.
 - [x] Implement the tiers-1–4 network guard + secret-absence assertion in the test
-      setup; wire `LOOPER_CASSETTE=replay` as the CI default.
-- [x] Add `.github/workflows/looper-ci.yml` (tiers 1–4, required, no secrets) and
-      `.github/workflows/looper-live-smoke.yml` (manual + nightly, gated secret,
+      setup; wire `LOOPDOG_CASSETTE=replay` as the CI default.
+- [x] Add `.github/workflows/loopdog-ci.yml` (tiers 1–4, required, no secrets) and
+      `.github/workflows/loopdog-live-smoke.yml` (manual + nightly, gated secret,
       non-blocking, concurrency-guarded).
 - [x] Implement the live-smoke harness (one safe loop, scratch repo, real backend,
       bounded wait, real ingest, run-record assertion, guaranteed cleanup).
 - [x] Implement the drift report (capability/API/correlation taxonomy + summary).
       (`--rerecord` regeneration left as a documented operator path — see Decisions.)
 - [x] Wire smoke failure to a tracking issue (no merge gating) — `issues: write`
-      + `continue-on-error` in `looper-live-smoke.yml`; the issue-open step is an
+      + `continue-on-error` in `loopdog-live-smoke.yml`; the issue-open step is an
       operator wiring point in the gated workflow.
 
 ## Test Plan
@@ -161,11 +161,11 @@ M18 fakes/cassettes (0083/0084) only — **no real quota, no network**. Tier 5 i
 only tier that touches a real subscription and is never run in per-PR CI.
 
 ```bash
-# tier selection: LOOPER_TIER=1-4 vitest run → unit+component+scenario+simulation only
+# tier selection: LOOPDOG_TIER=1-4 vitest run → unit+component+scenario+simulation only
 # hermeticity: a tier-1–4 test attempting a real socket → FAILS (network guard)
 # hermeticity: replay with a missing cassette → FAILS loudly (no network fallthrough)
 # secrets: assert no provider/GITHUB_TOKEN secret present in the tiers-1–4 job env
-# live (manual/nightly only): LOOPER_TIER=5 → one real edge dispatch→ingest, then cleanup
+# live (manual/nightly only): LOOPDOG_TIER=5 → one real edge dispatch→ingest, then cleanup
 # drift: feed a mismatched capability/correlation → drift-report classifies + --rerecord updates the cassette
 # rate-cap: simulate a cap response → smoke reports skipped, not failed
 ```
@@ -173,13 +173,13 @@ only tier that touches a real subscription and is never run in per-PR CI.
 ## Verification Log
 
 - 2026-06-12: tier runner + hermeticity guards green (`packages/testing/test/
-  tiers.test.ts`, 6 tests): `LOOPER_TIER` parses to include/exclude globs (1-4
+  tiers.test.ts`, 6 tests): `LOOPDOG_TIER` parses to include/exclude globs (1-4
   excludes the live glob; 5 = live only); the network guard turns a non-local
   `Socket.connect` into a thrown error while permitting localhost/IPC, and
   uninstall restores the original; `assertNoSecrets` flags GITHUB_TOKEN/provider
   keys and treats empty as unset; the drift classifier separates capability/api/
-  correlation drift. `LOOPER_TIER=5 vitest run` selects ONLY the live test
-  (1 passed self-test, 1 skipped real run). `LOOPER_HERMETIC=1 npm test` = the
+  correlation drift. `LOOPDOG_TIER=5 vitest run` selects ONLY the live test
+  (1 passed self-test, 1 skipped real run). `LOOPDOG_HERMETIC=1 npm test` = the
   full hermetic suite green (29 files, 213 tests) — the guard + secret check are
   inert locally (self-gated) and enforced in CI.
 - 2026-06-12: live-smoke harness logic verified hermetically (`live-smoke-
@@ -187,33 +187,33 @@ only tier that touches a real subscription and is never run in per-PR CI.
   rate-cap (dispatch throws 429 → skipped, not failed), timeout (no PR in the
   bounded wait, injected clock → failed with timeout diagnostic), capability
   drift (mismatched fingerprint → failed + drift report), and `cleanupScratch`
-  (removes `looper:*` labels, keeps foreign labels, runs the operator closer).
+  (removes `loopdog:*` labels, keeps foreign labels, runs the operator closer).
 
 ## Decisions
 
 - Tier tagging is by file convention + a single env switch, not a vitest plugin:
   the load-bearing split CI enforces is coarse — tiers 1–4 = every `*.test.ts`
   NOT named `*.live.test.ts`; tier 5 = `*.live.test.ts` only. The root
-  `vitest.config.ts` reads `LOOPER_TIER` (`1-4` default | `5` | `all`) and sets
+  `vitest.config.ts` reads `LOOPDOG_TIER` (`1-4` default | `5` | `all`) and sets
   include/exclude inline (no import of the testing barrel, which would pull
   vitest in at config-eval). A `TierSpec` registry in `testing/src/tiers/` keeps
   per-tier globs for reporting/future filtering, honestly noted as best-effort
   (existing tiers-1–4 tests aren't individually tagged).
-- Hermeticity is enforced, not assumed, but **self-gated on `LOOPER_HERMETIC=1`**
-  (set only by `looper-ci.yml`) so local `npm test` isn't broken by a developer's
+- Hermeticity is enforced, not assumed, but **self-gated on `LOOPDOG_HERMETIC=1`**
+  (set only by `loopdog-ci.yml`) so local `npm test` isn't broken by a developer's
   exported `GITHUB_TOKEN`. The guard monkeypatches `net.Socket.prototype.connect`
   to throw on any non-local host (localhost/`.local`/unix-socket allowed for
   vitest IPC); the secret-absence check fails loudly if any of GITHUB_TOKEN/
   GH_TOKEN/ANTHROPIC_API_KEY/CLAUDE_CODE_OAUTH_TOKEN/OPENAI_API_KEY/CODEX_API_KEY/
-  LOOPER_PROVIDER_TOKEN is non-empty. "Missing cassette fails loudly" is the
+  LOOPDOG_PROVIDER_TOKEN is non-empty. "Missing cassette fails loudly" is the
   `ReplayBackend` throwing when no cassette exchange matches a loop (0084) — never
   a network fallthrough.
-- Two workflows: `looper-ci.yml` (PR + push; `permissions: contents: read`, no
-  secrets; `LOOPER_TIER=1-4 LOOPER_HERMETIC=1 LOOPER_CASSETTE=replay`; build →
-  lint → `vitest run`) and `looper-live-smoke.yml` (`workflow_dispatch` +
+- Two workflows: `loopdog-ci.yml` (PR + push; `permissions: contents: read`, no
+  secrets; `LOOPDOG_TIER=1-4 LOOPDOG_HERMETIC=1 LOOPDOG_CASSETTE=replay`; build →
+  lint → `vitest run`) and `loopdog-live-smoke.yml` (`workflow_dispatch` +
   nightly `0 7 * * *`; `continue-on-error: true` so it never gates a merge;
-  `concurrency: looper-live-smoke` with no cancel so manual + nightly never
-  double-spend; reads `secrets.LOOPER_LIVE_SMOKE_TOKEN` + `vars.LOOPER_LIVE_
+  `concurrency: loopdog-live-smoke` with no cancel so manual + nightly never
+  double-spend; reads `secrets.LOOPDOG_LIVE_SMOKE_TOKEN` + `vars.LOOPDOG_LIVE_
   SMOKE_REPO`; `issues: write` for the drift tracking issue). "Required check" is
   a branch-protection setting (deferred with 0004), not expressible in the file.
 - Live-smoke scope is one loop / one edge / one provider per run to stay inside
@@ -221,7 +221,7 @@ only tier that touches a real subscription and is never run in per-PR CI.
   dispatch OR ingest yields `skipped(rate-capped)`, never `failed` — no false
   alarms. A bounded-wait expiry with no PR yields `failed(timeout)` (the live
   analogue of the sweep path). Cleanup is best-effort and split: the harness
-  clears looper's own labels via the port; closing PRs/issues + deleting branches
+  clears loopdog's own labels via the port; closing PRs/issues + deleting branches
   is provider-specific (outside the `GitHubPort`), so the operator passes a
   `closer` closure run in a `finally`.
 - Drift taxonomy: `capability` (flag-by-flag over declared `Capabilities`), `api`
@@ -238,16 +238,16 @@ missing-cassette failure must all be in place; treat any of them missing as a
 release blocker. The live smoke can flake on provider rate caps or transient
 provider outages — hence non-blocking + `skipped`-on-cap so it never blocks merges
 or pages falsely; its value is the drift signal, recorded to a tracking issue. All
-artifacts are dev-only (`@looper/testing`) or repo-level CI YAML — revertable in
+artifacts are dev-only (`@loopdog/testing`) or repo-level CI YAML — revertable in
 isolation without touching shipped packages.
 
 ## Final Summary
 
-The five-tier pyramid is an enforced gate: `LOOPER_TIER` selects tiers 1–4
-(hermetic, default) vs 5 (live, opt-in); `looper-ci.yml` runs 1–4 on every
-PR/push with no secrets, `replay`-pinned cassettes, and `LOOPER_HERMETIC=1` so a
+The five-tier pyramid is an enforced gate: `LOOPDOG_TIER` selects tiers 1–4
+(hermetic, default) vs 5 (live, opt-in); `loopdog-ci.yml` runs 1–4 on every
+PR/push with no secrets, `replay`-pinned cassettes, and `LOOPDOG_HERMETIC=1` so a
 network guard (any non-local socket → red test) + secret-absence check make
-per-PR CI provably zero-quota. `looper-live-smoke.yml` runs the tier-5 smoke only
+per-PR CI provably zero-quota. `loopdog-live-smoke.yml` runs the tier-5 smoke only
 on manual dispatch + nightly cron, gated to a repo secret, `continue-on-error` so
 it never blocks a merge. The live-smoke harness (one safe loop edge → real
 dispatch → bounded wait → real ingest → one-edge advance → cleanup) and its drift

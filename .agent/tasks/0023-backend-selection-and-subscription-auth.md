@@ -25,29 +25,29 @@ install where applicable, repo authorization, the picker prompt) is M02 · 0010;
 keyless local login is M02 · 0077; this task consumes their stored results.
 See [architecture](../../docs/architecture.md) "Generic-ness, in three plugin
 systems" (point 3) and "Identity & secrets (two planes)." Lands in
-`@looper/backends` (the registry + auth resolver) and `@looper/config` (the
+`@loopdog/backends` (the registry + auth resolver) and `@loopdog/config` (the
 `backends.default`/`backends.review` schema); selection is invoked from
-`@looper/runtime`.
+`@loopdog/runtime`.
 
 Claude caveat: do not treat Claude Code GitHub Actions auth as subscription auth.
-That public path uses `ANTHROPIC_API_KEY`; Looper's Claude backend must resolve
+That public path uses `ANTHROPIC_API_KEY`; Loopdog's Claude backend must resolve
 only imported Claude routine `/fire` credentials. Public docs require creating API
 triggers/tokens from the Claude web UI, so V1 auth resolution is manual routine
 import, not automated routine/token provisioning.
 
 ## Scope
 
-- A **backend registry** in `@looper/backends`: a small fixed map
+- A **backend registry** in `@loopdog/backends`: a small fixed map
   `{ claude, codex, self-hosted } → Backend` (no plugin-loader), keyed by name.
 - A **selection resolver**: given a loop + the current stage (implement vs.
   review), return the backend name to use, honoring per-loop and per-stage config
-  and `looper.yml` global defaults.
+  and `loopdog.yml` global defaults.
 - A **subscription-auth resolver**: given a backend name + repo context, produce
   the `BackendAuth` the backend needs (Claude imported fire URL/token refs +
   repo/environment setup assertion; Codex provider repo-authorization state;
   self-hosted API-key handle) from stored credentials — never a model API key on
   the Claude/Codex path.
-- Config schema additions (`@looper/config`) for `backends.default` and
+- Config schema additions (`@loopdog/config`) for `backends.default` and
   `backends.review`, plus validation (unknown backend, missing auth, ZDR + Claude
   conflict).
 - Clear, actionable errors when a selected backend is unauthorized or unavailable.
@@ -57,13 +57,13 @@ import, not automated routine/token provisioning.
 **Config surface** (validated in 0006; this task adds the keys + checks):
 
 ```yaml
-# looper.yml (global defaults)
+# loopdog.yml (global defaults)
 backends:
   default: claude               # root default execution backend for all loops
   review: codex                 # default backend for the review stage (cross-provider)
 ```
 ```yaml
-# .looper/loops/<name>/loop.yml (per-loop override; strictest/most-specific wins)
+# .loopdog/loops/<name>/loop.yml (per-loop override; strictest/most-specific wins)
 backends:
   default: codex                # this loop implements on Codex
   review: claude                # ...and is reviewed on Claude
@@ -74,7 +74,7 @@ backends:
 default `claude`.
 `stage` is derived from the transition kind (`review`/`verify` edges → `review`
 stage; everything else → `implement` stage), supplied by the runner. The resolver
-is pure and lives in `@looper/backends/src/selection`:
+is pure and lives in `@loopdog/backends/src/selection`:
 
 ```ts
 type Stage = "implement" | "review";
@@ -82,11 +82,11 @@ type BackendName = "claude" | "codex" | "self-hosted";
 function selectBackend(cfg: ResolvedConfig, loop: LoopConfig, stage: Stage): BackendName;
 ```
 
-**Registry** (`@looper/backends/src/registry`): `getBackend(name): Backend` over a
+**Registry** (`@loopdog/backends/src/registry`): `getBackend(name): Backend` over a
 frozen map; unknown name → typed `UnknownBackendError`. No dynamic import / no
 marketplace (codebase guardrail: "small fixed registry behind an interface").
 
-**Auth resolution** (`@looper/backends/src/auth`) — the credential the chosen
+**Auth resolution** (`@loopdog/backends/src/auth`) — the credential the chosen
 backend authenticates with, by plane:
 
 ```ts
@@ -95,23 +95,23 @@ type ClaudeRepoAuth =
   | { kind: "web-setup"; verified: true };
 type BackendAuth =
   | { kind: "claude"; fireUrl: SecretRef; routineToken: SecretRef; repoAuth: ClaudeRepoAuth }
-  | { kind: "codex";  providerAppInstalled: true }          // mention-only; no token looper holds
+  | { kind: "codex";  providerAppInstalled: true }          // mention-only; no token loopdog holds
   | { kind: "self-hosted"; apiKey: SecretRef };             // adopter's own key
 function resolveAuth(name: BackendName, ctx: RepoContext): BackendAuth;  // throws BackendAuthError
 ```
 
 - **Claude**: requires the imported routine `/fire` URL and bearer token secret
-  refs captured by `looper connect claude`, plus a recorded repo-authorization
+  refs captured by `loopdog connect claude`, plus a recorded repo-authorization
   assertion from the operator's Claude setup (`web-setup`/connected repo, or
   provider App only if the user opts into Claude-native GitHub triggers outside
-  Looper's primary API-fire path). Store both fire URL and token as repo secrets or
+  Loopdog's primary API-fire path). Store both fire URL and token as repo secrets or
   keychain-backed `SecretRef`s and reference them, never inline them. No
   `ANTHROPIC_API_KEY`, no Claude Platform model API key. Missing import is a
-  pre-flight auth error with remediation: run `looper connect claude --reimport`
+  pre-flight auth error with remediation: run `loopdog connect claude --reimport`
   after creating/regenerating the routine API trigger in Claude.
 - **Codex**: requires only the OpenAI App installed + repo authorized — dispatch is
-  the `@codex` mention, so looper holds **no** provider token; `resolveAuth` just
-  asserts App presence (probe via the `@looper/github` identity/App-installation
+  the `@codex` mention, so loopdog holds **no** provider token; `resolveAuth` just
+  asserts App presence (probe via the `@loopdog/github` identity/App-installation
   read) and returns.
 - **Self-hosted**: the *only* path with an API key — a `SecretRef` to the adopter's
   Actions secret / OIDC / Vault handle (M07 · 0031), resolved at dispatch by the
@@ -120,16 +120,16 @@ function resolveAuth(name: BackendName, ctx: RepoContext): BackendAuth;  // thro
 `SecretRef` is an opaque pointer (env-var name or secret id), resolved lazily by
 the backend, so this layer passes references and never holds plaintext.
 
-**Validation** (`@looper/config` + cross-checked here): unknown backend name;
+**Validation** (`@loopdog/config` + cross-checked here): unknown backend name;
 selected backend with no resolvable auth (missing provider repo authorization /
 missing routine token / missing self-hosted key) → fail pre-flight with a
-remediation message (e.g. "run `looper login` / `looper connect claude`");
+remediation message (e.g. "run `loopdog login` / `loopdog connect claude`");
 **ZDR org + `backend: claude`** → reject with a directive to `self-hosted` (mirrors
 0020's ZDR-excluded path). Capability conflicts (e.g. a loop whose gates need
 live-secret tests but selects a `secret_phase: setup-only` backend) surface as a
 **warning** via the backend's `capabilities()` (0019), not a hard error.
 
-**Runner integration**: `@looper/runtime` calls `selectBackend` then
+**Runner integration**: `@loopdog/runtime` calls `selectBackend` then
 `resolveAuth` in the transition pre-flight, *after* gates/authorization/budget
 (0012) and *before* `dispatch`; the resolved `{ backend, auth }` is recorded in
 the run record's `backend` field (0012 schema) for the CLI session link (0069).
@@ -169,23 +169,23 @@ Auth resolution failure is a pre-flight failure → handed to backoff/escalation
 
 ## Implementation Checklist
 
-- [x] Add `backends.default` + `backends.review` to the `looper.yml` and `loop.yml`
-      zod schemas (`@looper/config`) with validation.
+- [x] Add `backends.default` + `backends.review` to the `loopdog.yml` and `loop.yml`
+      zod schemas (`@loopdog/config`) with validation.
 - [x] Implement the frozen backend registry + `UnknownBackendError`
-      (`@looper/backends/src/registry`).
+      (`@loopdog/backends/src/registry`).
 - [x] Implement the pure `selectBackend` precedence resolver + stage derivation
-      (`@looper/backends/src/selection`).
+      (`@loopdog/backends/src/selection`).
 - [x] Implement `resolveAuth` per backend + `BackendAuth`/`SecretRef` types +
-      `BackendAuthError` (`@looper/backends/src/auth`), reading provider repo-auth
-      state via `@looper/github`.
+      `BackendAuthError` (`@loopdog/backends/src/auth`), reading provider repo-auth
+      state via `@loopdog/github`.
 - [x] Add the ZDR + Claude conflict check and the capability-mismatch warning.
-- [x] Wire selection + auth into the runner pre-flight (`@looper/runtime`) ahead of
+- [x] Wire selection + auth into the runner pre-flight (`@loopdog/runtime`) ahead of
       dispatch; record the chosen backend in the run record.
 - [x] Tests for selection, auth resolution, and error paths using the M18 fakes.
 
 ## Test Plan
 
-Tests run via the repo's `vitest` runner; behavioral cases use the `@looper/testing`
+Tests run via the repo's `vitest` runner; behavioral cases use the `@loopdog/testing`
 fakes (fake GitHub/provider-connect state, fake backends/registry) — **no real
 quota, no real provider auth**.
 
@@ -208,16 +208,16 @@ quota, no real provider auth**.
 
 ## Decisions
 
-- Selection precedence as specced; the pure resolver lives in `@looper/core`
+- Selection precedence as specced; the pure resolver lives in `@loopdog/core`
   (config must apply it inside its dependency boundary) and is re-exported
-  from `@looper/backends` (its spec home). Stage rule: edges leaving
+  from `@loopdog/backends` (its spec home). Stage rule: edges leaving
   `in-review` are the review stage.
 - Config keys: root `backends.{default,review,zdr,self_hosted}`; per-loop
   flat `backend:`/`review_backend:` (kept from 0006 instead of a nested
   per-loop `backends:` block — fewer shapes for the same expressiveness;
   recorded deviation).
 - `BackendAuth` shapes as specced; `SecretRef` = the env/Actions secret NAME
-  (LOOPER_CLAUDE_FIRE_URL/TOKEN; LOOPER_MODEL_API_KEY default) — plaintext
+  (LOOPDOG_CLAUDE_FIRE_URL/TOKEN; LOOPDOG_MODEL_API_KEY default) — plaintext
   resolves only inside the consuming backend/worker.
 - Auth failures surface at dispatch through the runner's failure path
   (release + attempts + escalation) with remediation text in the message;

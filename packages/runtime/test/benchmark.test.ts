@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import type { RunRecord } from '@looper/core';
-import { projectBenchmark, renderBenchmarkMarkdown } from '@looper/runtime';
+import type { RunRecord } from '@loopdog/core';
+import { projectBenchmark, renderBenchmarkMarkdown } from '@loopdog/runtime';
 
 /**
  * Per-loop/provider benchmarks (M15 · 0065): fold the ledger into a stable

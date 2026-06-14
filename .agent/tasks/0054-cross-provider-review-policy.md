@@ -29,10 +29,10 @@ reuses the existing `Backend.capabilities.can_review` flag (M05 · 0019). See
 
 ## Scope
 
-- A `review` policy block in root `looper.yml` (schema + validation in `@looper/config`)
+- A `review` policy block in root `loopdog.yml` (schema + validation in `@loopdog/config`)
   declaring reviewer selection **per risk tier**, layered over per-loop overrides.
 - A pure `selectReviewer(policy, implementer, tier, registry)` resolver in
-  `@looper/core` that the `cross-model` sentinel (0042) calls instead of its inline
+  `@loopdog/core` that the `cross-model` sentinel (0042) calls instead of its inline
   heuristic.
 - Guarantees: reviewer provider ≠ implementer provider; chosen reviewer's
   `capabilities.can_review` is true; deterministic given the same inputs.
@@ -41,13 +41,13 @@ reuses the existing `Backend.capabilities.can_review` flag (M05 · 0019). See
 
 ### Technical detail
 
-**Package(s):** schema in `@looper/config` (`config/src/schema`), the resolver in
-`@looper/core` (new `core/src/transitions/review-policy.ts`, exported from
-`index.ts`), consumed by `@looper/runtime`'s `cross-model` selection helper (0042).
+**Package(s):** schema in `@loopdog/config` (`config/src/schema`), the resolver in
+`@loopdog/core` (new `core/src/transitions/review-policy.ts`, exported from
+`index.ts`), consumed by `@loopdog/runtime`'s `cross-model` selection helper (0042).
 No new package; no backend code changes (it reads the existing `can_review`
 capability).
 
-**Config shape** (root `looper.yml`; `tier` keys are the M03 risk tiers
+**Config shape** (root `loopdog.yml`; `tier` keys are the M03 risk tiers
 `safe`/`core`, with a `default` fallback):
 
 ```yaml
@@ -70,9 +70,9 @@ review:
 ```
 
 A loop may override per-loop in its `loop.yml` `gates.review` (strictest wins:
-a pinned pairing in `looper.yml` `policy.<tier>` is not loosened by a loop).
+a pinned pairing in `loopdog.yml` `policy.<tier>` is not loosened by a loop).
 
-**Types (in `@looper/core`):**
+**Types (in `@loopdog/core`):**
 
 ```ts
 type ProviderId = string;                 // 'claude' | 'codex' | 'self-hosted' | ...
@@ -124,10 +124,10 @@ backward-compatible.
 
 ## Acceptance Criteria
 
-- [x] `looper.yml` accepts a `review.policy` block (per-tier rules + `default`),
-      validated by `@looper/config`; an invalid pairing (self-review, unknown
+- [x] `loopdog.yml` accepts a `review.policy` block (per-tier rules + `default`),
+      validated by `@loopdog/config`; an invalid pairing (self-review, unknown
       provider) is rejected with a clear error.
-- [x] `selectReviewer` is pure, deterministic, and exported from `@looper/core`.
+- [x] `selectReviewer` is pure, deterministic, and exported from `@loopdog/core`.
 - [x] On `tier:core` with `pairings: {claude: codex}`, a Claude-implemented PR
       resolves to a Codex reviewer; a Codex-implemented PR resolves to Claude.
 - [x] `any-distinct` (e.g. `tier:safe`) picks any distinct `can_review` provider
@@ -142,11 +142,11 @@ backward-compatible.
 
 ## Implementation Checklist
 
-- [x] Add the `review.policy` schema + validation to `@looper/config` (reject
+- [x] Add the `review.policy` schema + validation to `@loopdog/config` (reject
       self-pairings and unknown providers at load time).
-- [x] Implement `selectReviewer` in `@looper/core/transitions/review-policy.ts` and
+- [x] Implement `selectReviewer` in `@loopdog/core/transitions/review-policy.ts` and
       export it; unit-test the resolution table and the self-review guard.
-- [x] Refactor 0042's `cross-model` reviewer-selection helper in `@looper/runtime`
+- [x] Refactor 0042's `cross-model` reviewer-selection helper in `@loopdog/runtime`
       to delegate to `selectReviewer`, passing the resolved tier and provider registry.
 - [x] Thread per-loop `gates.review` override into the policy (strictest wins).
 - [x] Document the `review.policy` block in the config reference + an example loop.
@@ -159,13 +159,13 @@ fakes (in-memory GitHub + fake/replay backends) — no real quota.
 
 ```bash
 # core resolver unit tests (pure, no fakes)
-pnpm -F @looper/core test
+pnpm -F @loopdog/core test
 # config validation rejects self-pairing / unknown provider
-pnpm -F @looper/config test
+pnpm -F @loopdog/config test
 # runtime scenario: tier:core pairing claude->codex selects Codex reviewer;
 # codex->claude selects Claude; single-provider -> escalate -> needs-human;
 # policy omitted -> matches 0042 baseline.
-pnpm -F @looper/runtime test
+pnpm -F @loopdog/runtime test
 ```
 
 ## Verification Log

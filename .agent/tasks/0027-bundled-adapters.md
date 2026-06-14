@@ -7,19 +7,19 @@ Branch: claude/laughing-johnson-8a7944
 
 Ship the first-party `node` and `python` project adapters: concrete
 implementations of the `ProjectAdapter` interface (0024) that describe how to
-`build / test / lint / run / deploy` a Node or Python repo, so looper operates
+`build / test / lint / run / deploy` a Node or Python repo, so loopdog operates
 those stacks out of the box without bespoke config and gives Milestone 06 its
 "≥2 bundled adapters" Definition-of-Done.
 
 ## Background
 
 Part of [Milestone 06](../milestones/milestone-06-project-adapter-system.md) —
-the project-adapter plugin system, one of looper's three genericity surfaces
+the project-adapter plugin system, one of loopdog's three genericity surfaces
 ([architecture](../../docs/architecture.md) "Generic-ness, in three plugin
 systems" → project adapters). The bundled adapters are the proof the interface is
 real: they exercise the contract (0024), are the auto-detect targets (0025), and
 backstop the generic command adapter (0026) for recognized stacks. They land in
-`@looper/adapters` (`packages/adapters/src/{node,python}/`, see
+`@loopdog/adapters` (`packages/adapters/src/{node,python}/`, see
 [codebase](../../docs/codebase.md) — `adapters` package). Each adapter's commands
 become the verification the controller runs in the adopter's CI and the
 build/test instructions the brief hands the work cell.
@@ -29,13 +29,13 @@ build/test instructions the brief hands the work cell.
 - A `node` adapter and a `python` adapter implementing the full `ProjectAdapter`
   contract (0024), declaring per-capability commands and a `detect()` signal.
 - Sensible per-stack defaults with config override (every command overridable via
-  `looper.yml`'s `adapter:` block).
+  `loopdog.yml`'s `adapter:` block).
 - Each adapter passes the conformance kit (0028) and registers itself for
   auto-detection (0025).
 
 ### Technical detail
 
-Both implement the `ProjectAdapter` port declared in `@looper/core`
+Both implement the `ProjectAdapter` port declared in `@loopdog/core`
 (`packages/core/src/ports/`). Shape (final names follow 0024):
 
 ```ts
@@ -81,7 +81,7 @@ the injected `RepoFs` view); no network, no provider calls.
     `python -m <package>`/none.
   - `deploy` → none by default.
 
-**Config override** (in `@looper/config` schema, consumed here): the scalar
+**Config override** (in `@loopdog/config` schema, consumed here): the scalar
 `adapter: <name>` (default `auto`) pins which adapter to use; a related override
 block lets the adopter set the package manager/runner and any per-capability
 command, e.g.
@@ -128,7 +128,7 @@ both `pyproject.toml` and
       repo and emitting correct commands per runner (uv/poetry/pip).
 - [x] Capabilities a repo lacks (e.g. no `build` script) report unsupported
       rather than emitting a broken command.
-- [x] Any per-capability command is overridable via the `looper.yml` `adapter:`
+- [x] Any per-capability command is overridable via the `loopdog.yml` `adapter:`
       block, with override taking precedence over derived/default.
 - [x] Both adapters pass the conformance kit (0028) and register for
       auto-detection (0025).
@@ -153,7 +153,7 @@ fixture repos under `test/fixtures/` provide the filesystem inputs.
 
 ```bash
 # replace with the chosen stack's vitest invocation, e.g.
-npm run -w @looper/adapters test
+npm run -w @loopdog/adapters test
 # fixtures: a Node repo (npm/pnpm/yarn variants) + a Python repo (uv/poetry/pip)
 # assert detect() confidence + evidence, per-capability command argv, unsupported
 # capabilities → null, and override precedence; run the 0028 conformance kit.

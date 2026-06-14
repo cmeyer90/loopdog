@@ -4,14 +4,14 @@ import type { AcceptanceCriterion } from '../ports/plan-store.js';
  * The acceptance-criteria marker block (task 0014): mirrored from the durable
  * plan into the issue body so gates can evaluate from GitHub state alone.
  *
- * <!-- looper:acceptance-criteria -->
+ * <!-- loopdog:acceptance-criteria -->
  * - [ ] per-API-key limiting at 100 req/min   (test: api/ratelimit.test.ts)
  * - [x] returns 429 + Retry-After             (manual)
- * <!-- /looper:acceptance-criteria -->
+ * <!-- /loopdog:acceptance-criteria -->
  */
 
-export const CRITERIA_OPEN = '<!-- looper:acceptance-criteria -->';
-export const CRITERIA_CLOSE = '<!-- /looper:acceptance-criteria -->';
+export const CRITERIA_OPEN = '<!-- loopdog:acceptance-criteria -->';
+export const CRITERIA_CLOSE = '<!-- /loopdog:acceptance-criteria -->';
 
 export interface CriteriaParse {
   /** null = no marker block present. */
@@ -78,8 +78,8 @@ export function upsertCriteriaBlock(
 }
 
 /** Scope-bounds marker block, same pattern (DoR requires its presence). */
-export const SCOPE_OPEN = '<!-- looper:scope -->';
-export const SCOPE_CLOSE = '<!-- /looper:scope -->';
+export const SCOPE_OPEN = '<!-- loopdog:scope -->';
+export const SCOPE_CLOSE = '<!-- /loopdog:scope -->';
 
 export function hasScopeBlock(body: string): boolean {
   const start = body.indexOf(SCOPE_OPEN);

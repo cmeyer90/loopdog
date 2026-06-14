@@ -1,11 +1,11 @@
-import type { LoopDefinition, TransitionTable } from '@looper/core';
+import type { LoopDefinition, TransitionTable } from '@loopdog/core';
 import {
   DEFAULT_TRANSITION_TABLE,
   extendTable,
   isSupportedEventAction,
   selectBackend,
   validateLoopTransition,
-} from '@looper/core';
+} from '@loopdog/core';
 import { loopConfigSchema, type LoopConfig } from '../schema/loop.js';
 import { rootConfigSchema, type RootConfig } from '../schema/root.js';
 import { validateCron } from '../schema/cron.js';
@@ -47,7 +47,7 @@ export function validateConfig(tree: DiscoveredTree): ValidationResult {
     errors.push({
       file: tree.rootFile,
       path: '',
-      message: 'missing or unparseable .looper/looper.yml (run `looper init`)',
+      message: 'missing or unparseable .loopdog/loopdog.yml (run `loopdog init`)',
     });
     return { ok: false, errors, warnings };
   }
@@ -170,7 +170,7 @@ export function validateConfig(tree: DiscoveredTree): ValidationResult {
         path: 'backend',
         message:
           'Zero-Data-Retention org: Claude cloud routines are excluded — select the ' +
-          'self-hosted backend for this loop (`looper connect default self-hosted`)',
+          'self-hosted backend for this loop (`loopdog connect default self-hosted`)',
       });
     }
 
@@ -257,7 +257,7 @@ function resolveLoop(root: RootConfig, cfg: LoopConfig): LoopDefinition {
     },
     authorization: resolveAuthorization(root, cfg),
     resilience: resolveResilience(root, cfg),
-    promptPath: `.looper/loops/${cfg.name}/prompt.md`,
+    promptPath: `.loopdog/loops/${cfg.name}/prompt.md`,
     mode: cfg.mode ?? root.defaults.mode,
     expects: cfg.expects === 'none' ? undefined : cfg.expects,
     serializeBy: cfg.serialize_by,

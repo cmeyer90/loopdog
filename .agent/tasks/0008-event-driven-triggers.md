@@ -11,7 +11,7 @@ fire the controller on the relevant `on:` events and advance the affected item.
 ## Background
 
 Part of [Milestone 02](../milestones/milestone-02-attachment-and-configuration-model.md);
-one half of looper's dual-trigger model (the other is the cron sweep, 0076). See
+one half of loopdog's dual-trigger model (the other is the cron sweep, 0076). See
 [architecture](../../docs/architecture.md) "Triggering: events for latency, cron
 for resilience." Events give **low latency**; the sweep gives **completeness**.
 Together they are *watch + periodic resync*.
@@ -22,20 +22,20 @@ Together they are *watch + periodic resync*.
   controller on the lifecycle-relevant events.
 - Map each event to the eligible loop(s) via config; the controller (M03 · 0012)
   decides what to advance.
-- Run under the Actions `GITHUB_TOKEN` (M07) — no looper App.
+- Run under the Actions `GITHUB_TOKEN` (M07) — no loopdog App.
 
 ### Technical detail
 
-- **GitHub Actions *is* the webhook receiver** — there is no looper-hosted endpoint;
+- **GitHub Actions *is* the webhook receiver** — there is no loopdog-hosted endpoint;
   `on:` delivers events natively into the adopter's Actions.
 - **Canonical event/action matrix (V1)** — this is the source of truth for
   `github/src/events`, config validation (0006), trigger-source filtering (0081),
   custom-loop authoring (0078), and fake-GitHub event emission (0083):
 
-| GitHub workflow trigger | Payload actions / predicates Looper honors | Loop consumers |
+| GitHub workflow trigger | Payload actions / predicates Loopdog honors | Loop consumers |
 |---|---|---|
-| `issues` | `opened`, `edited`, `reopened`, `labeled`, `unlabeled` | `groom` for raw/new/needs-grooming issues; `implement` when a trusted non-controller label makes an issue `ready-for-agent`; approval/hold release via `looper:approved`; state/plan reconciliation on item-label drift. |
-| `issue_comment` | `created`, `edited` on issues or PRs | Clarification replies (0034); `@looper` directives such as approve/retry/stop; provider or reviewer verdict comments that carry a `looper-run:` marker. |
+| `issues` | `opened`, `edited`, `reopened`, `labeled`, `unlabeled` | `groom` for raw/new/needs-grooming issues; `implement` when a trusted non-controller label makes an issue `ready-for-agent`; approval/hold release via `loopdog:approved`; state/plan reconciliation on item-label drift. |
+| `issue_comment` | `created`, `edited` on issues or PRs | Clarification replies (0034); `@loopdog` directives such as approve/retry/stop; provider or reviewer verdict comments that carry a `loopdog-run:` marker. |
 | `pull_request` | `opened`, `reopened`, `synchronize`, `ready_for_review`, `converted_to_draft`, `labeled`, `unlabeled`, `closed` | Provider PR ingest/correlation (0073); review loop eligibility on opened/synchronize; tier/ladder re-evaluation on synchronize; approval/state-label release on PR labels; deploy on `closed` **only when** `pull_request.merged == true`. |
 | `pull_request_review` | `submitted`, `edited`, `dismissed` | Cross-provider review verdict ingest (0042/0043); human approval/changes-requested signals that feed the verification ladder and merge gate. |
 | `check_run` | `completed` (optionally `rerequested` to mark pending) | Non-Actions check-app CI/deploy-smoke completion; verification ladder, merge policy, rollback/deploy gates. |
@@ -62,7 +62,7 @@ Together they are *watch + periodic resync*.
   metadata-only. It may read the completed workflow's conclusion/artifacts needed
   for ladder evaluation, but must not check out or execute untrusted PR code from
   that trigger.
-- **The `GITHUB_TOKEN` nuance:** events caused by looper's own controller (which
+- **The `GITHUB_TOKEN` nuance:** events caused by loopdog's own controller (which
   acts as `GITHUB_TOKEN`) do **not** re-trigger workflows. So the event path covers
   activity from **humans** and from the **provider's** agent (PR opened by
   Anthropic's/OpenAI's App) — both fire instantly — while **controller→controller**
@@ -121,13 +121,13 @@ Together they are *watch + periodic resync*.
 
 ## Decisions
 
-- Canonical matrix lives in `@looper/core` `EVENT_ACTION_MATRIX` (single
+- Canonical matrix lives in `@loopdog/core` `EVENT_ACTION_MATRIX` (single
   source for config validation, github parsing, 0081 filtering, 0083 fakes);
   workflow `types:` in the scaffolded caller are pinned to it (fail-closed).
 - `merge` is normalized as specced: `pull_request.closed` + `merged: true`
   predicate (`MERGE_SOURCE` constant; `TriggerEvent.merged` field).
 - Reusable workflow: `.github/workflows/reusable-events.yml` (workflow_call)
-  runs `npx @looper/cli@<ver> controller event`; adopters reference it via the
+  runs `npx @loopdog/cli@<ver> controller event`; adopters reference it via the
   scaffolded thin caller at a release tag — never copy logic.
 - `workflow_run` safety: the controller only reads conclusions; it never
   checks out or executes PR code from that trigger (the workflow does a plain
@@ -144,7 +144,7 @@ Relying on events alone would strand controller→controller handoffs (the
 ## Final Summary
 
 Event triggering is: the pinned-matrix thin caller (scaffolded by init) →
-looper's versioned reusable workflow → `looper controller event` →
+loopdog's versioned reusable workflow → `loopdog controller event` →
 `parseActionsEvent` normalization → `matchLoopsForEvent` (events + merge
 predicate + author/label filters, fail-closed) → the 0012 runner for the one
 affected item, claim-protected against sweep races (proven by the runner race

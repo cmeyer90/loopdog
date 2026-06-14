@@ -1,4 +1,4 @@
-import type { RiskTier } from '@looper/core';
+import type { RiskTier } from '@loopdog/core';
 import type { OutcomeAggregate } from '../telemetry/aggregate.js';
 
 /**

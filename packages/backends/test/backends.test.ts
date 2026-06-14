@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FakeGitHub } from '@looper/testing';
+import { FakeGitHub } from '@loopdog/testing';
 import {
   BackendAuthError,
   ClaudeBackend,
@@ -13,8 +13,8 @@ import {
   findCorrelatedPr,
   resolveAuth,
   selectBackend,
-} from '@looper/backends';
-import type { DispatchHandle, WorkBrief } from '@looper/core';
+} from '@loopdog/backends';
+import type { DispatchHandle, WorkBrief } from '@loopdog/core';
 
 const repo = { owner: 'o', repo: 'r' };
 const item = { ...repo, number: 7 };
@@ -24,9 +24,9 @@ const brief: WorkBrief = {
   loop: 'implement',
   item,
   briefRef: 'implement/prompt.md@deadbeef',
-  instructions: 'Do the thing.\n\nlooper-run: run-implement-7-a1-abc',
-  expectedBranch: 'looper/implement/7-run-implement-7-a1-abc',
-  expectedTrailer: 'looper-run: run-implement-7-a1-abc',
+  instructions: 'Do the thing.\n\nloopdog-run: run-implement-7-a1-abc',
+  expectedBranch: 'loopdog/implement/7-run-implement-7-a1-abc',
+  expectedTrailer: 'loopdog-run: run-implement-7-a1-abc',
   expectation: 'pull-request',
 };
 
@@ -133,8 +133,8 @@ describe('claude backend (0020)', () => {
     const backend = new ClaudeBackend({
       gh,
       env: {
-        LOOPER_CLAUDE_FIRE_URL: 'https://api.anthropic.com/v1/claude_code/routines/rt1/fire',
-        LOOPER_CLAUDE_FIRE_TOKEN: 'sk-ant-oat01-test',
+        LOOPDOG_CLAUDE_FIRE_URL: 'https://api.anthropic.com/v1/claude_code/routines/rt1/fire',
+        LOOPDOG_CLAUDE_FIRE_TOKEN: 'sk-ant-oat01-test',
       } as NodeJS.ProcessEnv,
       fetchImpl,
       now: () => new Date('2026-06-09T12:00:00Z'),
@@ -145,6 +145,7 @@ describe('claude backend (0020)', () => {
     expect(calls[0]!.url).toContain('/fire');
     const headers = calls[0]!.init.headers as Record<string, string>;
     expect(headers['authorization']).toBe('Bearer sk-ant-oat01-test');
+    expect(headers['anthropic-version']).toBe('2023-06-01'); // api.anthropic.com rejects requests without it
     expect(headers['anthropic-beta']).toBe('experimental-cc-routine-2026-04-01');
     expect(JSON.parse(String(calls[0]!.init.body))).toEqual({ text: brief.instructions });
     expect(h.signal).toEqual({
@@ -157,7 +158,7 @@ describe('claude backend (0020)', () => {
 
   it('fails actionably when the routine import is missing', async () => {
     const backend = new ClaudeBackend({ gh: new FakeGitHub(), env: {} as NodeJS.ProcessEnv });
-    await expect(backend.dispatch(brief)).rejects.toThrow(/looper connect claude/);
+    await expect(backend.dispatch(brief)).rejects.toThrow(/loopdog connect claude/);
   });
 
   it('surfaces quota 429s without retry-storming', async () => {
@@ -165,8 +166,8 @@ describe('claude backend (0020)', () => {
     const backend = new ClaudeBackend({
       gh: new FakeGitHub(),
       env: {
-        LOOPER_CLAUDE_FIRE_URL: 'https://x/fire',
-        LOOPER_CLAUDE_FIRE_TOKEN: 't',
+        LOOPDOG_CLAUDE_FIRE_URL: 'https://x/fire',
+        LOOPDOG_CLAUDE_FIRE_TOKEN: 't',
       } as NodeJS.ProcessEnv,
       fetchImpl,
     });
@@ -212,7 +213,7 @@ describe('codex backend (0021)', () => {
     expect(await backend.ingest(h)).toEqual({ status: 'pending' });
     // the provider's verdict arrives
     gh.actor = { login: 'chatgpt-codex-connector[bot]', type: 'Bot' };
-    await gh.createComment(pr, 'Code review: looks good. looper-verdict: approve');
+    await gh.createComment(pr, 'Code review: looks good. loopdog-verdict: approve');
     const result = await backend.ingest(h);
     expect(result.status).toBe('completed');
   });
@@ -231,7 +232,7 @@ describe('self-hosted backend (0074)', () => {
     const h = await backend.dispatch(brief);
     expect(gh.workflowDispatches).toHaveLength(1);
     const d = gh.workflowDispatches[0]!;
-    expect(d.workflowFile).toBe('looper-self-hosted-worker.yml');
+    expect(d.workflowFile).toBe('loopdog-self-hosted-worker.yml');
     expect(d.inputs['api_key_secret']).toBe('MY_MODEL_KEY'); // a NAME, not a value
     expect(d.inputs['branch']).toBe(brief.expectedBranch);
     expect(JSON.stringify(d.inputs)).not.toMatch(/sk-/); // no plaintext key anywhere
@@ -265,11 +266,11 @@ describe('self-hosted backend (0074)', () => {
     const stale = await backend.dispatch({
       ...brief,
       runId: 'run-2',
-      expectedBranch: 'looper/x/9-run-2',
+      expectedBranch: 'loopdog/x/9-run-2',
     });
     gh.seedPull({
       ref: { ...repo, number: 201 },
-      headRef: 'looper/x/9-run-2',
+      headRef: 'loopdog/x/9-run-2',
       body: '',
       updatedAt: '2026-06-09T10:00:00Z', // BEFORE dispatch — no new push yet
     });
@@ -332,15 +333,15 @@ describe('selection + auth (0023)', () => {
   it('resolveAuth: refs only; claude rejects API-key config; ZDR directs to self-hosted', () => {
     expect(
       resolveAuth('claude', {
-        env: { LOOPER_CLAUDE_FIRE_URL: 'x', LOOPER_CLAUDE_FIRE_TOKEN: 'y' } as NodeJS.ProcessEnv,
+        env: { LOOPDOG_CLAUDE_FIRE_URL: 'x', LOOPDOG_CLAUDE_FIRE_TOKEN: 'y' } as NodeJS.ProcessEnv,
       }),
     ).toEqual({
       kind: 'claude',
-      fireUrl: 'LOOPER_CLAUDE_FIRE_URL',
-      routineToken: 'LOOPER_CLAUDE_FIRE_TOKEN',
+      fireUrl: 'LOOPDOG_CLAUDE_FIRE_URL',
+      routineToken: 'LOOPDOG_CLAUDE_FIRE_TOKEN',
     });
     expect(() => resolveAuth('claude', { env: {} as NodeJS.ProcessEnv })).toThrow(
-      /looper connect claude/,
+      /loopdog connect claude/,
     );
     expect(() =>
       resolveAuth('claude', { env: { ANTHROPIC_API_KEY: 'sk-ant-x' } as NodeJS.ProcessEnv }),
@@ -351,7 +352,7 @@ describe('selection + auth (0023)', () => {
     expect(resolveAuth('codex')).toEqual({ kind: 'codex', providerAppRequired: true });
     expect(resolveAuth('self-hosted')).toEqual({
       kind: 'self-hosted',
-      apiKey: 'LOOPER_MODEL_API_KEY',
+      apiKey: 'LOOPDOG_MODEL_API_KEY',
     });
     expect(() => resolveAuth('gpt-9000')).toThrow(UnknownBackendError);
   });

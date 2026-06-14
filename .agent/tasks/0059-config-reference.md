@@ -5,11 +5,11 @@ Branch: task/0059-config-reference
 
 ## Goal
 
-Publish a complete, accurate, example-rich reference for looper's configuration —
-the root `.looper/looper.yml` and the per-loop `.looper/loops/<name>/loop.yml` — so
+Publish a complete, accurate, example-rich reference for loopdog's configuration —
+the root `.loopdog/loopdog.yml` and the per-loop `.loopdog/loops/<name>/loop.yml` — so
 an adopter can author or tune any config field without reading source. The
 reference is **generated from the same schema the validator uses** (0006), so it
-can never silently drift from what looper actually accepts.
+can never silently drift from what loopdog actually accepts.
 
 ## Background
 
@@ -23,17 +23,17 @@ authorization (M17), resilience (M19), backend selection (M05), plan store (M04)
 so this page is also the single place those cross-cutting knobs are catalogued for
 an operator. See [architecture](../../docs/architecture.md) "Generic-ness, in three
 plugin systems" and "Loops are declarative (one file per loop)", and
-[codebase](../../docs/codebase.md) for the `@looper/config` boundary.
+[codebase](../../docs/codebase.md) for the `@loopdog/config` boundary.
 
 ## Scope
 
-- A reference page per config surface: **root `looper.yml`** and **per-loop
+- A reference page per config surface: **root `loopdog.yml`** and **per-loop
   `loop.yml`** (+ the co-located `prompt.md` brief), under the docs site (0058).
 - Every field documented: name, type, default, allowed values, which milestone
   owns it, and a worked example; the **default → per-loop override precedence**
   rule stated once and linked from each overridable field.
 - A **schema-to-doc generator** so the reference is emitted from the zod/JSON
-  Schema in `@looper/config` (0006) — not hand-maintained prose that rots.
+  Schema in `@loopdog/config` (0006) — not hand-maintained prose that rots.
 - A small library of **complete, copyable example configs** (minimal attach,
   dependabot auto-merge loop, cross-provider review loop, self-hosted backend) that
   are validated in CI.
@@ -41,7 +41,7 @@ plugin systems" and "Loops are declarative (one file per loop)", and
 ### Technical detail
 
 **Lands in:** `docs/` (the rendered reference pages, consumed by the 0058 site) +
-a generator that lives with the schema in **`@looper/config`** (e.g.
+a generator that lives with the schema in **`@loopdog/config`** (e.g.
 `packages/config/src/schema/` exposes the schema; a `docs:config` script walks it).
 No new package. The generator imports the *exact* schema objects 0006 defines so the
 doc is a projection of the validator, never a parallel source of truth.
@@ -79,14 +79,14 @@ validate fails the build.
    M17/M19); `mode` (dry-run|suggest|act); and the sibling `prompt.md` brief.
 3. `config-precedence.md` — the one normative rule:
    **per-loop value > root `defaults` > built-in default**, with a worked merge
-   example, plus the `looper:state/*` label scheme and where it's configured.
+   example, plus the `loopdog:state/*` label scheme and where it's configured.
 
 **Example library** (`docs/reference/examples/`, each a full valid tree):
 `minimal/` (root only, all loops default, `mode: dry-run`); `dep-update/` (cron
 trigger, `tier: safe`, `blast_radius.max_files: 5`, auto-merge); `review/`
 (cross-provider: implement on `claude`, review loop on `codex`); `self-hosted/`
 (`backends.default: self-hosted` + the API-key residency note). Each ships a
-`loop.yml`/`looper.yml` exactly as `looper init`/`looper loops new` would emit, and
+`loop.yml`/`loopdog.yml` exactly as `loopdog init`/`loopdog loops new` would emit, and
 is added to the CI validation set.
 
 **Edge cases the page must call out explicitly:** specifying both `github_event`
@@ -107,7 +107,7 @@ to the producing task.
 
 ## Acceptance Criteria
 
-- [x] A single reference page (`docs/config-reference.md`) covers root `looper.yml`,
+- [x] A single reference page (`docs/config-reference.md`) covers root `loopdog.yml`,
       per-loop `loop.yml`, and the precedence rule, covering **every** field in the
       0006 schema (verified field-by-field against `schema/root.ts` + `schema/loop.ts`).
 - [x] Each field row lists type, default, allowed values, and a short note;
@@ -120,12 +120,12 @@ to the producing task.
 - [x] The edge cases (dual trigger, name≠folder, illegal transition, unconnected
       backend, unknown key, `budgets.global.max_usd: 0`, `mode: act`) are each shown
       with the expected validator behavior (the "Validator behavior" table).
-- [x] Linked from the docs index (0058); references no Looper GitHub App, no
+- [x] Linked from the docs index (0058); references no Loopdog GitHub App, no
       primary-path API key, and no database/queue.
 
 ## Implementation Checklist
 
-- [x] Author `docs/config-reference.md` from `@looper/config`'s schema — every
+- [x] Author `docs/config-reference.md` from `@loopdog/config`'s schema — every
       root + loop field, the precedence rule, and the edge-case table.
 - [~] Schema-walking `docs:config` generator + `--check` mode — DEFERRED (see ACs).
 - [x] The runnable example (0061) is the validated example library; its config is
@@ -142,14 +142,14 @@ validator with the M18 fakes (no real quota, no real GitHub).
 # replace with the chosen stack's runner
 npm run docs:config -- --check        # generated page == committed page
 vitest run packages/config            # examples + edge cases validate as documented
-# each docs/reference/examples/* tree passes `looper config validate`; each
+# each docs/reference/examples/* tree passes `loopdog config validate`; each
 # documented invalid case fails with the stated per-field error
 ```
 
 ## Verification Log
 
 - 2026-06-12: `docs/config-reference.md` authored covering every field in
-  `@looper/config` (root `looper.yml` + per-loop `loop.yml` + the
+  `@loopdog/config` (root `loopdog.yml` + per-loop `loop.yml` + the
   `authorization`/`resilience` sub-blocks), each with type/default/allowed/notes,
   the precedence rule, and a "Validator behavior" edge-case table. Cross-checked
   field-by-field against `schema/root.ts` + `schema/loop.ts`. The example config
@@ -182,7 +182,7 @@ this task.
 
 `docs/config-reference.md` documents every root + per-loop config field (type,
 default, allowed values, notes), the precedence rule, and a validator-behavior
-edge-case table — authored directly from the `@looper/config` schema and
+edge-case table — authored directly from the `@loopdog/config` schema and
 cross-checked against it. The runnable example's config is validated against the
 same schema in CI. A schema-walking generator + `--check` drift guard is deferred
 as a follow-up.

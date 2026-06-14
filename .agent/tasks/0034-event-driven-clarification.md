@@ -5,7 +5,7 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-When a human replies to a looper clarification question on an issue, re-enter
+When a human replies to a loopdog clarification question on an issue, re-enter
 grooming **on that `issue_comment` event** — never by polling "did they answer
 yet." Recognize the reply as an answer (not noise), fold it back into the issue's
 grooming context, and hand the item back to the grooming work cell (0033) to
@@ -22,16 +22,16 @@ the consumer side of the `issue_comment` event already wired by the event trigge
 (0008); the grooming work cell (0033) posts the question and does the re-grooming,
 the assume-vs-block policy (0035) decides *when* a question is asked at all, and
 the loop runtime (0036) wires this transition into an executable loop. It lands as
-a **built-in loop asset** plus the deterministic logic in `@looper/runtime`/
-`@looper/github` that classifies the reply and re-enters grooming.
+a **built-in loop asset** plus the deterministic logic in `@loopdog/runtime`/
+`@loopdog/github` that classifies the reply and re-enters grooming.
 
 ## Scope
 
 - A clarification re-entry transition: `needs-clarification → needs-grooming`,
   triggered by an `issue_comment` event on an issue currently in
-  `looper:state/needs-clarification`.
+  `loopdog:state/needs-clarification`.
 - A **maintainer-vs-noise classifier**: decide whether a given comment is a
-  genuine reply to looper's outstanding question (re-enter grooming) or noise
+  genuine reply to loopdog's outstanding question (re-enter grooming) or noise
   (ignore, no spend).
 - Threading the human's answer into the grooming brief so the re-groom sees the
   question *and* its answer.
@@ -41,22 +41,22 @@ a **built-in loop asset** plus the deterministic logic in `@looper/runtime`/
 ### Technical detail
 
 **Where it lands.** The classifier + re-entry logic is deterministic controller
-code in `@looper/runtime` (pipeline step for the clarification transition), reading
-GitHub state via `@looper/github` (comment author, `author_association`, body,
+code in `@loopdog/runtime` (pipeline step for the clarification transition), reading
+GitHub state via `@loopdog/github` (comment author, `author_association`, body,
 issue labels, the question marker). The loop itself is a built-in asset:
 `templates/loops/groom-clarify/{loop.yml,prompt.md}` shipped from
 `runtime/src/loops-builtin/`. No new package.
 
 **The clarification marker (the contract this task keys off).** When grooming
 (0033) asks a question instead of proceeding (0035), it sets the issue to
-`looper:state/needs-clarification` and posts a comment carrying a fenced marker so
+`loopdog:state/needs-clarification` and posts a comment carrying a fenced marker so
 the answer can be correlated back deterministically — mirroring the
 acceptance-criteria marker scheme (M03 · 0014):
 
 ```
-<!-- looper:clarify run=run_91c loop=groom -->
-**Looper needs one decision to proceed:** …question…
-<!-- /looper:clarify -->
+<!-- loopdog:clarify run=run_91c loop=groom -->
+**Loopdog needs one decision to proceed:** …question…
+<!-- /loopdog:clarify -->
 ```
 
 The marker records the originating `run_id`/`loop` so a reply ties to the exact
@@ -76,17 +76,17 @@ gates: { require_dor: false, tier: safe }     # comment-only re-entry; no code
 **Maintainer-vs-noise classifier** (deterministic; runs in pre-flight before any
 claim). A comment re-enters grooming **iff all** hold:
 
-1. **State**: the issue currently carries `looper:state/needs-clarification` AND an
-   un-answered `looper:clarify` question comment exists above this reply.
-2. **Not self/bot echo**: the comment author is not looper's own identity
+1. **State**: the issue currently carries `loopdog:state/needs-clarification` AND an
+   un-answered `loopdog:clarify` question comment exists above this reply.
+2. **Not self/bot echo**: the comment author is not loopdog's own identity
    (`GITHUB_TOKEN`/`github-actions[bot]`) nor the provider agent — those never
    re-trigger and must never count as an answer (avoids self-reply loops).
 3. **Authorized actor** (M17 · 0079): the author passes the loop's actor policy
    (default `collaborators`). An untrusted reply is **parked**
-   (`looper:needs-approval`), not acted on — reusing the authorization gate, not a
+   (`loopdog:needs-approval`), not acted on — reusing the authorization gate, not a
    new path.
-4. **Substantive, not a directive**: the body is not solely a looper/bot command
-   (`@looper approve`, `/fire`, an emoji-only/`+1` reaction-style comment). Pure
+4. **Substantive, not a directive**: the body is not solely a loopdog/bot command
+   (`@loopdog approve`, `/fire`, an emoji-only/`+1` reaction-style comment). Pure
    directives route to their own handlers, not grooming.
 
 If 1–4 hold → the comment is a maintainer answer; else it is **noise** → return
@@ -100,11 +100,11 @@ to the same question (re-groom with the latest text).
    `(groom-clarify, issue, needs-clarification)` — atomic; races with the sweep
    (0076) are safe.
 2. Composes the re-groom brief: the original issue context + the
-   `looper:clarify` question + **the human's answer text** (and any later answers
+   `loopdog:clarify` question + **the human's answer text** (and any later answers
    in the same thread), so the work cell re-grooms *with* the resolution rather
    than re-asking. The brief is built by the grooming work cell (0033); this task
    supplies the threaded Q&A as composition input.
-3. Sets the label to `looper:state/needs-grooming`. Re-grooming then proceeds via
+3. Sets the label to `loopdog:state/needs-grooming`. Re-grooming then proceeds via
    0033 (which may resolve, ask a *follow-up* question, or, per 0035, assume-and-
    proceed) — looping back through this transition for any further replies.
 
@@ -130,12 +130,12 @@ waits for the human's event.
 
 ## Acceptance Criteria
 
-- [x] An authorized human reply to an open `looper:clarify` question on a
+- [x] An authorized human reply to an open `loopdog:clarify` question on a
       `needs-clarification` issue transitions it to `needs-grooming` **on the
       `issue_comment` event**, with no polling anywhere in the path.
 - [x] The human's answer text is threaded into the re-groom composition input
       (question + answer both present).
-- [x] Noise is ignored without spend: looper's/bot's own comments, comments on
+- [x] Noise is ignored without spend: loopdog's/bot's own comments, comments on
       issues not in `needs-clarification`, pure directive/approval/emoji comments,
       and replies with no outstanding question all return `null` (no transition).
 - [x] An untrusted actor's reply is parked (`needs-approval`), not acted on.
@@ -146,8 +146,8 @@ waits for the human's event.
 
 ## Implementation Checklist
 
-- [x] Define the `looper:clarify` comment marker (shape + `run`/`loop` attrs) as a
-      shared constant in `@looper/core`/`@looper/github`, consumed by 0033 too.
+- [x] Define the `loopdog:clarify` comment marker (shape + `run`/`loop` attrs) as a
+      shared constant in `@loopdog/core`/`@loopdog/github`, consumed by 0033 too.
 - [x] Implement the maintainer-vs-noise classifier (state + author + authz +
       substantive) returning answer | noise.
 - [x] Implement the re-entry pipeline step: claim → thread Q&A into the brief →
@@ -165,7 +165,7 @@ Tests run via the repo's `vitest` runner; behavioral tests use the M18 fakes
 ```bash
 # scenario (fake GitHub + fake backend):
 #   open question → authorized human reply → transitions to needs-grooming, answer threaded
-#   looper/bot self-comment, off-state issue, "+1", "@looper approve" → null (noise)
+#   loopdog/bot self-comment, off-state issue, "+1", "@loopdog approve" → null (noise)
 #   untrusted-actor reply → parked needs-approval
 #   same comment via event + sweep → single re-entry (idempotent)
 #   issue_comment edited → re-grooms with latest text
@@ -184,14 +184,14 @@ Tests run via the repo's `vitest` runner; behavioral tests use the M18 fakes
 - Clarification is a dedicated `clarify` builtin loop: trigger
   issue_comment.created (EVENT-driven — never polled), transition
   needs-clarification → ready-for-agent with a stay-fallback for follow-ups.
-- The work cell receives the recent discussion (last 10 non-looper comments)
+- The work cell receives the recent discussion (last 10 non-loopdog comments)
   in the brief context, so the human's answer is in-band.
 - Stay-fallbacks (fallback == from) were made legal in config validation for
   exactly this loop shape.
 
 ## Risks / Rollback
 
-- **Self-reply loop**: misclassifying looper's/the bot's own comment as an answer
+- **Self-reply loop**: misclassifying loopdog's/the bot's own comment as an answer
   would spin grooming. Mitigated by the identity exclusion (#2) and the
   `GITHUB_TOKEN` no-self-retrigger rule — both must hold before `act` mode.
 - **Quota drain on a busy issue**: every comment on a `needs-clarification` issue
