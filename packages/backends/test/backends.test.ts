@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 import { FakeGitHub } from '@loopdog/testing';
 import {
   BackendAuthError,
@@ -172,6 +172,62 @@ describe('claude backend (0020)', () => {
       fetchImpl,
     });
     await expect(backend.dispatch(brief)).rejects.toThrow(/429.*backing off/);
+  });
+
+  it('traces the /fire round-trip to stderr under LOOPDOG_DEBUG, never the token', async () => {
+    const errors: string[] = [];
+    const spy = vi.spyOn(console, 'error').mockImplementation((...args: unknown[]) => {
+      errors.push(args.join(' '));
+    });
+    try {
+      const fetchImpl = (async () =>
+        new Response(
+          JSON.stringify({ session_id: 'sess-1', session_url: 'https://claude.ai/s/1' }),
+          {
+            status: 200,
+          },
+        )) as typeof fetch;
+      const backend = new ClaudeBackend({
+        gh: new FakeGitHub(),
+        env: {
+          LOOPDOG_CLAUDE_FIRE_URL: 'https://x/fire',
+          LOOPDOG_CLAUDE_FIRE_TOKEN: 'sk-ant-oat01-secret',
+          LOOPDOG_DEBUG: '1',
+        } as NodeJS.ProcessEnv,
+        fetchImpl,
+      });
+      await backend.dispatch(brief);
+      const log = errors.join('\n');
+      expect(log).toContain('dispatch → POST https://x/fire');
+      expect(log).toContain(`run=${brief.runId}`);
+      expect(log).toMatch(/dispatch ← HTTP 200/);
+      expect(log).toContain('session=sess-1');
+      expect(log).toContain('url=https://claude.ai/s/1');
+      // the bearer token must never leak into logs
+      expect(log).not.toContain('sk-ant-oat01-secret');
+    } finally {
+      spy.mockRestore();
+    }
+  });
+
+  it('is silent on the /fire round-trip when LOOPDOG_DEBUG is unset', async () => {
+    const spy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    try {
+      const fetchImpl = (async () =>
+        new Response(JSON.stringify({ session_id: 'sess-1' }), { status: 200 })) as typeof fetch;
+      const backend = new ClaudeBackend({
+        gh: new FakeGitHub(),
+        env: {
+          LOOPDOG_CLAUDE_FIRE_URL: 'https://x/fire',
+          LOOPDOG_CLAUDE_FIRE_TOKEN: 't',
+        } as NodeJS.ProcessEnv,
+        fetchImpl,
+      });
+      await backend.dispatch(brief);
+      expect(spy).not.toHaveBeenCalled();
+    } finally {
+      spy.mockRestore();
+    }
   });
 
   it('ingests a comment result posted AS THE USER, never the dispatch marker', async () => {
