@@ -57,3 +57,7 @@ jobs:
       claude_fire_url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
       claude_fire_token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
       codex_mention_token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}
+      # Optional: set the LOOPDOG_PAT secret (`loopdog connect cascade`) to make
+      # loop→loop handoffs instant instead of waiting for the cron sweep. Unset
+      # is fine — handoffs then run at sweep pace (today's default).
+      loopdog_pat: ${{ secrets.LOOPDOG_PAT }}

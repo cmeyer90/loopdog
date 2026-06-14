@@ -8,7 +8,8 @@ import { findTemplatesDir } from '../assets.js';
 /**
  * `loopdog controller event|sweep` — the entrypoint the reusable Actions
  * workflows invoke (tasks 0008/0076). Deterministic; uses the workflow's
- * GITHUB_TOKEN; one event or one sweep tick per invocation.
+ * GITHUB_TOKEN, or LOOPDOG_PAT when set (task 0105: instant handoff); one event
+ * or one sweep tick per invocation.
  */
 
 export function registerController(
