@@ -8,8 +8,8 @@ Every planned task now has a full, handoff-ready spec under `tasks/`. The
 per-milestone grouping + sequencing lives in each milestone's **Planned Tasks**
 table and in `milestones.md`.
 
-- **Next task id:** `0104`
-- **Total tasks:** 103
+- **Next task id:** `0105`
+- **Total tasks:** 104
 
 | ID | Status | Branch | Title |
 |---:|---|---|---|
@@ -116,3 +116,4 @@ table and in `milestones.md`.
 | 0101 | verified | task/0101-controller-version-drift | Surface Controller-Version Drift in `status` |
 | 0102 | verified | task/0102-semver-bump-policy | Document the SemVer Changeset-Bump Policy |
 | 0103 | implemented | claude/gallant-tu-b70bd2 | Dispatch Session Visibility & `/fire` Debug Logging |
+| 0104 | implemented | claude/gallant-tu-b70bd2 | Fix Bundled CLI Crash Reading `../../package.json` |

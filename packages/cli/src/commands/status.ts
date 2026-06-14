@@ -1,5 +1,4 @@
 import type { Command } from 'commander';
-import { createRequire } from 'node:module';
 import { readFile, readdir, writeFile } from 'node:fs/promises';
 import { join } from 'node:path';
 import { loadConfig } from '@loopdog/config';
@@ -15,9 +14,7 @@ import { OctokitGitHub, parseRepoFromRemoteUrl, resolveGitHubAuth } from '@loopd
 import type { GitHubPort, RepoRef, RunRecord } from '@loopdog/core';
 import { buildLoopRows, renderStatus, type StatusView } from '../render/status-view.js';
 import { assessControllerDrift, type ControllerDrift } from './controller-version.js';
-
-const require = createRequire(import.meta.url);
-const { version: CLI_VERSION } = require('../../package.json') as { version: string };
+import { CLI_VERSION } from '../version.js';
 
 /**
  * `loopdog status` + control verbs (task 0071): the fleet overview (pipeline
