@@ -3,6 +3,7 @@ import { mkdir, readFile, readdir, stat, writeFile } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { loadConfig } from '@loopdog/config';
 import { findTemplatesDir } from '../assets.js';
+import { isLoopdogWorkflow, shortName } from './workflows.js';
 
 /**
  * `loopdog init` (task 0007): attach loopdog to a repo — scaffold the root
@@ -30,58 +31,122 @@ export function registerInit(program: Command): void {
     .option('--yes', 'non-interactive: accept and write the plan', false)
     .option('--force', 'offer to re-write conflicting files (still asks per file)', false)
     .option('--path <dir>', 'target repo root', '.')
-    .action(async (opts: { dryRun: boolean; yes: boolean; force: boolean; path: string }) => {
-      const templatesDir = await findTemplatesDir();
-      const plan = await buildScaffoldPlan(templatesDir, opts.path);
-      renderPlan(plan);
+    .option(
+      '--no-enable-workflows',
+      'skip re-enabling already-registered loopdog Actions workflows',
+    )
+    .action(
+      async (opts: {
+        dryRun: boolean;
+        yes: boolean;
+        force: boolean;
+        path: string;
+        enableWorkflows: boolean;
+      }) => {
+        const templatesDir = await findTemplatesDir();
+        const plan = await buildScaffoldPlan(templatesDir, opts.path);
+        renderPlan(plan);
 
-      if (opts.dryRun) {
-        console.log('\n--dry-run: nothing written.');
-        return;
-      }
-      if (!opts.yes && !process.stdout.isTTY) {
-        console.log('\nrefusing to write without --yes in a non-interactive shell.');
-        process.exitCode = 1;
-        return;
-      }
-      if (!opts.yes) {
-        const { confirm, isCancel } = await import('@clack/prompts');
-        const go = await confirm({ message: 'Write these files?' });
-        if (isCancel(go) || !go) {
-          console.log('aborted — nothing written.');
+        if (opts.dryRun) {
+          console.log('\n--dry-run: nothing written.');
           return;
         }
-      }
+        if (!opts.yes && !process.stdout.isTTY) {
+          console.log('\nrefusing to write without --yes in a non-interactive shell.');
+          process.exitCode = 1;
+          return;
+        }
+        if (!opts.yes) {
+          const { confirm, isCancel } = await import('@clack/prompts');
+          const go = await confirm({ message: 'Write these files?' });
+          if (isCancel(go) || !go) {
+            console.log('aborted — nothing written.');
+            return;
+          }
+        }
 
-      let wrote = 0;
-      for (const file of plan.files) {
-        if (file.action !== 'create') continue;
-        const target = join(opts.path, file.path);
-        await mkdir(join(target, '..'), { recursive: true });
-        await writeFile(target, await readFile(file.source, 'utf8'));
-        wrote++;
-      }
-      console.log(`\nwrote ${wrote} file(s); skipped ${plan.files.length - wrote}.`);
+        let wrote = 0;
+        for (const file of plan.files) {
+          if (file.action !== 'create') continue;
+          const target = join(opts.path, file.path);
+          await mkdir(join(target, '..'), { recursive: true });
+          await writeFile(target, await readFile(file.source, 'utf8'));
+          wrote++;
+        }
+        console.log(`\nwrote ${wrote} file(s); skipped ${plan.files.length - wrote}.`);
 
-      const result = await loadConfig(opts.path);
-      if (!result.ok) {
-        console.error('\nscaffolded tree FAILED validation (packaging bug?):');
-        for (const e of result.errors) console.error(`  - ${e.file} ${e.path}: ${e.message}`);
-        process.exitCode = 1;
-        return;
-      }
-      console.log('config validation: OK');
+        const result = await loadConfig(opts.path);
+        if (!result.ok) {
+          console.error('\nscaffolded tree FAILED validation (packaging bug?):');
+          for (const e of result.errors) console.error(`  - ${e.file} ${e.path}: ${e.message}`);
+          process.exitCode = 1;
+          return;
+        }
+        console.log('config validation: OK');
+
+        // Safe by default means dry-run loops, NOT a disabled controller: the
+        // events/sweep workflows must be ON or opened issues silently stall. On a
+        // first attach they aren't registered yet (they register + start enabled on
+        // first push); on a re-attach they may have been disabled — re-enable them.
+        // Strictly best-effort: offline / no-auth / first-attach are soft notes,
+        // never an init failure.
+        if (opts.enableWorkflows) await enableScaffoldedWorkflows(opts.path);
+
+        console.log(
+          [
+            '',
+            'Next steps:',
+            '  1. loopdog connect claude   (and/or: loopdog connect codex)',
+            '  2. commit the scaffold and push (the workflows register + turn on)',
+            '  3. open a test issue, watch the dry-run previews, then promote loops:',
+            '       loopdog promote groom --to act',
+            '  • toggle the driving workflows anytime: loopdog workflows [list|enable|disable]',
+          ].join('\n'),
+        );
+      },
+    );
+}
+
+/**
+ * Best-effort: leave loopdog's Actions workflows enabled after an attach. Never
+ * throws — a fresh attach has nothing registered yet, and offline/no-auth is a
+ * soft note, so this can't turn `loopdog init` into a failure.
+ */
+async function enableScaffoldedWorkflows(repoDir: string): Promise<void> {
+  try {
+    const { OctokitGitHub, parseRepoFromRemoteUrl, resolveGitHubAuth } =
+      await import('@loopdog/github');
+    const { execFile } = await import('node:child_process');
+    const { promisify } = await import('node:util');
+    const { stdout } = await promisify(execFile)('git', [
+      '-C',
+      repoDir,
+      'remote',
+      'get-url',
+      'origin',
+    ]);
+    const repo = parseRepoFromRemoteUrl(stdout.trim());
+    if (!repo) return;
+    const auth = await resolveGitHubAuth();
+    const gh = new OctokitGitHub({ token: auth.token });
+    const registered = (await gh.listWorkflows(repo)).filter(isLoopdogWorkflow);
+    if (registered.length === 0) {
       console.log(
-        [
-          '',
-          'Next steps:',
-          '  1. loopdog connect claude   (and/or: loopdog connect codex)',
-          '  2. commit the scaffold and open a test issue',
-          '  3. watch the dry-run previews, then promote loops one at a time:',
-          '       loopdog promote groom --to act',
-        ].join('\n'),
+        'workflows: none registered yet — they enable themselves on first push (`git push`).',
       );
-    });
+      return;
+    }
+    const disabled = registered.filter((w) => w.state !== 'active');
+    if (disabled.length === 0) {
+      console.log('workflows: loopdog Actions already enabled.');
+      return;
+    }
+    for (const w of disabled) await gh.enableWorkflow(repo, w.id);
+    console.log(`workflows: re-enabled ${disabled.map(shortName).join(', ')}.`);
+  } catch {
+    // Offline, no gh auth, missing actions:write, or not a GitHub remote — the
+    // dedicated command (`loopdog workflows enable`) covers it post-push.
+  }
 }
 
 export async function buildScaffoldPlan(
