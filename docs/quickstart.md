@@ -38,7 +38,7 @@ git add .loopdog .github/workflows && git commit -m "attach loopdog (dry-run)" &
 
 # 5. Open a test issue (any feature request) and watch the groom loop comment a
 #    plan-as-contract (acceptance criteria + scope) — in dry-run it only explains.
-loopdog status            # fleet overview: pipeline counts, attention, throughput
+loopdog status            # fleet overview: every loop + its mode/tier, items waiting per stage, attention, throughput
 
 # 6. Watch a specific item or loop as it runs.
 loopdog run groom --issue <n> --dry-run     # preview what groom would do, now
