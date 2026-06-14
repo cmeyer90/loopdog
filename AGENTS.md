@@ -51,8 +51,12 @@ roadmap.
   ([`.github/workflows/release.yml`](.github/workflows/release.yml)) — push to
   `main` opens/updates a "Version Packages" PR; merging it publishes
   `@loopdog/cli` (libraries bundled in; everything else `private: true`) to npm
-  with provenance and cuts the GitHub Release. Auth is **OIDC trusted
-  publishing** ([`docs.npmjs.com/trusted-publishers`](https://docs.npmjs.com/trusted-publishers)) —
+  with provenance and cuts the GitHub Release. Each publish also auto-syncs the
+  workflow-ref tags the scaffold pins to — an exact `vX.Y.Z` and a floating major
+  `vX` ([`scripts/sync-workflow-tags.mjs`](scripts/sync-workflow-tags.mjs)) — so a
+  freshly-scaffolded `uses: …@vX` always resolves; no manual tagging. Auth is
+  **OIDC trusted publishing**
+  ([`docs.npmjs.com/trusted-publishers`](https://docs.npmjs.com/trusted-publishers)) —
   no `NPM_TOKEN` secret; it needs a Trusted Publisher entry on the
   `@loopdog/cli` package naming this repo + `release.yml`, and npm ≥ 11.5.1
   (the workflow upgrades npm). OIDC can't create a new package name, so the

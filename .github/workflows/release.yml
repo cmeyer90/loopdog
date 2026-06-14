@@ -49,6 +49,7 @@ jobs:
       - run: npm test
       - run: npm run build
       - name: version PR or publish
+        id: changesets
         uses: changesets/action@v1
         with:
           version: npm run version-packages
@@ -57,3 +58,10 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           NPM_CONFIG_PROVENANCE: 'true'
+      # Keep the workflow-ref tags that `loopdog init` scaffolds (`uses: …@vX`) in
+      # lockstep with the just-published CLI: an exact `vX.Y.Z` + a floating major
+      # `vX`. Runs only on a real publish, so a release never again leaves `@vX`
+      # dangling. Self-activates on the release that ships it.
+      - name: sync workflow-ref tags
+        if: steps.changesets.outputs.published == 'true'
+        run: node scripts/sync-workflow-tags.mjs

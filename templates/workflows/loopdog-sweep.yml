@@ -13,6 +13,7 @@ permissions:
 
 jobs:
   loopdog:
-    uses: cmeyer90/loopdog/.github/workflows/reusable-sweep.yml@v0.1.0
+    # Floating major tag (see loopdog-events.yml): `@v0` tracks the latest 0.x.
+    uses: cmeyer90/loopdog/.github/workflows/reusable-sweep.yml@v0
     with:
-      loopdog-version: 0.1.0
+      loopdog-version: '0' # latest 0.x of @loopdog/cli (tracks the @v0 workflow)
