@@ -6,10 +6,13 @@ on:
     - cron: '*/5 * * * *'
   workflow_dispatch: # manual/debug tick
 
+# Must grant at least what the reusable workflow declares — a called workflow
+# requesting more than the caller provides is a startup failure.
 permissions:
-  contents: read
+  contents: write
   issues: write
   pull-requests: write
+  checks: read
 
 jobs:
   loopdog:
