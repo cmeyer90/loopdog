@@ -1,6 +1,6 @@
 {
   "name": "@loopdog/testing",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Loopdog testing package",
   "license": "Apache-2.0",
   "type": "module",
@@ -20,9 +20,9 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@loopdog/core": "0.3.0",
-    "@loopdog/config": "0.3.0",
-    "@loopdog/runtime": "0.3.0",
+    "@loopdog/core": "0.3.1",
+    "@loopdog/config": "0.3.1",
+    "@loopdog/runtime": "0.3.1",
     "yaml": "^2.8.0"
   }
 }
