@@ -49,18 +49,25 @@ export function registerConnect(program: Command): void {
         [
           'Connect Claude (subscription, manual routine import — one-time web setup):',
           '',
-          '  1. In Claude (web): Claude Code → Routines → create a routine.',
-          '     - Repository: select THIS repo (authorize Anthropic’s GitHub App if asked).',
-          '     - Cloud environment: pick/create one. Project env vars + setup scripts',
-          '       for the sandbox are configured THERE, in Claude — loopdog never',
-          '       forwards Actions secrets at /fire time.',
-          '     - Allow the routine to create branches / open PRs.',
-          '  2. Add an **API trigger** to the routine. Claude shows a per-routine',
-          '     fire URL and a bearer token (shown ONCE — copy both now).',
-          '  3. Paste them below; they are stored as GitHub Actions secrets',
-          `     ${CLAUDE_FIRE_URL_SECRET} / ${CLAUDE_FIRE_TOKEN_SECRET} via gh.`,
+          'In Claude (web): Claude Code → Routines → create a routine.',
           '',
-          'This uses your Claude subscription (no ANTHROPIC_API_KEY anywhere).',
+          '  1. Repository: select THIS repo (authorize Anthropic’s GitHub App if asked).',
+          '  2. Cloud environment: pick/create one. Project env vars + setup scripts',
+          '     for the sandbox are configured THERE, in Claude — loopdog never',
+          '     forwards Actions secrets at /fire time.',
+          '  3. Allow the routine to create branches / open PRs.',
+          '  4. Routine prompt: Claude requires one, but its text does not matter —',
+          '     loopdog sends the real task on every /fire call and overrides it.',
+          '     A placeholder is fine, e.g. "Loopdog supplies the task at run time."',
+          '  5. Add an API trigger. Claude reveals two values ONCE — copy both now,',
+          '     in the order Claude shows them:',
+          '       a) a bearer TOKEN, then',
+          '       b) the per-routine fire URL.',
+          '',
+          'Paste them below (you will be asked for the token first, then the URL).',
+          `They are stored as GitHub Actions secrets ${CLAUDE_FIRE_TOKEN_SECRET} /`,
+          `${CLAUDE_FIRE_URL_SECRET} via gh. This uses your Claude subscription`,
+          '(no ANTHROPIC_API_KEY anywhere).',
           '',
           'Note: Zero-Data-Retention orgs cannot use Claude cloud routines, and',
           'tests needing live secrets/network may not run in provider sandboxes —',
@@ -73,19 +80,34 @@ export function registerConnect(program: Command): void {
       if (!process.stdin.isTTY) {
         console.log(
           `non-interactive shell: set the secrets yourself —\n` +
-            `  gh secret set ${CLAUDE_FIRE_URL_SECRET}\n  gh secret set ${CLAUDE_FIRE_TOKEN_SECRET}`,
+            `  gh secret set ${CLAUDE_FIRE_TOKEN_SECRET}\n  gh secret set ${CLAUDE_FIRE_URL_SECRET}`,
         );
         return;
       }
-      const { password, isCancel } = await import('@clack/prompts');
-      const fireUrl = await password({ message: 'Routine fire URL:' });
-      if (isCancel(fireUrl)) return;
-      const fireToken = await password({ message: 'Routine bearer token:' });
-      if (isCancel(fireToken)) return;
+      // Prompt order mirrors what Claude reveals on screen: token first, then URL.
+      // Input stays visible (text, not password) so a bad paste is easy to spot —
+      // these are one-time values you're copying off the Claude UI right now.
+      const { text, isCancel, cancel } = await import('@clack/prompts');
+      const fireToken = await text({
+        message: 'Routine bearer token (Claude shows this first):',
+        validate: (v) => (v.trim() ? undefined : 'Paste the bearer token.'),
+      });
+      if (isCancel(fireToken)) {
+        cancel('Cancelled — nothing stored.');
+        return;
+      }
+      const fireUrl = await text({
+        message: 'Routine fire URL:',
+        validate: (v) => (/^https?:\/\//.test(v.trim()) ? undefined : 'Paste the full https:// fire URL.'),
+      });
+      if (isCancel(fireUrl)) {
+        cancel('Cancelled — nothing stored.');
+        return;
+      }
 
       const repoArgs = opts.repo ? ['--repo', opts.repo] : [];
-      await ghSecretSet(CLAUDE_FIRE_URL_SECRET, String(fireUrl), repoArgs);
-      await ghSecretSet(CLAUDE_FIRE_TOKEN_SECRET, String(fireToken), repoArgs);
+      await ghSecretSet(CLAUDE_FIRE_TOKEN_SECRET, String(fireToken).trim(), repoArgs);
+      await ghSecretSet(CLAUDE_FIRE_URL_SECRET, String(fireUrl).trim(), repoArgs);
       console.log(
         `✓ stored ${CLAUDE_FIRE_URL_SECRET} + ${CLAUDE_FIRE_TOKEN_SECRET} as Actions secrets.\n` +
           '  Rotation: regenerate the token in Claude, then re-run `loopdog connect claude`.',
