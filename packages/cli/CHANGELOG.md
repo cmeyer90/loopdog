@@ -1,5 +1,20 @@
 # @loopdog/cli
 
+## 0.6.1
+
+### Patch Changes
+
+- [#20](https://github.com/cmeyer90/loopdog/pull/20) [`65ffaa1`](https://github.com/cmeyer90/loopdog/commit/65ffaa1458ee980042531ffd9539d0c2fbcfbb52) Thanks [@cmeyer90](https://github.com/cmeyer90)! - Surface the running Claude work cell at dispatch. The dispatch marker comment now
+  shows a `🔭 live session:` link, and `loopdog controller event`/`sweep` output
+  appends the session per processed item. Setting `LOOPDOG_DEBUG` traces the routine
+  `/fire` round-trip (request + response, session id/URL) to stderr for diagnosis —
+  off by default, and the bearer token is never logged.
+
+- [#20](https://github.com/cmeyer90/loopdog/pull/20) [`65ffaa1`](https://github.com/cmeyer90/loopdog/commit/65ffaa1458ee980042531ffd9539d0c2fbcfbb52) Thanks [@cmeyer90](https://github.com/cmeyer90)! - Fix `loopdog upgrade` / `loopdog status` crashing with `Cannot find module
+'../../package.json'`. The CLI version is now read from a single bundle-safe
+  module (`src/version.ts`), so the flattened publish bundle resolves it relative to
+  the installed package instead of one level above it.
+
 ## 0.6.0
 
 ### Minor Changes

@@ -1,6 +1,6 @@
 {
   "name": "@loopdog/core",
-  "version": "0.6.0",
+  "version": "0.6.1",
   "description": "Loopdog core package",
   "license": "Apache-2.0",
   "type": "module",
