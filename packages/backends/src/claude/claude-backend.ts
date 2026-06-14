@@ -26,6 +26,9 @@ export const CLAUDE_API_VERSION = '2023-06-01';
 export const CLAUDE_FIRE_URL_REF = 'LOOPDOG_CLAUDE_FIRE_URL';
 export const CLAUDE_FIRE_TOKEN_REF = 'LOOPDOG_CLAUDE_FIRE_TOKEN';
 
+/** Set (to any non-empty value) to trace the `/fire` round-trip to stderr. */
+export const CLAUDE_DEBUG_REF = 'LOOPDOG_DEBUG';
+
 export interface ClaudeBackendOptions {
   gh: GitHubPort;
   /** Lazily-resolved secret refs (env names) — never plaintext in config. */
@@ -69,7 +72,18 @@ export class ClaudeBackend implements ExecutionBackend {
       );
     }
 
+    // Opt-in `/fire` round-trip tracing (stderr only — keeps stdout/job-summary
+    // output clean). Never logs the bearer token; logs instruction *size*, not
+    // the brief body (which can be large and carry repo content).
+    const debug = env[CLAUDE_DEBUG_REF] ? makeFireLogger() : undefined;
+    const clockMs = (): number => (this.opts.now?.() ?? new Date()).getTime();
+
     const doFetch = this.opts.fetchImpl ?? fetch;
+    debug?.(
+      `dispatch → POST ${fireUrl} run=${brief.runId} item=#${brief.item.number} ` +
+        `instructions=${brief.instructions.length}B`,
+    );
+    const startedMs = clockMs();
     const response = await doFetch(fireUrl, {
       method: 'POST',
       headers: {
@@ -80,8 +94,13 @@ export class ClaudeBackend implements ExecutionBackend {
       },
       body: JSON.stringify({ text: brief.instructions }),
     });
+    const elapsedMs = clockMs() - startedMs;
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
+      debug?.(
+        `dispatch ← HTTP ${response.status} in ${elapsedMs}ms (failed)` +
+          (detail ? ` body=${detail.slice(0, 200)}` : ''),
+      );
       throw new Error(formatFireError(response.status, detail));
     }
     const data = (await response.json().catch(() => ({}))) as {
@@ -91,6 +110,10 @@ export class ClaudeBackend implements ExecutionBackend {
       url?: string;
     };
     const sessionId = data.session_id ?? data.id ?? 'unknown-session';
+    debug?.(
+      `dispatch ← HTTP ${response.status} in ${elapsedMs}ms ` +
+        `session=${sessionId} url=${data.session_url ?? data.url ?? '(none)'}`,
+    );
 
     return {
       runId: brief.runId,
@@ -111,6 +134,11 @@ export class ClaudeBackend implements ExecutionBackend {
   async ingest(handle: DispatchHandle): Promise<IngestResult> {
     return ingestViaCorrelation(this.opts.gh, handle);
   }
+}
+
+/** A stderr line logger for `/fire` tracing — stdout stays reserved for CLI output. */
+function makeFireLogger(): (line: string) => void {
+  return (line: string) => console.error(`[loopdog:claude] ${line}`);
 }
 
 /**

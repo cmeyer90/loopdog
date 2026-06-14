@@ -30,7 +30,7 @@ export interface SweepSummary {
   scannedStates: string[];
   reclaimedLeases: number;
   candidates: number;
-  processed: Array<{ loop: string; item: number; status: string }>;
+  processed: Array<{ loop: string; item: number; status: string; session?: string }>;
   /** Candidates dropped by caps — deferred to later ticks, never silent. */
   deferredByCap: number;
   skipped: Array<{ item: number; reason: string }>;
@@ -145,6 +145,7 @@ export async function runSweep(
         loop: loop.name,
         item: item.ref.number,
         status: record.outcome.status,
+        ...(record.outcome.artifacts?.session ? { session: record.outcome.artifacts.session } : {}),
       });
       actedItems.add(item.ref.number);
     }

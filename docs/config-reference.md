@@ -119,6 +119,20 @@ loosen it).
 | `budgets.global.max_usd: 0` | **valid** — `0` means *unlimited*, not "block everything" |
 | `defaults.mode: act` | **valid** — but you've removed the safe default; promote deliberately |
 
+## Operational environment variables
+
+These are runtime/troubleshooting toggles read directly from the environment —
+not `loopdog.yml` keys. Set them on the controller step (or your shell).
+
+| Env var | Effect |
+|---|---|
+| `LOOPDOG_DEBUG` | Any non-empty value traces the Claude `/fire` round-trip to **stderr**: the request (URL, run, item, instruction size) and response (HTTP status, elapsed ms, session id, session URL — or a truncated body on failure). The bearer token is never logged. Use it to diagnose a missing `session_url` or an odd dispatch. |
+
+When a dispatch succeeds, the live session is also surfaced without any flag: the
+dispatch marker comment on the issue/PR shows a `🔭 live session:` link, and the
+`loopdog controller event`/`sweep` output appends the session to each processed
+item.
+
 ## See also
 
 - [Resilience & Failure Policy](resilience.md) — the full `resilience:` block.

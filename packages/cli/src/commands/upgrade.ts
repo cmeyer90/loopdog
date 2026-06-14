@@ -1,5 +1,4 @@
 import type { Command } from 'commander';
-import { createRequire } from 'node:module';
 import { readFile, writeFile, readdir, stat } from 'node:fs/promises';
 import { join, relative } from 'node:path';
 import { parse } from 'yaml';
@@ -11,9 +10,8 @@ import {
   type FileTree,
 } from '@loopdog/config';
 import { retargetCallerWorkflow, type CallerPinChange } from './upgrade-workflows.js';
+import { CLI_VERSION } from '../version.js';
 
-const require = createRequire(import.meta.url);
-const { version: CLI_VERSION } = require('../../package.json') as { version: string };
 const CLI_MAJOR = Number(CLI_VERSION.split('.')[0]);
 
 /**

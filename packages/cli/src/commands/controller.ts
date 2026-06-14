@@ -59,7 +59,8 @@ export function registerController(
           ...(result.intake ? ['intake: labeled new issue loopdog:state/new'] : []),
           ...result.records.map(
             (r) =>
-              `  ${r.loop} #${r.item.number}: ${r.outcome.status}${r.outcome.transition ? ` (${r.outcome.transition})` : ''}`,
+              `  ${r.loop} #${r.item.number}: ${r.outcome.status}${r.outcome.transition ? ` (${r.outcome.transition})` : ''}` +
+              (r.outcome.artifacts?.session ? ` → ${r.outcome.artifacts.session}` : ''),
           ),
         ];
         console.log(lines.join('\n'));
@@ -89,7 +90,9 @@ export function registerController(
         `sweep: scanned ${summary.scannedStates.length} state(s), ` +
           `${summary.candidates} candidate(s), processed ${summary.processed.length}, ` +
           `reclaimed ${summary.reclaimedLeases} lease(s), deferred-by-cap ${summary.deferredByCap}`,
-        ...summary.processed.map((p) => `  ${p.loop} #${p.item}: ${p.status}`),
+        ...summary.processed.map(
+          (p) => `  ${p.loop} #${p.item}: ${p.status}${p.session ? ` → ${p.session}` : ''}`,
+        ),
         ...summary.skipped.slice(0, 20).map((s) => `  skip #${s.item}: ${s.reason}`),
       ];
       console.log(lines.join('\n'));

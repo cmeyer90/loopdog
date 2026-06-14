@@ -1,4 +1,4 @@
-import type { CommentSnapshot, DispatchHandle } from '@loopdog/core';
+import type { CommentSnapshot, CorrelationSignal, DispatchHandle } from '@loopdog/core';
 
 /**
  * The dispatch handle persists as a marker comment on the item, so a LATER
@@ -12,15 +12,32 @@ const CLOSE = ' -->';
 const RESOLVED = '<!-- loopdog:dispatch-resolved -->';
 
 export function renderDispatchMarker(handle: DispatchHandle): string {
+  const session = sessionLine(handle.signal);
   return [
     `🛰️ loopdog dispatched \`${handle.runId}\` to **${handle.backend}**`,
     '',
+    ...(session ? [session] : []),
     `- expected branch: \`${handle.expectedBranch}\``,
     `- expected PR trailer: \`${handle.expectedTrailer}\``,
     `- dispatched at: ${handle.dispatchedAt}`,
     '',
     `${OPEN}${JSON.stringify(handle)}${CLOSE}`,
   ].join('\n');
+}
+
+/**
+ * The operator-facing window into the running work cell. For a Claude session we
+ * prefer the live `sessionUrl` (bare URL → auto-linked by GitHub); fall back to a
+ * real session id but never surface the `'unknown-session'` placeholder. Other
+ * backends carry no human-followable session, so they get no line.
+ */
+function sessionLine(signal: CorrelationSignal): string | null {
+  if (signal.kind !== 'claude-session') return null;
+  if (signal.sessionUrl) return `- 🔭 live session: ${signal.sessionUrl}`;
+  if (signal.sessionId && signal.sessionId !== 'unknown-session') {
+    return `- 🔭 session: \`${signal.sessionId}\``;
+  }
+  return null;
 }
 
 export interface PendingDispatch {
