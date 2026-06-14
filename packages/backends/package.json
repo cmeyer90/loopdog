@@ -1,6 +1,6 @@
 {
   "name": "@loopdog/backends",
-  "version": "0.3.2",
+  "version": "0.4.0",
   "description": "Loopdog backends package",
   "license": "Apache-2.0",
   "type": "module",
@@ -20,7 +20,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@loopdog/core": "0.3.2",
-    "@loopdog/github": "0.3.2"
+    "@loopdog/core": "0.4.0",
+    "@loopdog/github": "0.4.0"
   }
 }
