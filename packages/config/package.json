@@ -1,6 +1,6 @@
 {
   "name": "@loopdog/config",
-  "version": "0.5.0",
+  "version": "0.6.0",
   "description": "Loopdog config package",
   "license": "Apache-2.0",
   "type": "module",
@@ -22,6 +22,6 @@
   "dependencies": {
     "zod": "^3.25.0",
     "yaml": "^2.8.0",
-    "@loopdog/core": "0.5.0"
+    "@loopdog/core": "0.6.0"
   }
 }

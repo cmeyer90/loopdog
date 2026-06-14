@@ -1,5 +1,14 @@
 # @loopdog/testing
 
+## 0.6.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @loopdog/config@0.6.0
+  - @loopdog/core@0.6.0
+  - @loopdog/runtime@0.6.0
+
 ## 0.5.0
 
 ### Patch Changes
