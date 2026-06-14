@@ -1,12 +1,12 @@
 # Install
 
-Looper ships as the `@looper/cli` npm package + the versioned reusable workflows
+Looper ships as the `@loopdog/cli` npm package + the versioned reusable workflows
 the CLI scaffolds into your repo.
 
 ## Install the CLI
 
 ```bash
-npm i -g @looper/cli      # or: npx @looper/cli <command>
+npm i -g @loopdog/cli      # or: npx @loopdog/cli <command>
 looper --version          # should report the installed version
 ```
 
@@ -42,7 +42,7 @@ changes the config contract — see [UPGRADING.md](UPGRADING.md). The controller
 refuses to run config newer than it understands, so a version mismatch fails
 loudly rather than misbehaving.
 
-> Publishing `@looper/cli` to npm with provenance + cutting the `v1.0.0` /
+> Publishing `@loopdog/cli` to npm with provenance + cutting the `v1.0.0` /
 > floating `v1` tags is the release step (see
 > [release-checklist.md](release-checklist.md)); until 1.0.0 is cut, install from
 > the `0.x` channel / a local build.

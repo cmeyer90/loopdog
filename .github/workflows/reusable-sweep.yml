@@ -7,7 +7,7 @@ on:
   workflow_call:
     inputs:
       looper-version:
-        description: '@looper/cli version to run'
+        description: '@loopdog/cli version to run'
         type: string
         default: latest
 
@@ -31,5 +31,5 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
         run: |
-          npx --yes @looper/cli@${{ inputs.looper-version }} controller sweep \
+          npx --yes @loopdog/cli@${{ inputs.looper-version }} controller sweep \
             --repo "${{ github.repository }}"

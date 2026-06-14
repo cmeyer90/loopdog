@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { buildProgram } from '@looper/cli';
+import { buildProgram } from '@loopdog/cli';
 
 describe('looper CLI program', () => {
   it('exposes the looper name and a version', () => {

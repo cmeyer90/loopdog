@@ -1,6 +1,6 @@
 # Looper root configuration — global defaults every loop inherits.
 # Each loop is its own folder under .looper/loops/<name>/ (loop.yml + prompt.md).
-# Reference: https://github.com/cmeyer90/looper docs/ (config reference).
+# Reference: https://github.com/cmeyer90/loopdog docs/ (config reference).
 version: 1
 
 backends:

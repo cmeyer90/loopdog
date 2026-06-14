@@ -2,7 +2,7 @@ import { afterEach, describe, expect, it } from 'vitest';
 import { mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
-import { buildProgram } from '@looper/cli';
+import { buildProgram } from '@loopdog/cli';
 import { buildScaffoldPlan } from '../src/commands/init.js';
 import { findTemplatesDir } from '../src/assets.js';
 import { loadConfig } from '@looper/config';
