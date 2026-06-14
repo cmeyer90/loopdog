@@ -82,10 +82,7 @@ export class ClaudeBackend implements ExecutionBackend {
     });
     if (!response.ok) {
       const detail = await response.text().catch(() => '');
-      throw new Error(
-        `claude /fire failed: HTTP ${response.status}${detail ? ` — ${detail.slice(0, 200)}` : ''}` +
-          (response.status === 429 ? ' (routine quota — backing off, never retry-storming)' : ''),
-      );
+      throw new Error(formatFireError(response.status, detail));
     }
     const data = (await response.json().catch(() => ({}))) as {
       session_id?: string;
@@ -114,4 +111,43 @@ export class ClaudeBackend implements ExecutionBackend {
   async ingest(handle: DispatchHandle): Promise<IngestResult> {
     return ingestViaCorrelation(this.opts.gh, handle);
   }
+}
+
+/**
+ * Turn a /fire HTTP failure into an actionable, single-line message. Anthropic
+ * returns `{error:{reason,message}}`; we map the known reasons to the fix the
+ * adopter must make (which loopdog can't make for them) instead of leaking a
+ * raw HTTP status. Falls back to the trimmed body for anything unrecognized.
+ */
+export function formatFireError(status: number, body: string): string {
+  let reason = '';
+  let message = '';
+  try {
+    const parsed = JSON.parse(body) as { error?: { reason?: string; message?: string } };
+    reason = parsed.error?.reason ?? '';
+    message = parsed.error?.message ?? '';
+  } catch {
+    // non-JSON body — fall through to the raw-detail path
+  }
+  const base = `claude /fire failed: HTTP ${status}`;
+  switch (reason) {
+    case 'github_repo_access_denied':
+      return (
+        `${base} — the Claude routine can't access this repo. Re-authorize GitHub ` +
+        `in Claude (Settings → connected GitHub, or the routine's repository field) ` +
+        `and grant the Anthropic GitHub App access to this repository, then retry.`
+      );
+    case 'authentication_error':
+      return (
+        `${base} — the routine bearer token is invalid or revoked. Regenerate it in ` +
+        `Claude and re-run \`loopdog connect claude --rotate\`.`
+      );
+    default:
+      break;
+  }
+  if (status === 429) {
+    return `${base} — routine quota reached (per-account daily cap); backing off, never retry-storming.${message ? ` ${message}` : ''}`;
+  }
+  const detail = message || body.slice(0, 200);
+  return `${base}${detail ? ` — ${detail}` : ''}`;
 }

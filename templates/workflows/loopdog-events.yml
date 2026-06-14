@@ -41,7 +41,15 @@ permissions:
 
 jobs:
   loopdog:
-    # LOOPDOG_VERSION_REF: pinned by `loopdog init` to the installed CLI version.
-    uses: cmeyer90/loopdog/.github/workflows/reusable-events.yml@v0.1.0
+    # Pinned by `loopdog init`: the `@v<major>` ref tracks loopdog's reusable
+    # workflow; `loopdog-version` pins the exact @loopdog/cli the controller runs.
+    uses: cmeyer90/loopdog/.github/workflows/reusable-events.yml@v0
     with:
-      loopdog-version: 0.1.0
+      loopdog-version: 0.2.0
+    # Forward the provider secrets the controller needs to dispatch in `act`
+    # mode. Unset secrets pass through as empty — dry-run/suggest loops and the
+    # deterministic triage loop never read them. Stored by `loopdog connect`.
+    secrets:
+      claude-fire-url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
+      claude-fire-token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
+      codex-mention-token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}

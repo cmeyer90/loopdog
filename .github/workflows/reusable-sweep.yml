@@ -10,6 +10,19 @@ on:
         description: '@loopdog/cli version to run'
         type: string
         default: latest
+    # Provider dispatch secrets, forwarded by the thin caller. All optional —
+    # the sweep still runs (reclaim leases, advance deterministic loops) without
+    # them; only model-dispatching loops in `act` mode require them.
+    secrets:
+      claude-fire-url:
+        description: 'LOOPDOG_CLAUDE_FIRE_URL — Claude routine /fire URL'
+        required: false
+      claude-fire-token:
+        description: 'LOOPDOG_CLAUDE_FIRE_TOKEN — Claude routine bearer token'
+        required: false
+      codex-mention-token:
+        description: 'LOOPDOG_CODEX_MENTION_TOKEN — token that posts @codex mentions'
+        required: false
 
 # Least-privilege manifest (task 0029). NOT granted: actions, packages,
 # deployments, id-token, security-events. Deploy/OIDC loops opt in per-workflow.
@@ -30,6 +43,10 @@ jobs:
       - name: run loopdog controller (sweep)
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # Provider auth for `act`-mode dispatch — empty when not connected.
+          LOOPDOG_CLAUDE_FIRE_URL: ${{ secrets.claude-fire-url }}
+          LOOPDOG_CLAUDE_FIRE_TOKEN: ${{ secrets.claude-fire-token }}
+          LOOPDOG_CODEX_MENTION_TOKEN: ${{ secrets.codex-mention-token }}
         run: |
           npx --yes @loopdog/cli@${{ inputs.loopdog-version }} controller sweep \
             --repo "${{ github.repository }}"

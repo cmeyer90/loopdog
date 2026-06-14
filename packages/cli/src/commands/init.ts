@@ -22,7 +22,7 @@ export interface ScaffoldPlan {
   loops: Array<{ name: string; transition: string; trigger: string; mode: string }>;
 }
 
-export function registerInit(program: Command): void {
+export function registerInit(program: Command, cliVersion = '0.0.0'): void {
   program
     .command('init')
     .description('attach loopdog to this repository (scaffold config + loops + workflows)')
@@ -58,7 +58,12 @@ export function registerInit(program: Command): void {
         if (file.action !== 'create') continue;
         const target = join(opts.path, file.path);
         await mkdir(join(target, '..'), { recursive: true });
-        await writeFile(target, await readFile(file.source, 'utf8'));
+        const contents = pinLoopdogVersion(
+          file.path,
+          await readFile(file.source, 'utf8'),
+          cliVersion,
+        );
+        await writeFile(target, contents);
         wrote++;
       }
       console.log(`\nwrote ${wrote} file(s); skipped ${plan.files.length - wrote}.`);
@@ -146,6 +151,21 @@ export async function buildScaffoldPlan(
   return { files, loops };
 }
 
+/**
+ * Pin the loopdog reusable-workflow callers to the installed CLI version: the
+ * `uses: …@v<major>` ref tracks loopdog's reusable workflow on its major track,
+ * and `loopdog-version:` pins the exact `@loopdog/cli` the controller runs. The
+ * shipped templates carry a valid default; this keeps a fresh install in step
+ * with whatever CLI version scaffolded it. Non-workflow files pass through.
+ */
+export function pinLoopdogVersion(relPath: string, content: string, cliVersion: string): string {
+  if (!/[\\/]loopdog-(events|sweep)\.yml$/.test(relPath)) return content;
+  const major = cliVersion.split('.')[0] || '0';
+  return content
+    .replace(/(uses:\s*cmeyer90\/loopdog\/\S+@)v[\w.]+/g, `$1v${major}`)
+    .replace(/(loopdog-version:\s*)\S+/g, `$1${cliVersion}`);
+}
+
 function renderPlan(plan: ScaffoldPlan): void {
   console.log('loopdog init plan:\n');
   for (const f of plan.files) {
@@ -155,9 +175,14 @@ function renderPlan(plan: ScaffoldPlan): void {
     );
   }
   console.log('\nloops this attaches (all safe-by-default until promoted):\n');
+  // Width columns to the actual content so names like `deploy-smoke` and long
+  // trigger lists stay aligned instead of ragged.
+  const nameW = Math.max(...plan.loops.map((l) => l.name.length));
+  const transW = Math.max(...plan.loops.map((l) => l.transition.length));
+  const trigW = Math.max(...plan.loops.map((l) => l.trigger.length));
   for (const l of plan.loops) {
     console.log(
-      `  ${l.name.padEnd(10)} ${l.transition.padEnd(32)} on ${l.trigger.padEnd(28)} mode=${l.mode}`,
+      `  ${l.name.padEnd(nameW)}  ${l.transition.padEnd(transW)}  on ${l.trigger.padEnd(trigW)}  mode=${l.mode}`,
     );
   }
   void relative; // (kept for future path rendering)

@@ -98,7 +98,8 @@ export function registerConnect(program: Command): void {
       }
       const fireUrl = await text({
         message: 'Routine fire URL:',
-        validate: (v) => (/^https?:\/\//.test(v.trim()) ? undefined : 'Paste the full https:// fire URL.'),
+        validate: (v) =>
+          /^https?:\/\//.test(v.trim()) ? undefined : 'Paste the full https:// fire URL.',
       });
       if (isCancel(fireUrl)) {
         cancel('Cancelled — nothing stored.');

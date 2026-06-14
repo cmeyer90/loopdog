@@ -13,6 +13,14 @@ permissions:
 
 jobs:
   loopdog:
-    uses: cmeyer90/loopdog/.github/workflows/reusable-sweep.yml@v0.1.0
+    # Pinned by `loopdog init`: the `@v<major>` ref tracks loopdog's reusable
+    # workflow; `loopdog-version` pins the exact @loopdog/cli the controller runs.
+    uses: cmeyer90/loopdog/.github/workflows/reusable-sweep.yml@v0
     with:
-      loopdog-version: 0.1.0
+      loopdog-version: 0.2.0
+    # The sweep carries controller->controller handoffs, so it is the path that
+    # actually dispatches most loops — it needs the provider secrets too.
+    secrets:
+      claude-fire-url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
+      claude-fire-token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
+      codex-mention-token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}
