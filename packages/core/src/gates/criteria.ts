@@ -86,3 +86,12 @@ export function hasScopeBlock(body: string): boolean {
   const end = body.indexOf(SCOPE_CLOSE);
   return start !== -1 && end > start && body.slice(start + SCOPE_OPEN.length, end).trim() !== '';
 }
+
+/** The scope block's inner text (trimmed), or null when absent/empty. */
+export function parseScopeBlock(body: string): string | null {
+  const start = body.indexOf(SCOPE_OPEN);
+  const end = body.indexOf(SCOPE_CLOSE);
+  if (start === -1 || end === -1 || end < start) return null;
+  const inner = body.slice(start + SCOPE_OPEN.length, end).trim();
+  return inner === '' ? null : inner;
+}

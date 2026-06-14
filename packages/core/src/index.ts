@@ -139,6 +139,7 @@ export {
   SCOPE_OPEN,
   hasScopeBlock,
   parseCriteriaBlock,
+  parseScopeBlock,
   renderCriteriaBlock,
   upsertCriteriaBlock,
 } from './gates/criteria.js';

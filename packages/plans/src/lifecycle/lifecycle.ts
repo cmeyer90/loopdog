@@ -1,5 +1,5 @@
 import type { GitHubPort, IssueSnapshot, RunRecord } from '@loopdog/core';
-import { parseCriteriaBlock, renderCriteriaBlock } from '@loopdog/core';
+import { parseCriteriaBlock, parseScopeBlock, renderCriteriaBlock } from '@loopdog/core';
 import type { RepoPlanStoreFiles } from '../store/repo-plan-store.js';
 import { STORE_LAYOUT } from '../format/templates.js';
 import {
@@ -33,10 +33,16 @@ export async function openPlan(
 
   let next = doc;
   if (doc.status === 'planned') next = setStatus(next, 'ready');
-  // Carry the groomed criteria block from the issue into the plan (verbatim).
+  // Carry the groomed criteria + scope from the issue body (loopdog's canonical
+  // source) into the durable plan, so the loops that read the PLAN — review,
+  // implement — see the same acceptance bar humans groomed on the issue.
   const { criteria } = parseCriteriaBlock(issue.body);
   if (criteria && criteria.length > 0) {
     next = updateSection(next, 'Acceptance Criteria', `\n${renderCriteriaBlock(criteria)}\n`);
+  }
+  const scope = parseScopeBlock(issue.body);
+  if (scope) {
+    next = updateSection(next, 'Scope', `\n${scope}\n`);
   }
   if (next !== doc) {
     await files.write(

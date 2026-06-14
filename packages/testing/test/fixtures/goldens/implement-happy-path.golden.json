@@ -21,7 +21,7 @@
     }
   ],
   "plan": {
-    ".loopdog/plans/tasks/0001-add-rate-limiting.md": "sha256:dd1c90f989bf5e09"
+    ".loopdog/plans/tasks/0001-add-rate-limiting.md": "sha256:4e8c53aab3bbed7b"
   },
   "runs": [
     {

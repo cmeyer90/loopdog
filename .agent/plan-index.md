@@ -8,8 +8,8 @@ Every planned task now has a full, handoff-ready spec under `tasks/`. The
 per-milestone grouping + sequencing lives in each milestone's **Planned Tasks**
 table and in `milestones.md`.
 
-- **Next task id:** `0098`
-- **Total tasks:** 97
+- **Next task id:** `0099`
+- **Total tasks:** 98
 
 | ID | Status | Branch | Title |
 |---:|---|---|---|
@@ -110,3 +110,4 @@ table and in `milestones.md`.
 | 0095 | implemented | claude/amazing-goldberg-0926da | CLI `ldg` Shorthand & 0.2.0 Publish |
 | 0096 | implemented | claude/amazing-goldberg-0926da | Auto-cut Workflow-Ref Tags & Quiet 404s |
 | 0097 | verified | claude/stoic-gauss-7aa571 | `loopdog status` Pipeline Visualization & Speed-up |
+| 0098 | implemented | claude/optimistic-shamir-17b43f | Plan-Store Fragmentation: One Durable Plan Per Issue |
