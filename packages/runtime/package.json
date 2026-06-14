@@ -1,6 +1,6 @@
 {
   "name": "@loopdog/runtime",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "Loopdog runtime package",
   "license": "Apache-2.0",
   "type": "module",
@@ -20,11 +20,11 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@loopdog/core": "0.3.0",
-    "@loopdog/config": "0.3.0",
-    "@loopdog/github": "0.3.0",
-    "@loopdog/plans": "0.3.0",
-    "@loopdog/backends": "0.3.0",
-    "@loopdog/adapters": "0.3.0"
+    "@loopdog/core": "0.3.1",
+    "@loopdog/config": "0.3.1",
+    "@loopdog/github": "0.3.1",
+    "@loopdog/plans": "0.3.1",
+    "@loopdog/backends": "0.3.1",
+    "@loopdog/adapters": "0.3.1"
   }
 }
