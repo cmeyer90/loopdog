@@ -27,9 +27,11 @@ trust-boundary doc under `docs/`:
 
 ## Maintainer credentials
 
-- `NPM_TOKEN` (repo secret): npm automation token scoped to publish-only, used
-  exclusively by the release workflow. Rotate on suspicion; publishing also
-  carries npm provenance attestation so artifacts are verifiable.
+- npm publishing uses **OIDC trusted publishing** (no stored token): the
+  release workflow mints a short-lived OIDC credential, authorized by a Trusted
+  Publisher entry on the `@loopdog/cli` package that pins this repo +
+  `release.yml`. There is no long-lived `NPM_TOKEN` to leak or rotate.
+  Publishing carries npm provenance attestation so artifacts are verifiable.
 - `ADMIN_TOKEN` (repo secret, optional): a maintainer PAT with repo
   `administration:write`, used only by the manually-dispatched
   branch-protection apply workflow. Not used by any loop or runtime path.
