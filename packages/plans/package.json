@@ -1,6 +1,6 @@
 {
   "name": "@loopdog/plans",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Loopdog plans package",
   "license": "Apache-2.0",
   "type": "module",
@@ -20,7 +20,7 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@loopdog/core": "0.1.0",
-    "@loopdog/github": "0.1.0"
+    "@loopdog/core": "0.2.0",
+    "@loopdog/github": "0.2.0"
   }
 }
