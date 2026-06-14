@@ -5,7 +5,7 @@ This file lists active roadmap milestones only. Completed milestones move to
 for how the planning system works and `PLANS.md` for the protocol.
 
 North-star architecture for the V1 roadmap:
-[Looper Architecture](../docs/architecture.md).
+[Loopdog Architecture](../docs/architecture.md).
 
 ## Active Milestone Files
 
@@ -51,15 +51,15 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0093 | Milestone 00: Pre-Build Validation Spikes | blocked | task/0093-dispatch-and-correlation-spike | Dispatch & Correlation Spike |
 | 0001 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0001-stack-and-repo-layout | Stack & Repo Layout |
 | 0002 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0002-license-and-community-files | License & Community Files |
-| 0003 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0003-own-ci-pipeline | Looper's Own CI |
+| 0003 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0003-own-ci-pipeline | Loopdog's Own CI |
 | 0004 | Milestone 01: Project Foundation & Open-Source Scaffolding | implemented | task/0004-branch-protection-and-codeowners | Branch Protection & CODEOWNERS |
 | 0005 | Milestone 01: Project Foundation & Open-Source Scaffolding | verified | task/0005-release-and-versioning | Release & Versioning |
 | 0006 | Milestone 02: Attachment & Configuration Model | verified | task/0006-config-schema-and-validation | Config Schema & Validation |
-| 0007 | Milestone 02: Attachment & Configuration Model | verified | task/0007-init-cli-and-scaffolding | `looper init` CLI & Scaffolding |
+| 0007 | Milestone 02: Attachment & Configuration Model | verified | task/0007-init-cli-and-scaffolding | `loopdog init` CLI & Scaffolding |
 | 0008 | Milestone 02: Attachment & Configuration Model | verified | task/0008-event-driven-triggers | Event-Driven Triggers |
 | 0076 | Milestone 02: Attachment & Configuration Model | verified | task/0076-cron-reconcile-sweep | Cron Reconcile Sweep |
 | 0009 | Milestone 02: Attachment & Configuration Model | verified | task/0009-dry-run-and-safe-defaults | Dry-Run & Safe Defaults |
-| 0077 | Milestone 02: Attachment & Configuration Model | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `looper login` |
+| 0077 | Milestone 02: Attachment & Configuration Model | implemented | task/0077-cli-github-connector-and-login | CLI GitHub Connector & `loopdog login` |
 | 0010 | Milestone 02: Attachment & Configuration Model | implemented | task/0010-subscription-onboarding-and-backend-select | Subscription Onboarding & Backend Select |
 | 0094 | Milestone 03: GitHub State-Machine Core | verified | task/0094-core-port-interfaces-and-run-record-store | Core Port Interfaces & Run-Record Store |
 | 0011 | Milestone 03: GitHub State-Machine Core | verified | task/0011-label-state-machine-spec | Label State Machine Spec |
@@ -122,12 +122,12 @@ primary deliverables live in that milestone file's **Planned Tasks** table.
 | 0065 | Milestone 15: V1 Hardening & Release | implemented | task/0065-cost-latency-benchmarks | Cost & Latency Benchmarks |
 | 0066 | Milestone 15: V1 Hardening & Release | implemented | task/0066-release-1-0-0 | Release 1.0.0 |
 | 0067 | Milestone 15: V1 Hardening & Release | verified | task/0067-upgrade-and-migration-path | Upgrade & Migration Path |
-| 0068 | Milestone 16: Loop Control & Observability CLI | verified | task/0068-cli-loop-introspection | Loop Introspection (`looper loops list` / `looper loops show`) |
-| 0069 | Milestone 16: Loop Control & Observability CLI | verified | task/0069-cli-run-history-and-tracing | Run History & Tracing (`looper runs list` / `looper runs show`) |
-| 0070 | Milestone 16: Loop Control & Observability CLI | verified | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`looper run` / `looper tail` / `looper watch`) |
-| 0071 | Milestone 16: Loop Control & Observability CLI | verified | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`looper status` + control verbs) |
-| 0072 | Milestone 16: Loop Control & Observability CLI | verified | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`looper prompts show/diff/edit/history`) |
-| 0078 | Milestone 16: Loop Control & Observability CLI | verified | task/0078-custom-loop-authoring | Custom Loop Authoring (`looper loops new` questionnaire) |
+| 0068 | Milestone 16: Loop Control & Observability CLI | verified | task/0068-cli-loop-introspection | Loop Introspection (`loopdog loops list` / `loopdog loops show`) |
+| 0069 | Milestone 16: Loop Control & Observability CLI | verified | task/0069-cli-run-history-and-tracing | Run History & Tracing (`loopdog runs list` / `loopdog runs show`) |
+| 0070 | Milestone 16: Loop Control & Observability CLI | verified | task/0070-cli-trigger-dryrun-and-tail | Trigger, Dry-Run & Tail (`loopdog run` / `loopdog tail` / `loopdog watch`) |
+| 0071 | Milestone 16: Loop Control & Observability CLI | verified | task/0071-cli-fleet-status-and-control | Fleet Status & Control (`loopdog status` + control verbs) |
+| 0072 | Milestone 16: Loop Control & Observability CLI | verified | task/0072-cli-prompt-policy-inspection | Prompt & Policy Inspection (`loopdog prompts show/diff/edit/history`) |
+| 0078 | Milestone 16: Loop Control & Observability CLI | verified | task/0078-custom-loop-authoring | Custom Loop Authoring (`loopdog loops new` questionnaire) |
 | 0079 | Milestone 17: Authorization & Trigger Control | verified | task/0079-actor-authorization-policy | Actor Authorization Policy (WHO) |
 | 0080 | Milestone 17: Authorization & Trigger Control | verified | task/0080-approval-gate-and-parked-items | Approval Gate & Parked Items (WHEN / release) |
 | 0081 | Milestone 17: Authorization & Trigger Control | verified | task/0081-trigger-source-and-bot-controls | Trigger Source & Bot Controls (WHAT) |

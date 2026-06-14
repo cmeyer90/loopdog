@@ -21,9 +21,9 @@ in [Milestone 06](../milestones/milestone-06-project-adapter-system.md) (interfa
 0024, auto-detect 0025, generic escape hatch 0026, bundled adapters 0027). See
 [architecture](../../docs/architecture.md) "Execution model" (the work cell "runs
 build/tests (provider-hosted)") and "Generic-ness, in three plugin systems"
-(project adapters). It lands in `@looper/runtime` (brief composition + CI-gate
-read) using the `ProjectAdapter` interface from `@looper/core` and the adapters in
-`@looper/adapters`; the actual command execution happens in the provider sandbox
+(project adapters). It lands in `@loopdog/runtime` (brief composition + CI-gate
+read) using the `ProjectAdapter` interface from `@loopdog/core` and the adapters in
+`@loopdog/adapters`; the actual command execution happens in the provider sandbox
 (brief) and the adopter's Actions (CI), not in controller code.
 
 ## Scope
@@ -40,9 +40,9 @@ read) using the `ProjectAdapter` interface from `@looper/core` and the adapters 
 
 ### Technical detail
 
-**Adapter resolution.** A pure helper in `@looper/runtime/src/pipeline` calls
-`@looper/adapters` `detect()` unless `looper.yml`/`loop.yml` pins an adapter; the
-resolved `ProjectAdapter` (from `@looper/core` ports) exposes command specs:
+**Adapter resolution.** A pure helper in `@loopdog/runtime/src/pipeline` calls
+`@loopdog/adapters` `detect()` unless `loopdog.yml`/`loop.yml` pins an adapter; the
+resolved `ProjectAdapter` (from `@loopdog/core` ports) exposes command specs:
 
 ```ts
 interface CommandSpec { cmd: string; cwd?: string; env?: string[] /* names only */ }
@@ -68,7 +68,7 @@ command configured — CI is the sole gate" note rather than omitting the sectio
 **CI as the trustworthy gate.** This is the load-bearing half: the sandbox run is
 the *weakest* rung (may be quota- or network-limited under Codex). After 0073
 correlates the PR, `readCiVerdict(github, pr)` reads the PR's required check runs
-(`check_suite`/`status`) via `@looper/github` and returns
+(`check_suite`/`status`) via `@loopdog/github` and returns
 `{ status: passed|failed|pending, checks: [...] }`. The merge gate (M03 0014 /
 review loop M10) consumes this; build/test "passing" for merge purposes means the
 adopter's CI is green, regardless of the sandbox self-report. The controller makes
@@ -110,10 +110,10 @@ adapter id + command digests on the run record (0012) for tracing.
 ## Implementation Checklist
 
 - [x] Add `resolveBuildTest(adapter)` + config-override → detect → generic logic in
-      `@looper/runtime/src/pipeline`.
+      `@loopdog/runtime/src/pipeline`.
 - [x] Extend brief composition to render the Build & Test section (incl. the
       null-test note).
-- [x] Add `readCiVerdict(github, pr)` over `@looper/github` required checks.
+- [x] Add `readCiVerdict(github, pr)` over `@loopdog/github` required checks.
 - [x] Wire the verdict into the run record (0012) and expose it to the merge gate.
 - [x] Handle pending-CI (defer to sweep 0076) and sandbox≠CI divergence.
 - [x] Update docs if loop authoring/brief shape changed.
@@ -121,7 +121,7 @@ adapter id + command digests on the run record (0012) for tracing.
 ## Test Plan
 
 Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
-(`@looper/testing` fake-github + fake-backends) — no real provider quota.
+(`@loopdog/testing` fake-github + fake-backends) — no real provider quota.
 
 ```bash
 # replace with the chosen stack's runner

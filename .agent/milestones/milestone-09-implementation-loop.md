@@ -2,7 +2,7 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — "The loops"
+> Background: [Loopdog Architecture](../../docs/architecture.md) — "The loops"
 > (implementation). Uses the provider (M05) and project adapter (M06).
 
 ## Objective
@@ -17,7 +17,7 @@ durable plan accurate throughout.
 - The controller owns claim/budget/retry; it dispatches the code-change work cell
   to the configured execution backend (M05) and ingests the resulting PR.
 - On the primary path the provider's cloud agent clones the repo and runs
-  build/test in the provider sandbox; looper makes no direct model API call.
+  build/test in the provider sandbox; loopdog makes no direct model API call.
 - Refuses to start unless DoR is satisfied (M03 gate).
 - Enforces blast-radius limits (max files / max diff); scope-exceeding work halts
   and escalates instead of ballooning.

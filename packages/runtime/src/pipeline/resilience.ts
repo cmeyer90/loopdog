@@ -1,10 +1,10 @@
-import type { BreakerPolicy, BreakerState, InFlight, RunRecord } from '@looper/core';
+import type { BreakerPolicy, BreakerState, InFlight, RunRecord } from '@loopdog/core';
 
 /**
  * Runtime resilience helpers (M19 · 0090): derive the concurrency in-flight
  * count and the per-(loop,backend) circuit-breaker state from the run-record
  * ledger — the same no-side-DB pattern the budget/quota gates use (the ledger
- * lives on the `looper/telemetry` branch, i.e. GitHub state). No new marker.
+ * lives on the `loopdog/telemetry` branch, i.e. GitHub state). No new marker.
  */
 
 /**

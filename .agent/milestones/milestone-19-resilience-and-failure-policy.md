@@ -2,7 +2,7 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) "Resilience &
+> Background: [Loopdog Architecture](../../docs/architecture.md) "Resilience &
 > failure policy." Generalizes the narrow stuck-detection in M12 · 0051 into a
 > systematic, **user-tunable** failure model: partial failures, provider errors
 > mid-dispatch, poisoned items, and load spikes degrade gracefully under the
@@ -10,7 +10,7 @@ Status: verified
 
 ## Objective
 
-Classify failures and expose **knobs** so maintainers control how looper degrades:
+Classify failures and expose **knobs** so maintainers control how loopdog degrades:
 retries/timeouts, concurrency ceilings, circuit breakers on provider outages,
 escalation routing, and quarantine for poisoned items — all configurable repo-wide
 and per loop.
@@ -25,10 +25,10 @@ and per loop.
 - **Circuit breaker** beats blind retries on a provider outage — open the circuit
   and pause the loop instead of burning attempts/quota.
 - Nothing is silently dropped: an item that exhausts its policy lands in
-  `needs-human`/`looper:quarantine` with the failure recorded in its run record.
+  `needs-human`/`loopdog:quarantine` with the failure recorded in its run record.
 - Knobs ship with safe defaults; every knob is overridable per loop.
 
-Config (repo default in `looper.yml`, overridable per loop):
+Config (repo default in `loopdog.yml`, overridable per loop):
 
 ```yaml
 resilience:
@@ -49,7 +49,7 @@ resilience:
 | 0088 | verified | task/0088-failure-taxonomy | Failure Taxonomy & Classification | Pure total `classify`/`responseFor` (transient/terminal/poisoned/overload/budget → retry/escalate/quarantine/defer/pause). |
 | 0089 | verified | task/0089-retry-timeout-backoff | Retry, Timeout & Backoff | 3-shape jittered backoff engine + runtime-stamped `dispatch_timeout` (lease-clamped, ingest-wins). |
 | 0090 | verified | task/0090-concurrency-ceiling-and-circuit-breaker | Concurrency Ceiling & Circuit Breaker | `checkCeiling` + ledger-derived circuit breaker, enforced as pre-flight `skip` (defer/pause). |
-| 0091 | verified | task/0091-resilience-knobs-and-quarantine | Resilience Knobs, Quarantine & Escalation | `resilience:` block honored + `looper:quarantine`/`on_failure`/`escalate_to` + `looper retry`/`status`. |
+| 0091 | verified | task/0091-resilience-knobs-and-quarantine | Resilience Knobs, Quarantine & Escalation | `resilience:` block honored + `loopdog:quarantine`/`on_failure`/`escalate_to` + `loopdog retry`/`status`. |
 
 ## Definition Of Done
 
@@ -71,10 +71,10 @@ resilience:
   a concurrency ceiling that defers a load spike, a ledger-derived circuit breaker
   that pauses a loop on a provider outage and admits a single half-open probe after
   cooldown, and quarantine + `on_failure`/`escalate_to` routing so a poisoned item
-  is never silently dropped (released with `looper retry`; surfaced in `looper
+  is never silently dropped (released with `loopdog retry`; surfaced in `loopdog
   status`). Repo-wide: 242 tests across 33 files green (12 core + 4 e2e new for
   M19), lint + build clean, taxonomy table at `docs/resilience.md`. Honest
-  deferrals (see task Decisions): the breaker's visible `looper:paused/<loop>`
+  deferrals (see task Decisions): the breaker's visible `loopdog:paused/<loop>`
   label + one-time comment and strict half-open single-flight are not applied
   (ledger-derived enforcement covers the semantics); the distinct per-dispatch
   `retry_count` budget is defined + tested in core but the runtime uses the item

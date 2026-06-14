@@ -14,7 +14,7 @@ export interface ItemRef extends RepoRef {
  * The clock seam (task 0086). The runtime never blocks (no sleep), so a clock
  * is just an injectable "what time is it now" — threaded everywhere wall time
  * is read (runner, sweep, lease expiry, backoff, telemetry) as the optional
- * `now` dep. A `VirtualClock` (in `@looper/testing`) conforms to this so the
+ * `now` dep. A `VirtualClock` (in `@loopdog/testing`) conforms to this so the
  * simulation owns all time advancement; production passes the default below.
  */
 export type Clock = () => Date;

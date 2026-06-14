@@ -6,7 +6,7 @@ Branch: claude/laughing-johnson-8a7944
 ## Goal
 
 Let a third party author a correct `ProjectAdapter` and *prove* it conforms without
-reading looper's internals: ship (a) an authoring guide that documents the
+reading loopdog's internals: ship (a) an authoring guide that documents the
 `detect / build / test / lint / run / deploy` contract end-to-end, and (b) a reusable
 **conformance test kit** — a single exported function an adapter's own test file
 calls to assert it satisfies every clause of the port. The same kit gates the
@@ -16,7 +16,7 @@ thing repo-wide.
 ## Background
 
 Part of [Milestone 06](../milestones/milestone-06-project-adapter-system.md) — the
-project-adapter plugin system, the second of looper's three genericity surfaces
+project-adapter plugin system, the second of loopdog's three genericity surfaces
 ([architecture](../../docs/architecture.md) "Generic-ness, in three plugin systems"
 → *Project adapters*). The milestone's Definition-of-Done requires that "third
 parties can author and verify an adapter using the guide + test kit," and its
@@ -26,7 +26,7 @@ realizes the [codebase](../../docs/codebase.md) decision: "No plugin-loader/
 marketplace framework — backends and adapters are a small fixed registry behind an
 interface; third parties use the conformance kit (M06 · 0028)." It consumes the
 frozen `ProjectAdapter` contract (0024), references the generic adapter (0026) and
-bundled adapters (0027) as worked examples, and lives partly in `@looper/testing`
+bundled adapters (0027) as worked examples, and lives partly in `@loopdog/testing`
 (the kit) and partly in `docs/` (the guide). The kit runs at the **component tier**
 of the M18 pyramid (each port impl vs. a fake counterpart) using the M18 fakes — no
 real provider quota, no child processes.
@@ -34,7 +34,7 @@ real provider quota, no child processes.
 ## Scope
 
 - A `runAdapterConformance(makeAdapter, opts)` function exported from
-  `@looper/testing` that drives every clause of the 0024 `ProjectAdapter` contract
+  `@loopdog/testing` that drives every clause of the 0024 `ProjectAdapter` contract
   against a candidate adapter and fails with a clear message on any violation.
 - A fixture set (`RepoFs` snapshots + a scripted fake `CommandRunner`) the kit uses
   so the suite is deterministic, offline, and process-free.
@@ -46,13 +46,13 @@ real provider quota, no child processes.
 
 ### Technical detail
 
-**Lands in:** `@looper/testing` (`packages/testing/src/conformance/adapter.ts` +
+**Lands in:** `@loopdog/testing` (`packages/testing/src/conformance/adapter.ts` +
 fixtures under `packages/testing/src/conformance/fixtures/`) and `docs/adapters.md`.
-The kit depends on `@looper/core` (for the `ProjectAdapter` types frozen by 0024)
+The kit depends on `@loopdog/core` (for the `ProjectAdapter` types frozen by 0024)
 and the M18 fakes (0083 + the fake `CommandRunner`); it is **dev-only**, never
 shipped (codebase: `testing` is "Not shipped").
 
-**Kit signature** (`@looper/testing`):
+**Kit signature** (`@loopdog/testing`):
 
 ```ts
 export interface AdapterConformanceOpts {
@@ -107,7 +107,7 @@ exercise both the pass and fail branches without spawning anything.
 
 **Authoring guide (`docs/adapters.md`)** — sections:
 - *What an adapter is*: the 0024 contract, the IO boundary (adapters describe *what*
-  to run; `@looper/runtime` owns *how*), and why commands feed both the adopter's CI
+  to run; `@loopdog/runtime` owns *how*), and why commands feed both the adopter's CI
   gate (M03 · 0014) and the dispatched brief (M03 · 0012).
 - *Scaffold*: a copyable skeleton implementing `ProjectAdapter` with TODOs.
 - *Implement detect*: how `confidence` is scored and why generic must never
@@ -115,7 +115,7 @@ exercise both the pass and fail branches without spawning anything.
 - *Implement commands*: returning `CommandResult`, the skipped-vs-failed semantics
   (0024), and the secret-redaction expectation for output (0026 — never leak into
   the run record).
-- *Register*: adding the adapter to the fixed registry array in `@looper/adapters`
+- *Register*: adding the adapter to the fixed registry array in `@loopdog/adapters`
   (no plugin loader); the override precedence (`adapter.commands` > derived >
   default) it must honor.
 - *Verify*: a 6-line `adapter.conformance.test.ts` calling `runAdapterConformance`,
@@ -125,7 +125,7 @@ exercise both the pass and fail branches without spawning anything.
   breaking bump.
 
 **Contract version.** Export an `ADAPTER_CONTRACT_VERSION` constant from
-`@looper/core` (the 0024 port surface); the kit asserts the adapter was authored
+`@loopdog/core` (the 0024 port surface); the kit asserts the adapter was authored
 against the current version (advisory, not a hard gate) so the guide and kit can
 evolve without silently mis-validating an old adapter.
 
@@ -142,7 +142,7 @@ evolve without silently mis-validating an old adapter.
 
 ## Acceptance Criteria
 
-- [x] `@looper/testing` exports `runAdapterConformance(makeAdapter, opts)` that
+- [x] `@loopdog/testing` exports `runAdapterConformance(makeAdapter, opts)` that
       registers an `it()` per contract clause and fails with a clear message on any
       violation.
 - [x] The kit asserts: full method shape; `detect()` confidence in `[0,1]` with
@@ -168,7 +168,7 @@ evolve without silently mis-validating an old adapter.
       `packages/testing/src/conformance/adapter.ts`; export via the testing barrel.
 - [x] Add the `FakeCommandRunner` (scripted, call-recording) if not already provided
       by the M18 fakes (0083), and the `RepoFs` fixture snapshots.
-- [x] Add `ADAPTER_CONTRACT_VERSION` to `@looper/core`'s adapter port (0024).
+- [x] Add `ADAPTER_CONTRACT_VERSION` to `@loopdog/core`'s adapter port (0024).
 - [x] Write a deliberately-broken `BrokenAdapter` test fixture and assert the kit
       rejects it (negative test for the kit itself).
 - [x] Wire the kit into 0026 and 0027 test suites.
@@ -183,7 +183,7 @@ fakes — no real provider quota, no child processes spawned.
 
 ```bash
 # replace with this repo's runner once finalized (0001)
-npm run -w @looper/testing test
+npm run -w @loopdog/testing test
 # cases:
 #  - a conformant fake adapter passes every kit clause
 #  - BrokenAdapter (throws on skipped phase / lies about capabilities) FAILS the kit
@@ -218,7 +218,7 @@ npm run -w @looper/testing test
   kit must fail it before the kit is trusted.
 - **Contract drift.** If 0024 changes after this lands, the kit and guide go stale;
   `ADAPTER_CONTRACT_VERSION` makes a bump detectable, and the kit is pinned to the
-  `@looper/core` types so a breaking change fails to compile rather than silently
+  `@loopdog/core` types so a breaking change fails to compile rather than silently
   mis-validating.
 - **Over-promising third-party support.** The guide must state the registry is a
   fixed array (no dynamic loading) so authors PR their adapter in rather than
@@ -229,7 +229,7 @@ behavior; removing them reverts to the bundled adapters' bespoke tests.
 
 ## Final Summary
 
-The conformance kit in @looper/testing (seven clauses, shared fixtures,
+The conformance kit in @loopdog/testing (seven clauses, shared fixtures,
 fake runner) is the single definition of adapter conformance — used by all
 three bundled adapters and documented for third parties in docs/adapters.md
 with a full authoring walkthrough.

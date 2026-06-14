@@ -6,19 +6,19 @@ Branch: claude/laughing-johnson-8a7944
 ## Goal
 
 Define the one project-adapter contract — `detect / build / test / lint / run /
-deploy` — that lets looper describe and operate an arbitrary project. The
-interface lives in `@looper/core` (a port); implementations live in
-`@looper/adapters`. Every command returns a normalized
+deploy` — that lets loopdog describe and operate an arbitrary project. The
+interface lives in `@loopdog/core` (a port); implementations live in
+`@loopdog/adapters`. Every command returns a normalized
 `{ ok, output, durationMs }` result so the controller treats all stacks uniformly.
 
 ## Background
 
 Part of [Milestone 06](../milestones/milestone-06-project-adapter-system.md) — the
-second of looper's three plugin systems ([architecture](../../docs/architecture.md)
+second of loopdog's three plugin systems ([architecture](../../docs/architecture.md)
 "Generic-ness, in three plugin systems"). Without this contract, "any GitHub
 project" is false: the controller cannot run verification in the adopter's CI,
 compose a brief that tells the work cell how to build/test, or deploy on merge.
-`ProjectAdapter` is one of the five `@looper/core` ports listed in
+`ProjectAdapter` is one of the five `@loopdog/core` ports listed in
 [codebase](../../docs/codebase.md) (Packages table) and stubbed by the port task
 (0094); this task fills in its real shape. It is a sibling of the execution-backend
 interface (0019) and follows the same "small uniform contract + capability
@@ -28,21 +28,21 @@ the authoring guide + test kit (0028) build on the contract frozen here.
 
 ## Scope
 
-- The `ProjectAdapter` interface in `@looper/core`: the six lifecycle methods plus
+- The `ProjectAdapter` interface in `@loopdog/core`: the six lifecycle methods plus
   `detect()` and capability/metadata.
 - The normalized command result type `{ ok, output, durationMs }` returned by every
   lifecycle method, and the input shape (workspace dir + structured options).
 - How `detect()` (0025) selects an adapter and how the generic command adapter
   (0026) plugs in as the always-available fallback.
 - A thin `CommandRunner` injection point so adapters describe *what* to run while
-  `@looper/runtime` owns *how* (child-process exec) — keeping `core` IO-free.
+  `@loopdog/runtime` owns *how* (child-process exec) — keeping `core` IO-free.
 
 ### Technical detail
 
-Lands in `@looper/core/src/ports/` (interface + result types) and is implemented in
-`@looper/adapters/src/{interface,detect,generic,node,python}/`.
+Lands in `@loopdog/core/src/ports/` (interface + result types) and is implemented in
+`@loopdog/adapters/src/{interface,detect,generic,node,python}/`.
 
-**Result + command shapes** (`@looper/core`):
+**Result + command shapes** (`@loopdog/core`):
 
 ```ts
 interface CommandResult {
@@ -64,7 +64,7 @@ type CommandRunner = (
   argv: string[], opts: { cwd: string; env?: Record<string, string>; signal?: AbortSignal }
 ) => Promise<{ exitCode: number; stdout: string; stderr: string; durationMs: number }>;
 
-// Read-only repo view declared in @looper/core and injected into detect(); keeps
+// Read-only repo view declared in @loopdog/core and injected into detect(); keeps
 // the port IO-free (no real fs / no workdir:string) — the runtime supplies the impl.
 interface RepoFs {
   exists(path: string): Promise<boolean>;
@@ -73,7 +73,7 @@ interface RepoFs {
 }
 ```
 
-**The interface** (`@looper/core`):
+**The interface** (`@loopdog/core`):
 
 ```ts
 interface ProjectAdapter {
@@ -101,9 +101,9 @@ interface AdapterDescription {
 
 **Detect / selection (0025 plugs in here):** the auto-detector calls `detect()` on
 each registered adapter, takes the highest `confidence` over a threshold, and falls
-back to `generic` when none match. Explicit `looper.yml` config
+back to `generic` when none match. Explicit `loopdog.yml` config
 (`adapter: node` or per-phase command overrides) always wins over detection — see
-0025/0026. The registry is a small fixed array in `@looper/adapters`
+0025/0026. The registry is a small fixed array in `@loopdog/adapters`
 (`[node, python, generic]`), not a plugin loader ([codebase](../../docs/codebase.md)
 "No plugin-loader/marketplace framework").
 
@@ -119,8 +119,8 @@ which phases to skip (`skipped: true`) when an adapter omits one.
 than throwing — the controller treats a skipped phase as a non-blocking pass and
 records it. A phase that *runs* and fails returns `ok: false` with captured output.
 
-**IO boundary:** `@looper/core` declares the interface and types only (no
-child-process import); `@looper/runtime` supplies the concrete `CommandRunner`
+**IO boundary:** `@loopdog/core` declares the interface and types only (no
+child-process import); `@loopdog/runtime` supplies the concrete `CommandRunner`
 (exec with cwd/env/timeout/abort) when it injects an adapter. This keeps `core`
 IO-free per the one-way dependency rule.
 
@@ -135,8 +135,8 @@ IO-free per the one-way dependency rule.
 
 ## Acceptance Criteria
 
-- [x] `ProjectAdapter` exists as real TS in `@looper/core`, importable by
-      `@looper/adapters` and `@looper/runtime`.
+- [x] `ProjectAdapter` exists as real TS in `@loopdog/core`, importable by
+      `@loopdog/adapters` and `@loopdog/runtime`.
 - [x] Every lifecycle method (`build/test/lint/run/deploy`) returns a normalized
       `CommandResult` (`{ ok, output, durationMs, ... }`); none throw on a
       missing/unsupported phase (returns `skipped: true` instead).
@@ -145,20 +145,20 @@ IO-free per the one-way dependency rule.
 - [x] `capabilities()` and `describe()` expose which phases exist + their literal
       commands (consumable by the brief composer, M03 0012).
 - [x] Adapters never spawn processes directly — they exec via the injected
-      `CommandRunner`; `@looper/core` imports no IO module.
+      `CommandRunner`; `@loopdog/core` imports no IO module.
 - [x] A trivial in-package fake adapter conforms to the interface and drives all six
       methods (proof the contract is implementable).
 
 ## Implementation Checklist
 
 - [x] Define `CommandResult`, `CommandContext`, `CommandRunner`, `RepoFs`, `DetectResult`,
-      `AdapterCapabilities`, `AdapterDescription` in `@looper/core/src/ports/`.
+      `AdapterCapabilities`, `AdapterDescription` in `@loopdog/core/src/ports/`.
 - [x] Define the `ProjectAdapter` interface alongside them; export via the `core`
       barrel.
-- [x] Add the adapter registry shape (fixed array) skeleton in `@looper/adapters`.
+- [x] Add the adapter registry shape (fixed array) skeleton in `@loopdog/adapters`.
 - [x] Specify the skipped/failed/passed result semantics in code comments + this
       file's Decisions.
-- [x] Add a minimal fake adapter under `@looper/testing` for the conformance kit
+- [x] Add a minimal fake adapter under `@loopdog/testing` for the conformance kit
       (0028) to build on.
 - [x] Confirm consumers (0025/0026/0027 stubs, 0012 brief composer) type-check
       against the interface.
@@ -170,7 +170,7 @@ suite is type-checking plus a fake adapter exercised with the M18 fakes (no real
 quota, no child processes):
 
 ```bash
-# type-check: adapters/runtime compile against @looper/core's ProjectAdapter
+# type-check: adapters/runtime compile against @loopdog/core's ProjectAdapter
 # unit: fake adapter returns normalized CommandResult for each phase;
 #       missing phase -> skipped:true (not a throw); failed command -> ok:false
 # inject a fake CommandRunner (M18) so no real process spawns

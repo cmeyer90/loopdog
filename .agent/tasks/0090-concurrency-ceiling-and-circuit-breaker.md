@@ -5,7 +5,7 @@ Branch: task/0090-concurrency-ceiling-and-circuit-breaker
 
 ## Goal
 
-Two pre-flight resilience gates that keep looper from overrunning itself or a sick
+Two pre-flight resilience gates that keep loopdog from overrunning itself or a sick
 provider: a **concurrency ceiling** (`max_in_flight`) that defers dispatch when too
 much work is already in flight, and a **circuit breaker** that, after N consecutive
 provider failures, *opens* (pauses the loop) for a cooldown instead of burning more
@@ -36,16 +36,16 @@ task ships the *engine*; 0091 ships the *config block + CLI*.
 - A **circuit breaker** per `(loop, backend)`: track a consecutive-failure streak;
   at `consecutive_failures` open the circuit and pause the loop for `cooldown`; a
   success while half-open closes it.
-- The two **pure predicates** in `@looper/core` + their **effectful wiring** in
-  `@looper/runtime` (count in-flight via the `GitHubPort`; read/write the breaker
+- The two **pure predicates** in `@loopdog/core` + their **effectful wiring** in
+  `@loopdog/runtime` (count in-flight via the `GitHubPort`; read/write the breaker
   marker; set the loop-pause label).
 - Integration into the runner pre-flight (0012) and the sweep's eligibility pass
   (0076) so a half-open circuit is re-tested only after its cooldown.
 
 ### Technical detail
 
-**Lands in `@looper/core`** (`core/src/resilience/` — pure predicates + types,
-beside 0051's `evaluate`) **and `@looper/runtime`** (`runtime/src/pipeline/` +
+**Lands in `@loopdog/core`** (`core/src/resilience/` — pure predicates + types,
+beside 0051's `evaluate`) **and `@loopdog/runtime`** (`runtime/src/pipeline/` +
 `runtime/src/sweep/` — the in-flight count, the breaker marker IO over the existing
 `GitHubPort`, the pause label). No new IO port.
 
@@ -73,11 +73,11 @@ real race guard — the ceiling only throttles *new* claims.
 **Circuit breaker — per `(loop, backend)`, not per item.** A provider outage hurts
 every item, so the streak is keyed by the *provider*, not the issue. State lives in
 a single hidden marker in a durable per-loop location (the loop's state issue, or a
-`looper:circuit/<loop>` label-carrying tracking issue — same substrate pattern as
+`loopdog:circuit/<loop>` label-carrying tracking issue — same substrate pattern as
 0051's attempts marker):
 
 ```
-<!-- looper:circuit loop=implement backend=claude state=open
+<!-- loopdog:circuit loop=implement backend=claude state=open
      consecutive_failures=5 opened_at=2026-06-08T14:00:00Z
      reopen_after=2026-06-08T15:00:00Z last_run=run_91c -->
 ```
@@ -97,7 +97,7 @@ function onSuccess(s: BreakerState): BreakerState;  // reset to closed, failures
 
 - **Closed → Open**: the runner's failed-step path calls `onFailure`; when the
   streak hits `consecutive_failures` the runtime sets `state=open`, stamps
-  `reopen_after = now + cooldown`, applies a `looper:paused/<loop>` label, and posts
+  `reopen_after = now + cooldown`, applies a `loopdog:paused/<loop>` label, and posts
   a one-time comment ("circuit open: provider `claude` failed N× — paused until
   HH:MM"). While open, the pre-flight returns early — **no claim, no dispatch, no
   attempt-counter increments** on any item of that loop.
@@ -126,7 +126,7 @@ loop (skip the loop's items entirely while `open`; allow one probe while
 time-based transition the sweep owns — the cooldown clock only advances on sweep
 ticks, mirroring 0051's backoff clock.
 
-**Config keys** (repo-wide in `looper.yml`, per-loop override in `loop.yml`;
+**Config keys** (repo-wide in `loopdog.yml`, per-loop override in `loop.yml`;
 strictest-wins, consistent with other gates; schema owned by 0091):
 
 ```yaml
@@ -136,7 +136,7 @@ resilience:
 ```
 
 **Edge cases:** (a) marker absent/malformed → treat as `closed` and log a warning
-(fail-open to dispatch, never silently pause); (b) a hand-removed `looper:paused`
+(fail-open to dispatch, never silently pause); (b) a hand-removed `loopdog:paused`
 label must clear `state=open` on the next sweep so a maintainer can force-resume;
 (c) the half-open probe must be **single-flight** — the claim (0013) on the chosen
 probe item prevents two invocations both probing; (d) `max_in_flight: { per_loop: 0 }`
@@ -147,7 +147,7 @@ backend (e.g. review on Codex) is unaffected when Claude's circuit is open.
 
 ## Out Of Scope
 
-- The `resilience:` config schema + validation, `looper:quarantine`, `on_failure`/
+- The `resilience:` config schema + validation, `loopdog:quarantine`, `on_failure`/
   `escalate_to` routing, and the CLI surface (`status`/`retry`/`resume`) — all 0091.
 - The failure taxonomy + classification mapping that labels a failure
   provider-vs-content (0088); this task consumes its classes.
@@ -164,7 +164,7 @@ backend (e.g. review on Codex) is unaffected when Claude's circuit is open.
       re-tried by the sweep once headroom frees — proven by a fakes test.
 - [x] `consecutive_failures` provider failures on a `(loop, backend)` **open** the
       circuit: no further items of that loop dispatch during the cooldown. (Realized
-      via a pre-flight `skip` derived from the ledger; the `looper:paused/<loop>`
+      via a pre-flight `skip` derived from the ledger; the `loopdog:paused/<loop>`
       label + one-time comment are NOT applied — see Decisions.)
 - [x] While open, the pre-flight returns early for that loop — no claim, no dispatch,
       and **no attempt-counter increments** on its items.
@@ -186,11 +186,11 @@ backend (e.g. review on Codex) is unaffected when Claude's circuit is open.
 
 - [x] Define `InFlight`/`Ceiling`/`CeilingDecision` + `checkCeiling` and
       `BreakerState`/`BreakerPolicy`/`BreakerDecision` + `breakerStatus`/`onFailure`/
-      `onSuccess` in `@looper/core/src/resilience/` (pure).
+      `onSuccess` in `@loopdog/core/src/resilience/` (pure).
 - [x] Implement the in-flight count from the ledger (`inFlightFromLedger`) in
-      `@looper/runtime` (pending runIds with no terminal record).
+      `@loopdog/runtime` (pending runIds with no terminal record).
 - [x] Derive the breaker state per loop+backend from the ledger
-      (`breakerStateFromLedger`) — no separate marker; `looper:paused/<loop>` label
+      (`breakerStateFromLedger`) — no separate marker; `loopdog:paused/<loop>` label
       is defined in core (`pausedLabel`) but not applied (see Decisions).
 - [x] Wire the runner pre-flight (0012): breaker-skip → ceiling-skip after
       authorization (both emit a `skip`, no `failed` run record).
@@ -201,7 +201,7 @@ backend (e.g. review on Codex) is unaffected when Claude's circuit is open.
       runs on every sweep tick). Hand-removed pause-label reconciliation is N/A (no
       label is applied).
 - [x] Read `max_in_flight` / `circuit_breaker` config (repo + per-loop) via
-      `@looper/config` + the core normalizers (`toCeiling`/`toBreakerPolicy`).
+      `@loopdog/config` + the core normalizers (`toCeiling`/`toBreakerPolicy`).
 
 ## Test Plan
 
@@ -210,11 +210,11 @@ Tests run via the repo's vitest runner; behavioral paths use the M18 fakes
 
 ```bash
 # core unit (IO-free): checkCeiling boundaries; breakerState/onFailure/onSuccess
-pnpm -F @looper/core test
+pnpm -F @loopdog/core test
 #  - failures count up to threshold → open; cooldown elapsed → half_open; success → closed
 #  - half_open failure → re-open with fresh cooldown
 # runtime behavioral (fakes):
-pnpm -F @looper/runtime test
+pnpm -F @loopdog/runtime test
 #  - saturate max_in_flight → next candidate deferred, state unchanged, no run record
 #  - free a slot (ingest one) → sweep dispatches the deferred item
 #  - fail provider K times → loop paused, comment posted, other items skipped
@@ -250,7 +250,7 @@ pnpm -F @looper/runtime test
   isn't recorded as a provider failure so it never trips it), stamping `openedAt`
   at the instant the streak first hit the threshold. This satisfies "state
   persisted in GitHub state" via the telemetry-branch ledger without a new marker
-  or a per-item parse/serialize. Consequence: the `looper:paused/<loop>` label +
+  or a per-item parse/serialize. Consequence: the `loopdog:paused/<loop>` label +
   one-time "circuit open" comment from the spec are NOT applied (a loop-level
   label doesn't fit the per-item label model); the breaker is enforced purely by
   the pre-flight `skip`. `pausedLabel`/`PAUSED_LABEL_PREFIX` are defined in core
@@ -283,12 +283,12 @@ pnpm -F @looper/runtime test
 
 ## Final Summary
 
-Two pre-flight resilience gates keep looper from overrunning itself or a sick
+Two pre-flight resilience gates keep loopdog from overrunning itself or a sick
 provider: a concurrency ceiling (`max_in_flight`, global + per-loop) that defers
 new dispatches, and a circuit breaker that opens after N consecutive provider
 failures on a `(loop, backend)` and pauses that loop for a cooldown, then admits a
-single half-open probe. Both pure predicates live in `@looper/core`; both are
+single half-open probe. Both pure predicates live in `@loopdog/core`; both are
 enforced from the run-record ledger (no new marker) via a pre-flight `skip` that
-burns no attempt. The visible `looper:paused/<loop>` label + one-time comment and
+burns no attempt. The visible `loopdog:paused/<loop>` label + one-time comment and
 strict half-open single-flight are deferred (ledger-derived enforcement covers the
 semantics; see Decisions).

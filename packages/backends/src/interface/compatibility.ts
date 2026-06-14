@@ -1,9 +1,9 @@
-import type { BackendCapabilities, LoopDefinition } from '@looper/core';
+import type { BackendCapabilities, LoopDefinition } from '@loopdog/core';
 
 /**
  * Capability-mismatch check (task 0021, shared by 0074): a loop whose work
  * needs live secrets or agent-phase network cannot run on a backend that
- * strips them. Surfaced at `looper config validate` time and re-checked at
+ * strips them. Surfaced at `loopdog config validate` time and re-checked at
  * dispatch pre-flight so a misconfigured loop fails loud before spending a
  * cloud task.
  */

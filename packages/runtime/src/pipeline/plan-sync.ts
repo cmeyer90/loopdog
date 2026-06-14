@@ -1,4 +1,4 @@
-import type { GitHubPort, IssueSnapshot, RunRecord } from '@looper/core';
+import type { GitHubPort, IssueSnapshot, RunRecord } from '@loopdog/core';
 import {
   archivePlan,
   openPlan,
@@ -6,8 +6,8 @@ import {
   resolveBinding,
   updatePlan,
   verifyPlan,
-} from '@looper/plans';
-import type { RepoPlanStoreFiles } from '@looper/plans';
+} from '@loopdog/plans';
+import type { RepoPlanStoreFiles } from '@loopdog/plans';
 import type { EffectGate } from './effect-gate.js';
 
 /**
@@ -37,7 +37,7 @@ export async function syncPlanAfterTransition(
       await verifyPlan(
         files,
         binding,
-        `Verified by looper run \`${record.runId}\` (${record.loop}).`,
+        `Verified by loopdog run \`${record.runId}\` (${record.loop}).`,
       );
     } else if (to === 'merged' || to === 'abandoned') {
       await archivePlan(files, binding, to);

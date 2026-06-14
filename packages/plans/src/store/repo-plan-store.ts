@@ -1,4 +1,4 @@
-import type { GitHubPort, RepoRef } from '@looper/core';
+import type { GitHubPort, RepoRef } from '@loopdog/core';
 import { STORE_LAYOUT } from '../format/templates.js';
 import { parsePlan, type PlanDoc } from '../format/plan-doc.js';
 
@@ -13,7 +13,7 @@ export class RepoPlanStoreFiles {
     private readonly gh: GitHubPort,
     private readonly repo: RepoRef,
     private readonly branch: string,
-    /** Store root, e.g. `.looper/plans`. */
+    /** Store root, e.g. `.loopdog/plans`. */
     readonly root: string,
   ) {}
 
@@ -51,7 +51,7 @@ export class RepoPlanStoreFiles {
       if (!name.endsWith('.md')) continue;
       const file = await this.read(`${dir}/${name}`);
       if (!file) continue;
-      if (file.content.includes('<!-- looper:tombstone -->')) continue; // archived pointer
+      if (file.content.includes('<!-- loopdog:tombstone -->')) continue; // archived pointer
       const doc = parsePlan(file.content);
       if (doc.id === '') {
         skipped.push(`${dir}/${name}`);

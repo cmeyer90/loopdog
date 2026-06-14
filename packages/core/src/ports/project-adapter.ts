@@ -1,7 +1,7 @@
 /**
  * The project-adapter port (M06 · 0024): `detect / build / test / lint / run /
- * deploy` — the one contract that lets looper describe and operate an
- * arbitrary project. Adapters describe WHAT to run; `@looper/runtime` owns HOW
+ * deploy` — the one contract that lets loopdog describe and operate an
+ * arbitrary project. Adapters describe WHAT to run; `@loopdog/runtime` owns HOW
  * (the injected `CommandRunner`) — so core stays IO-free and adapters never
  * spawn processes directly.
  */

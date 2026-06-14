@@ -7,19 +7,19 @@ import type {
   RepoRef,
   RunRecord,
   TriggerEvent,
-} from '@looper/core';
+} from '@loopdog/core';
 import {
   STATE_LABEL_PREFIX,
   resolveActorTrust,
   resolveAuthorizationPolicy,
   stateLabel,
-} from '@looper/core';
-import type { AuthorizationConfig } from '@looper/core';
-import { loadConfig, parseDuration } from '@looper/config';
-import { parseActionsEvent, resolveRepoIdentity } from '@looper/github';
-import { RepoPlanStoreFiles, assertSupportedFormatVersion } from '@looper/plans';
-import { createBackendRegistry } from '@looper/backends';
-import type { PromptSource } from '@looper/backends';
+} from '@loopdog/core';
+import type { AuthorizationConfig } from '@loopdog/core';
+import { loadConfig, parseDuration } from '@loopdog/config';
+import { parseActionsEvent, resolveRepoIdentity } from '@loopdog/github';
+import { RepoPlanStoreFiles, assertSupportedFormatVersion } from '@loopdog/plans';
+import { createBackendRegistry } from '@loopdog/backends';
+import type { PromptSource } from '@loopdog/backends';
 import type { RunnerDeps } from './transition-runner.js';
 import { runLoopOnce } from './transition-runner.js';
 import { createPreflight } from './preflight.js';
@@ -30,7 +30,7 @@ import type { RunRecordStore } from '../telemetry/record-store.js';
 
 /**
  * The controller composition root: what the Actions reusable workflows (and
- * `looper controller …`) invoke. Loads + validates config from the checked-out
+ * `loopdog controller …`) invoke. Loads + validates config from the checked-out
  * repo, builds the runner deps, and drives one event or one sweep tick.
  */
 
@@ -100,11 +100,11 @@ export async function handleEvent(
   }
 
   // Trusted-only approval release (M17 · 0080): an untrusted actor applying
-  // `looper:approved` does NOT release the hold — revoke the self-approval.
+  // `loopdog:approved` does NOT release the hold — revoke the self-approval.
   if (
     trigger.kind === 'event' &&
     (trigger.name === 'issues.labeled' || trigger.name === 'pull_request.labeled') &&
-    trigger.label === (config.root.authorization.approval_label ?? 'looper:approved') &&
+    trigger.label === (config.root.authorization.approval_label ?? 'loopdog:approved') &&
     trigger.item !== undefined
   ) {
     const policy = resolveAuthorizationPolicy(toAuthorizationConfig(config.root.authorization));
@@ -117,7 +117,7 @@ export async function handleEvent(
       await opts.gh.removeLabel(trigger.item, config.root.authorization.approval_label);
       await opts.gh.createComment(
         trigger.item,
-        `🔒 looper: \`${config.root.authorization.approval_label}\` from an untrusted actor ` +
+        `🔒 loopdog: \`${config.root.authorization.approval_label}\` from an untrusted actor ` +
           `(${trust.actor}) does not count — a collaborator must approve.`,
       );
     }
@@ -163,15 +163,27 @@ export async function handleRun(
   const { config, deps } = await load(opts);
   const loop = config.loops.find((l) => l.name === loopName);
   if (!loop) return { loop: loopName, found: false, records: [] };
-  const trigger: TriggerEvent =
-    issue !== undefined
-      ? {
-          kind: 'event',
-          name: 'manual.run',
-          item: { ...opts.repo, number: issue },
-          deliveredAt: (opts.now?.() ?? new Date()).toISOString(),
-        }
-      : { kind: 'cron', deliveredAt: (opts.now?.() ?? new Date()).toISOString() };
+  const at = (opts.now?.() ?? new Date()).toISOString();
+  let trigger: TriggerEvent;
+  if (issue !== undefined) {
+    // A manual `loopdog run --issue` is invoked by a human holding a repo-scoped
+    // token — they could mutate the repo directly — so attribute the trigger to
+    // that authenticated actor instead of leaving it unknown/NONE, which the
+    // authorization gate (M17) would park as an "untrusted trigger". Mirrors
+    // `loopdog approve`, where the CLI operator releases holds as a trusted actor.
+    const actor = await opts.gh.getAuthenticatedActor();
+    trigger = {
+      kind: 'event',
+      name: 'manual.run',
+      item: { ...opts.repo, number: issue },
+      actor: { login: actor.login, type: 'User' },
+      authorAssociation: actor.login === opts.repo.owner ? 'OWNER' : 'COLLABORATOR',
+      deliveredAt: at,
+    };
+  } else {
+    // Whole-from-state run: a cron-kind trigger is trusted by construction.
+    trigger = { kind: 'cron', deliveredAt: at };
+  }
   const records = await runLoopOnce(deps, loop, opts.repo, trigger);
   return { loop: loopName, found: true, records };
 }
@@ -185,7 +197,7 @@ async function load(opts: ControllerOptions): Promise<{
     const lines = result.errors.map(
       (e) => `  - ${e.file}${e.path ? ` (${e.path})` : ''}: ${e.message}`,
     );
-    throw new Error(`looper config invalid:\n${lines.join('\n')}`);
+    throw new Error(`loopdog config invalid:\n${lines.join('\n')}`);
   }
   const planStoreCfg = result.config.root.plan_store;
   assertSupportedFormatVersion(planStoreCfg.format_version);
@@ -249,10 +261,10 @@ export function createFsPromptSource(repoDir: string, templatesDir?: string): Pr
       templatesDir
         ? tryRead(join(templatesDir, 'loops', loop, 'prompt.md'))
         : Promise.resolve(null),
-    repo: (loop) => tryRead(join(repoDir, '.looper', 'loops', loop, 'prompt.md')),
+    repo: (loop) => tryRead(join(repoDir, '.loopdog', 'loops', loop, 'prompt.md')),
     overlay: (loop, backend) =>
-      tryRead(join(repoDir, '.looper', 'loops', loop, `prompt.${backend}.md`)),
-    policy: (name) => tryRead(join(repoDir, '.looper', 'policies', `${name}.md`)),
+      tryRead(join(repoDir, '.loopdog', 'loops', loop, `prompt.${backend}.md`)),
+    policy: (name) => tryRead(join(repoDir, '.loopdog', 'policies', `${name}.md`)),
   };
 }
 

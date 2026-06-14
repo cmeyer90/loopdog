@@ -6,7 +6,7 @@ import {
   stateLabel,
   stateOfLabels,
   validateEdge,
-} from '@looper/core';
+} from '@loopdog/core';
 
 describe('transition table (0011)', () => {
   it('accepts every default edge', () => {
@@ -56,11 +56,11 @@ describe('transition table (0011)', () => {
 });
 
 describe('label reconciliation planner (0011)', () => {
-  it('creates all looper labels on an empty repo and is idempotent', () => {
+  it('creates all loopdog labels on an empty repo and is idempotent', () => {
     const first = planLabelReconciliation([], DEFAULT_TRANSITION_TABLE);
     expect(first.create.length).toBeGreaterThan(0);
-    expect(first.create.map((l) => l.name)).toContain('looper:state/new');
-    expect(first.create.map((l) => l.name)).toContain('looper:needs-human');
+    expect(first.create.map((l) => l.name)).toContain('loopdog:state/new');
+    expect(first.create.map((l) => l.name)).toContain('loopdog:needs-human');
     // second run with the created labels present plans nothing
     const second = planLabelReconciliation(first.create, DEFAULT_TRANSITION_TABLE);
     expect(second.create).toEqual([]);
@@ -68,19 +68,19 @@ describe('label reconciliation planner (0011)', () => {
 
   it('never plans changes to labels it does not own', () => {
     const plan = planLabelReconciliation(
-      [{ name: 'bug' }, { name: 'looper:state/new', color: 'ffffff' }],
+      [{ name: 'bug' }, { name: 'loopdog:state/new', color: 'ffffff' }],
       DEFAULT_TRANSITION_TABLE,
     );
-    // existing looper label (even with a custom color) is left alone; 'bug' untouched
-    expect(plan.create.map((l) => l.name)).not.toContain('looper:state/new');
+    // existing loopdog label (even with a custom color) is left alone; 'bug' untouched
+    expect(plan.create.map((l) => l.name)).not.toContain('loopdog:state/new');
     expect(plan.create.map((l) => l.name)).not.toContain('bug');
   });
 });
 
 describe('state labels', () => {
   it('round-trips state <-> label', () => {
-    expect(stateLabel('in-review')).toBe('looper:state/in-review');
-    expect(stateOfLabels(['bug', 'looper:state/in-review'])).toBe('in-review');
+    expect(stateLabel('in-review')).toBe('loopdog:state/in-review');
+    expect(stateOfLabels(['bug', 'loopdog:state/in-review'])).toBe('in-review');
     expect(stateOfLabels(['bug'])).toBeNull();
   });
 });

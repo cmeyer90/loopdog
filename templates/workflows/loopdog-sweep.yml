@@ -1,6 +1,6 @@
-# Looper reconcile sweep — thin caller scaffolded by `looper init` (task 0076).
-# Keep the schedule aligned with `sweep.interval` in .looper/looper.yml.
-name: looper-sweep
+# Loopdog reconcile sweep — thin caller scaffolded by `loopdog init` (task 0076).
+# Keep the schedule aligned with `sweep.interval` in .loopdog/loopdog.yml.
+name: loopdog-sweep
 on:
   schedule:
     - cron: '*/5 * * * *'
@@ -12,7 +12,7 @@ permissions:
   pull-requests: write
 
 jobs:
-  looper:
+  loopdog:
     uses: cmeyer90/loopdog/.github/workflows/reusable-sweep.yml@v0.1.0
     with:
-      looper-version: 0.1.0
+      loopdog-version: 0.1.0

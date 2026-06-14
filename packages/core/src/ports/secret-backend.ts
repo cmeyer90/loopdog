@@ -1,7 +1,7 @@
 /**
  * The secret-backend port (M07): resolves the project secrets a work cell
  * needs on the **self-hosted** path, and provides the leak guard every path
- * uses. On the primary (provider-cloud) path looper never resolves secret
+ * uses. On the primary (provider-cloud) path loopdog never resolves secret
  * values — they live in the provider's environment — so `resolve` is only
  * implemented by self-hosted backends.
  */
@@ -27,7 +27,7 @@ export interface ResolvedSecrets {
 }
 
 /**
- * Leak guard (0031): scrubs known secret values from any text looper is about
+ * Leak guard (0031): scrubs known secret values from any text loopdog is about
  * to serialize into a model-visible artifact (briefs, comments, plans, run
  * records). Pure function — safe to use everywhere.
  */

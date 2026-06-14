@@ -1,6 +1,6 @@
 import { defineConfig } from 'tsup';
 
-// Publish-time bundle (task 0005): inlines the private @looper/* libraries so
+// Publish-time bundle (task 0005): inlines the private @loopdog/* libraries so
 // the published @loopdog/cli is self-contained. Third-party runtime deps stay
 // external and are listed in this package's `dependencies`.
 export default defineConfig({
@@ -11,5 +11,5 @@ export default defineConfig({
   clean: true,
   dts: false,
   sourcemap: false,
-  noExternal: [/^@looper\//],
+  noExternal: [/^@loopdog\//],
 });

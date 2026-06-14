@@ -1,4 +1,4 @@
-import type { CommentSnapshot, DispatchHandle } from '@looper/core';
+import type { CommentSnapshot, DispatchHandle } from '@loopdog/core';
 
 /**
  * The dispatch handle persists as a marker comment on the item, so a LATER
@@ -7,13 +7,13 @@ import type { CommentSnapshot, DispatchHandle } from '@looper/core';
  * the handle is the authoritative key (0093 decision).
  */
 
-const OPEN = '<!-- looper:dispatch ';
+const OPEN = '<!-- loopdog:dispatch ';
 const CLOSE = ' -->';
-const RESOLVED = '<!-- looper:dispatch-resolved -->';
+const RESOLVED = '<!-- loopdog:dispatch-resolved -->';
 
 export function renderDispatchMarker(handle: DispatchHandle): string {
   return [
-    `🛰️ looper dispatched \`${handle.runId}\` to **${handle.backend}**`,
+    `🛰️ loopdog dispatched \`${handle.runId}\` to **${handle.backend}**`,
     '',
     `- expected branch: \`${handle.expectedBranch}\``,
     `- expected PR trailer: \`${handle.expectedTrailer}\``,

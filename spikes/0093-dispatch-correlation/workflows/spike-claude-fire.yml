@@ -22,8 +22,8 @@ jobs:
       - uses: actions/checkout@v4
       - name: fire routine
         env:
-          LOOPER_SPIKE_CLAUDE_FIRE_URL: ${{ secrets.LOOPER_SPIKE_CLAUDE_FIRE_URL }}
-          LOOPER_SPIKE_CLAUDE_FIRE_TOKEN: ${{ secrets.LOOPER_SPIKE_CLAUDE_FIRE_TOKEN }}
+          LOOPDOG_SPIKE_CLAUDE_FIRE_URL: ${{ secrets.LOOPDOG_SPIKE_CLAUDE_FIRE_URL }}
+          LOOPDOG_SPIKE_CLAUDE_FIRE_TOKEN: ${{ secrets.LOOPDOG_SPIKE_CLAUDE_FIRE_TOKEN }}
           SPIKE_ISSUE: ${{ inputs.issue }}
           SPIKE_RUN_ID: ${{ inputs.run_id }}
         run: |

@@ -2,7 +2,7 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — verification
+> Background: [Loopdog Architecture](../../docs/architecture.md) — verification
 > ladder rung 4 and "rollback as a first-class loop." Deploy is project-specific,
 > so it runs through the adapter (M06). Depends on Milestones 06 and 07.
 
@@ -14,9 +14,9 @@ operational with smoke/canary + health checks, and auto-roll-back on failure —
 
 ## Guiding Decisions
 
-- Deploy is adapter-driven; looper makes no assumptions about the target's
+- Deploy is adapter-driven; loopdog makes no assumptions about the target's
   infrastructure.
-- Deploy secrets come from the bring-your-own backend (M07); no looper-baked
+- Deploy secrets come from the bring-your-own backend (M07); no loopdog-baked
   cloud creds.
 - Smoke/health assertions gate promotion; rollback is a first-class loop with its
   own trigger.
@@ -35,8 +35,8 @@ operational with smoke/canary + health checks, and auto-roll-back on failure —
 ## Definition Of Done
 
 - [x] Merging marks the work item deploying; the adapter's deploy command runs
-  in the adopter's CI with their own secrets (looper-deploy template; no
-  looper-baked creds).
+  in the adopter's CI with their own secrets (loopdog-deploy template; no
+  loopdog-baked creds).
 - [x] A deploy is not successful until the deploy + deploy-smoke checks pass
   (check-gated promotion; e2e-proven green and red).
 - [x] A failed smoke fails over to deploy-failed and the rollback loop

@@ -6,7 +6,7 @@ import {
   classifyVersion,
   migrateTree,
   planUpgrade,
-} from '@looper/config';
+} from '@loopdog/config';
 
 /**
  * Versioned config contract + migration registry (M15 · 0067): the version gate
@@ -16,7 +16,7 @@ import {
  */
 
 describe('config version contract (0067)', () => {
-  it('classifies an on-disk version against what looper understands', () => {
+  it('classifies an on-disk version against what loopdog understands', () => {
     expect(classifyVersion(CONFIG_VERSION)).toBe('current');
     expect(classifyVersion(CONFIG_VERSION + 1)).toBe('ahead'); // downgrade
     expect(classifyVersion(MIN_MIGRATABLE_FROM - 1)).toBe('too-old');
@@ -40,14 +40,14 @@ describe('config version contract (0067)', () => {
   });
 
   it('migrateTree is idempotent and a no-op at the current version', () => {
-    const tree = { 'looper.yml': 'version: 1\n' };
+    const tree = { 'loopdog.yml': 'version: 1\n' };
     expect(migrateTree(tree, CONFIG_VERSION)).toEqual(tree);
     // Applying again yields the same tree (idempotent).
     expect(migrateTree(migrateTree(tree, CONFIG_VERSION), CONFIG_VERSION)).toEqual(tree);
   });
 
   it('migrateTree throws on a non-migratable (ahead/too-old) version', () => {
-    expect(() => migrateTree({}, CONFIG_VERSION + 1)).toThrow(/newer than this looper/);
+    expect(() => migrateTree({}, CONFIG_VERSION + 1)).toThrow(/newer than this loopdog/);
     expect(() => migrateTree({}, MIN_MIGRATABLE_FROM - 1)).toThrow(/older than the minimum/);
   });
 });

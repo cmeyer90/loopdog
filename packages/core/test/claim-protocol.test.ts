@@ -7,11 +7,11 @@ import {
   parseClaims,
   parseLeaseExpiry,
   resolveClaimRace,
-} from '@looper/core';
+} from '@loopdog/core';
 
 describe('claim protocol (0013)', () => {
   it('claim labels round-trip through item labels', () => {
-    const labels = ['looper:state/ready-for-agent', claimLabel('run-b'), claimLabel('run-a')];
+    const labels = ['loopdog:state/ready-for-agent', claimLabel('run-b'), claimLabel('run-a')];
     expect(parseClaims(labels)).toEqual(['run-a', 'run-b']);
   });
 

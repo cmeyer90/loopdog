@@ -1,7 +1,7 @@
-// @looper/adapters — project-adapter implementations: detect, generic, node,
-// python (M06). The port lives in @looper/core; the registry is a small fixed
+// @loopdog/adapters — project-adapter implementations: detect, generic, node,
+// python (M06). The port lives in @loopdog/core; the registry is a small fixed
 // array (no plugin loader).
-import type { AdapterPhase, ProjectAdapter } from '@looper/core';
+import type { AdapterPhase, ProjectAdapter } from '@loopdog/core';
 import { GenericCommandAdapter } from './generic/generic-adapter.js';
 import type { GenericAdapterOptions } from './generic/generic-adapter.js';
 import { NodeAdapter } from './node/node-adapter.js';

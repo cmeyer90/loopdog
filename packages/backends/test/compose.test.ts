@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { compose, lintPrompt, resolveArtifact } from '@looper/backends';
-import type { ComposeContext, PromptSource } from '@looper/backends';
+import { compose, lintPrompt, resolveArtifact } from '@loopdog/backends';
+import type { ComposeContext, PromptSource } from '@loopdog/backends';
 
 const ctx: ComposeContext = {
   issue: { number: 7, title: 'Add rate limiting', body: 'Please limit the API.' },
@@ -9,7 +9,7 @@ const ctx: ComposeContext = {
   runId: 'run-implement-7-a1-abc',
   loop: 'implement',
   backend: 'claude',
-  branch: 'looper/implement/7-run-implement-7-a1-abc',
+  branch: 'loopdog/implement/7-run-implement-7-a1-abc',
   repo: { defaultBranch: 'main' },
   adapter: { testCmd: 'npm test' },
 };
@@ -52,15 +52,15 @@ describe('prompt artifacts & brief composition (0022)', () => {
     );
     expect(c.ref).toBe(a.ref);
     expect(a.text).toContain(
-      'Implement Add rate limiting on looper/implement/7-run-implement-7-a1-abc.',
+      'Implement Add rate limiting on loopdog/implement/7-run-implement-7-a1-abc.',
     );
     expect(a.text).toContain('- [ ] limits at 100 req/min');
   });
 
   it('the output contract is ALWAYS present, even when the prompt omits it', async () => {
     const naked = await compose(ctx, source({ 'repo:implement': 'Just do it.' }));
-    expect(naked.text).toContain('looper-run: run-implement-7-a1-abc');
-    expect(naked.text).toContain('looper/implement/7-run-implement-7-a1-abc');
+    expect(naked.text).toContain('loopdog-run: run-implement-7-a1-abc');
+    expect(naked.text).toContain('loopdog/implement/7-run-implement-7-a1-abc');
     expect(naked.policies).toContain('output-contract');
 
     // a prompt that tries to OVERRIDE the contract via a repo policy file
@@ -73,7 +73,7 @@ describe('prompt artifacts & brief composition (0022)', () => {
       }),
     );
     expect(sneaky.text).not.toContain('No rules');
-    expect(sneaky.text).toContain('looper-run: run-implement-7-a1-abc');
+    expect(sneaky.text).toContain('loopdog-run: run-implement-7-a1-abc');
   });
 
   it('inlines shared policy fragments and lists them for audit', async () => {

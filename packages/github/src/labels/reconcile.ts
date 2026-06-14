@@ -1,9 +1,9 @@
-import type { GitHubPort, RepoRef, TransitionTable } from '@looper/core';
-import { planLabelReconciliation } from '@looper/core';
+import type { GitHubPort, RepoRef, TransitionTable } from '@loopdog/core';
+import { planLabelReconciliation } from '@loopdog/core';
 
 /**
- * Apply the label plan to a repo (task 0011): create missing looper labels,
- * never touch labels looper didn't create. Idempotent — a second run creates
+ * Apply the label plan to a repo (task 0011): create missing loopdog labels,
+ * never touch labels loopdog didn't create. Idempotent — a second run creates
  * nothing.
  */
 export async function reconcileLabels(

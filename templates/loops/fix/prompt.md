@@ -1,7 +1,7 @@
 # Fix work cell
 
 A reviewer requested changes on the pull request for this item. The review
-feedback is in the recent discussion below (the `looper-verdict:
+feedback is in the recent discussion below (the `loopdog-verdict:
 changes-requested` comment lists each finding).
 
 1. Address EVERY finding in the reviewer's checklist — or, if a finding is

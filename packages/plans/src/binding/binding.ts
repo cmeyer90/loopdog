@@ -1,5 +1,5 @@
-import type { GitHubPort, IssueSnapshot, ItemRef } from '@looper/core';
-import { parseCriteriaBlock, renderCriteriaBlock, statusForLabels } from '@looper/core';
+import type { GitHubPort, IssueSnapshot, ItemRef } from '@loopdog/core';
+import { parseCriteriaBlock, renderCriteriaBlock, statusForLabels } from '@loopdog/core';
 import type { RepoPlanStoreFiles } from '../store/repo-plan-store.js';
 import { slugify } from '../store/repo-plan-store.js';
 import { STORE_LAYOUT, TASK_TEMPLATE, renderTemplate } from '../format/templates.js';
@@ -17,10 +17,10 @@ export interface Binding {
   path: string;
 }
 
-const MARKER_RE = /<!-- looper:plan task=(\d{4})(?: milestone=\S+)? path=(\S+) -->/;
+const MARKER_RE = /<!-- loopdog:plan task=(\d{4})(?: milestone=\S+)? path=(\S+) -->/;
 
 export function renderPlanMarker(binding: Binding): string {
-  return `<!-- looper:plan task=${binding.taskId} path=${binding.path} -->`;
+  return `<!-- loopdog:plan task=${binding.taskId} path=${binding.path} -->`;
 }
 
 export function parsePlanMarker(issueBody: string): { taskId: string; path: string } | null {
@@ -50,7 +50,7 @@ export async function bindIssue(
   const binding: Binding = { issue: issue.ref, taskId, path };
 
   // Issue → plan marker (idempotent append).
-  if (!issue.body.includes('<!-- looper:plan ')) {
+  if (!issue.body.includes('<!-- loopdog:plan ')) {
     await gh.updateIssueBody(
       issue.ref,
       issue.body.trimEnd() + `\n\n${renderPlanMarker(binding)}\n`,
@@ -71,7 +71,7 @@ async function writeTaskFile(
     id: taskId,
     title: issue.title,
     status: 'planned',
-    branch: `looper/implement/${issue.ref.number}`,
+    branch: `loopdog/implement/${issue.ref.number}`,
     issue: `#${issue.ref.number}`,
     goal: issue.title,
     background: firstParagraph(issue.body) || '(from the bound issue)',
@@ -82,7 +82,7 @@ async function writeTaskFile(
         : '- [ ] (groomed criteria land here) (manual)',
     testPlan: 'See acceptance criteria `test:` tags.',
   });
-  await files.write(path, content, `looper: bind issue #${issue.ref.number} to plan ${taskId}`);
+  await files.write(path, content, `loopdog: bind issue #${issue.ref.number} to plan ${taskId}`);
   return path;
 }
 
@@ -135,7 +135,7 @@ export async function reconcileBinding(
   await files.write(
     binding.path,
     serializePlan(next),
-    `looper: mirror status '${want}' from #${issue.ref.number}`,
+    `loopdog: mirror status '${want}' from #${issue.ref.number}`,
     file.sha,
   );
   return { changed: true, status: want };

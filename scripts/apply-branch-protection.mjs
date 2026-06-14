@@ -3,7 +3,7 @@
 // on drift or on a required-check context that ci.yml does not define.
 //
 // Auth (admin required): GITHUB_TOKEN or ADMIN_TOKEN env, or `gh auth token`.
-// Repo: LOOPER_REPO env (owner/name) or inferred from `git remote get-url origin`.
+// Repo: LOOPDOG_REPO env (owner/name) or inferred from `git remote get-url origin`.
 // Usage: npm run protect [-- --check]   (--check: verify only, never write)
 import { readFileSync } from 'node:fs';
 import { execSync } from 'node:child_process';
@@ -56,7 +56,7 @@ function resolveToken() {
 }
 
 function resolveRepo() {
-  if (process.env.LOOPER_REPO) return process.env.LOOPER_REPO;
+  if (process.env.LOOPDOG_REPO) return process.env.LOOPDOG_REPO;
   const url = execSync('git remote get-url origin', { encoding: 'utf8' }).trim();
   const m = url.match(/[:/]([^/:]+\/[^/.]+?)(?:\.git)?$/);
   if (!m) {

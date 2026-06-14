@@ -1,7 +1,7 @@
 {
-  "name": "@looper/core",
+  "name": "@loopdog/core",
   "version": "0.1.0",
-  "description": "Looper core package",
+  "description": "Loopdog core package",
   "license": "Apache-2.0",
   "type": "module",
   "private": true,

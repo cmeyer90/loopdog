@@ -8,7 +8,7 @@ Branch: claude/laughing-johnson-8a7944
 Turn every deploy attempt into a durable, auditable record: post the deploy
 outcome (deployed / smoke-failed / rolled-back) onto the originating PR and issue,
 write it into the durable plan, surface it as an Actions job summary + a
-`looper-deploy` check-run, and emit a deploy step into the run record — so
+`loopdog-deploy` check-run, and emit a deploy step into the run record — so
 "merged" visibly resolves to "deployed and healthy" (or to a recorded rollback),
 for any project's deploy target.
 
@@ -19,15 +19,15 @@ Part of [Milestone 11](../milestones/milestone-11-deploy-and-operational-verific
 durable plan." This is the **reporting** half of the deploy loop: the adapter-driven
 deploy (0046) produces the outcome, the smoke/canary + health gate (0047) decides
 pass/fail, and auto-rollback (0048) handles the failure path — this task takes those
-verdicts and makes them visible and durable across looper's three sources of truth
+verdicts and makes them visible and durable across loopdog's three sources of truth
 (GitHub state, the durable plan, run telemetry). See [architecture](../../docs/architecture.md)
 "Observability, cost & safety" (run reporting with no hosted UI: Actions job
 summaries, issue/PR comments, the CLI) and "The verification ladder" (rung 4
 deploy-time smoke/canary feeds merge DoD).
 
-Lands primarily in **@looper/runtime** (`telemetry` + the deploy-loop write-back in
-`pipeline`) with the report-write helpers calling the **@looper/github** port
-(PR/issue comments, check-runs, job summary) and the **@looper/plans** lifecycle
+Lands primarily in **@loopdog/runtime** (`telemetry` + the deploy-loop write-back in
+`pipeline`) with the report-write helpers calling the **@loopdog/github** port
+(PR/issue comments, check-runs, job summary) and the **@loopdog/plans** lifecycle
 `update` operation (M04 · 0017). No new package; the deploy loop itself adds no code
 module — it is a `templates/loops/deploy/` asset whose write-back the runtime
 executes ([codebase](../../docs/codebase.md) "loops are data").
@@ -40,16 +40,16 @@ executes ([codebase](../../docs/codebase.md) "loops are data").
 - Four reporting surfaces, written idempotently in one transition's write-back:
   PR comment + issue comment (sticky, edited-in-place); durable-plan update (a
   dated Verification-Log entry via 0017 `update`); an Actions job summary; a
-  `looper-deploy` GitHub **check-run** on the merge commit.
+  `loopdog-deploy` GitHub **check-run** on the merge commit.
 - A `deploy` step appended to the run record (0012 schema) carrying the report, so
-  `looper runs show` (M16 · 0069) renders the deploy trace and cost/duration.
+  `loopdog runs show` (M16 · 0069) renders the deploy trace and cost/duration.
 - Idempotency + scrubbing: re-running the deploy reporter (event ↔ sweep, 0076)
   produces one effect per outcome; secrets are scrubbed from any captured deploy
   output before it reaches a model-visible or public surface.
 
 ### Technical detail
 
-**`DeployReport`** (in `@looper/core/src/run-record/` alongside the run-record
+**`DeployReport`** (in `@loopdog/core/src/run-record/` alongside the run-record
 types, so both `runtime` and the CLI consume one shape):
 
 ```ts
@@ -87,7 +87,7 @@ once 0048 completes; `error` when deploy itself threw.
 `GITHUB_TOKEN`):
 
 1. **PR + issue comment** — a *sticky* comment keyed by a hidden marker
-   `<!-- looper:deploy-report run:<run_id> -->`; the reporter finds-or-creates and
+   `<!-- loopdog:deploy-report run:<run_id> -->`; the reporter finds-or-creates and
    **edits in place** (no comment spam on re-deploy). Renders status badge, target,
    commit, the smoke-check table, rollback note if any, duration, and the env URL.
    The issue (resolved via the issue↔plan binding, 0016) gets the same body.
@@ -99,7 +99,7 @@ once 0048 completes; `error` when deploy itself threw.
 3. **Actions job summary** — write the same rendered table to
    `$GITHUB_STEP_SUMMARY` via the github port, so the Actions run page shows the
    outcome with no hosted UI.
-4. **`looper-deploy` check-run** — set a check-run on the merge `commit` with
+4. **`loopdog-deploy` check-run** — set a check-run on the merge `commit` with
    conclusion `success` (deployed) / `failure` (smoke_failed) / `neutral`
    (skipped) and a summary. This is the machine-readable signal the verification
    ladder's rung-4 `deploy_smoke` (0041) and the DoD gate (0014) resolve against.
@@ -112,7 +112,7 @@ dispatch). 0069's `runs show` renders this step.
 **Idempotency.** Reporting keys off durable content, not a flag: the sticky comment
 is matched by the `run:<run_id>` marker (edit not re-post); the plan `update` is
 `run_id`-keyed and append-only (0017); the check-run is upserted by
-`(commit, "looper-deploy")`; the run-record `deploy` step is keyed by `run_id`.
+`(commit, "loopdog-deploy")`; the run-record `deploy` step is keyed by `run_id`.
 Re-running under event ↔ sweep (0076) therefore yields exactly one effect per
 distinct outcome. A *new* outcome for the same run (deploy → smoke_failed →
 rolled_back) updates the same surfaces in place — the report reflects the latest
@@ -146,12 +146,12 @@ the item for `needs-human` escalation (M12 · 0051) rather than claiming health.
       (0047) + rollback result (0048), with `status` derived deterministically.
 - [x] On a successful deploy the originating PR and issue carry a sticky deploy
       comment, the plan has a dated `run_id`-keyed Verification-Log entry, the
-      Actions run shows a job summary, and a `looper-deploy` check-run concludes
+      Actions run shows a job summary, and a `loopdog-deploy` check-run concludes
       `success`.
 - [x] On a smoke failure + rollback the same surfaces report `rolled_back` (check-run
       `failure`), in place — no duplicate comments.
 - [x] The run record gains a `deploy` step carrying the report and
-      `outcome.artifacts.deploy`, consumable by `looper runs show` (0069).
+      `outcome.artifacts.deploy`, consumable by `loopdog runs show` (0069).
 - [x] Re-running the reporter (event then sweep) produces exactly one effect per
       outcome, proven by a double-invocation test.
 - [x] Deploy output is scrubbed by the M07 leak guards before any public/PR/plan
@@ -162,11 +162,11 @@ the item for `needs-human` escalation (M12 · 0051) rather than claiming health.
 
 ## Implementation Checklist
 
-- [x] Define `DeployReport` in `@looper/core/src/run-record/`; export via the barrel.
+- [x] Define `DeployReport` in `@loopdog/core/src/run-record/`; export via the barrel.
 - [x] Implement report assembly + `status` derivation in the deploy-loop write-back
-      (`@looper/runtime/src/pipeline`).
+      (`@loopdog/runtime/src/pipeline`).
 - [x] Implement the four reporting surfaces (sticky PR/issue comment via the github
-      port, plan `update` via 0017, job summary, `looper-deploy` check-run).
+      port, plan `update` via 0017, job summary, `loopdog-deploy` check-run).
 - [x] Append the `deploy` step + `artifacts.deploy` to the run record (0012).
 - [x] Make every surface idempotent (marker/`run_id`/check-run upsert keys).
 - [x] Route deploy output through the M07 leak-guard scrub before writing it.
@@ -180,9 +180,9 @@ Tests run via the repo's vitest runner. Behavioral tests use the M18 fakes
 `CommandResult`) — no real quota, no real GitHub, no real deploy.
 
 ```bash
-npm test -w @looper/runtime
+npm test -w @loopdog/runtime
 # scenario: merge → deploy ok → PR/issue comment + plan entry + job summary +
-#           looper-deploy check-run success + run-record deploy step
+#           loopdog-deploy check-run success + run-record deploy step
 # scenario: deploy → smoke fail → rollback → all surfaces report rolled_back, in place
 # double-invoke (event then sweep) on one outcome → exactly one effect (idempotent)
 # leak-guard: planted secret in deploy output is scrubbed from every surface
@@ -215,7 +215,7 @@ check-run upsert key — the same idempotency discipline as 0012/0017). Reportin
 write-back-only and observational: it never gates merge directly (the check-run is
 read by 0041/0014, not enforced here), so disabling the reporter degrades visibility
 without affecting deploy/rollback safety — revert the deploy-loop write-back wiring
-in `@looper/runtime` to roll back cleanly.
+in `@loopdog/runtime` to roll back cleanly.
 
 ## Final Summary
 

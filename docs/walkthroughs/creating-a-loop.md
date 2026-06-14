@@ -12,7 +12,7 @@ Dana wants: **auto-review Dependabot PRs, merge the safe patch bumps.**
 ### 1. Questionnaire
 
 ```
-$ looper loops new
+$ loopdog loops new
 ? Loop name: dependabot-review
 ? Trigger:              ❯ GitHub event   ·   Cron (scheduled)
 ?   Which event:        ❯ pull_request
@@ -22,7 +22,7 @@ $ looper loops new
 ? Risk tier:            ❯ safe   ·   core
 ? Max files per change: 3
 
-✓ Created .looper/loops/dependabot-review/
+✓ Created .loopdog/loops/dependabot-review/
     loop.yml     ← trigger, transition, backend, gates
     prompt.md    ← edit this: tell the loop what to do      (mode: dry-run)
 ```
@@ -33,7 +33,7 @@ implementer, the cross-model review win.
 ### 2. Edit `loop.yml` for the details the questionnaire didn't ask
 
 ```yaml
-# .looper/loops/dependabot-review/loop.yml
+# .loopdog/loops/dependabot-review/loop.yml
 name: dependabot-review
 trigger:
   github_event: pull_request
@@ -57,13 +57,13 @@ Otherwise comment what's missing and label `needs-human`.
 ### 4. Validate → dry-run → promote
 
 ```
-$ looper loops validate dependabot-review
+$ loopdog loops validate dependabot-review
 ✓ schema ok · transition in-review → verified legal (M03) · backend codex connected
 
-$ looper run dependabot-review --dry-run --pr 200
+$ loopdog run dependabot-review --dry-run --pr 200
 [dry-run] matches author=dependabot[bot] · patch bump ✓ · would label verified
 
-$ looper promote dependabot-review --to act          # after watching a clean run
+$ loopdog promote dependabot-review --to act          # after watching a clean run
 ✓ dependabot-review: dry-run → act
 ```
 
@@ -74,7 +74,7 @@ one loop (collapsing groom+implement). Same mechanics; the questionnaire picks t
 `issues` event, `new → in-review`, `claude` backend. Two hand-edits make it safe:
 
 ```yaml
-# .looper/loops/auto-implement/loop.yml  (excerpt)
+# .loopdog/loops/auto-implement/loop.yml  (excerpt)
 trigger: { github_event: issues, action: [opened] }
 transition: { from: new, to: in-review }
 backend: claude
@@ -95,12 +95,12 @@ to `tier:safe`.
 
 ## The shape of it
 
-> **`looper loops new` (answer ~6 questions) → it generates `.looper/loops/<name>/`
+> **`loopdog loops new` (answer ~6 questions) → it generates `.loopdog/loops/<name>/`
 > and prints the path → edit `loop.yml` for fine detail + `prompt.md` for the brief
 > → `validate` → `--dry-run` → commit → promote to `act`.**
 
-No looper code, each loop self-contained, nothing dumped into a giant
-`looper.yml`, and nothing acts until it's dry-run and the mode is flipped.
+No loopdog code, each loop self-contained, nothing dumped into a giant
+`loopdog.yml`, and nothing acts until it's dry-run and the mode is flipped.
 
 ## The honest trade-off (fast path vs. trustworthy path)
 

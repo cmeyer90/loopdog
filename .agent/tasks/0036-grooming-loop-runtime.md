@@ -5,7 +5,7 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Wire the grooming work cell (0033) into a live, triggered loop in `@looper/runtime`:
+Wire the grooming work cell (0033) into a live, triggered loop in `@loopdog/runtime`:
 register the built-in `groom` loop so the right GitHub events and the cron sweep
 fire it, and make it ship **dry-run (comment-only)** by default with an explicit,
 documented promotion to acting. This is the task that turns the groom *assets*
@@ -14,7 +14,7 @@ documented promotion to acting. This is the task that turns the groom *assets*
 ## Goal recap
 
 No new model behavior — only the deterministic registration, trigger-eligibility,
-and compose→dispatch plumbing that hangs the groom loop off looper's generic
+and compose→dispatch plumbing that hangs the groom loop off loopdog's generic
 pipeline (0012), enforced through the single mode boundary (0009).
 
 ## Background
@@ -36,20 +36,20 @@ responder (0034) and the assume-vs-block policy (0035) plug their transitions in
 
 ## Scope
 
-- Register the built-in `groom` loop in `@looper/runtime`'s loop registry
+- Register the built-in `groom` loop in `@loopdog/runtime`'s loop registry
   (`loops-builtin/`) so the generic pipeline (0012) can select and run it.
 - Map the loop's triggers — which GitHub events and the sweep make a
   `needs-grooming` item *eligible* — onto the event workflow (0008) and the
   reconcile sweep (0076).
 - Default the loop to `mode: dry-run` (comment-only preview) and document the
-  one-command promotion to `act` via `looper promote` (0009).
+  one-command promotion to `act` via `loopdog promote` (0009).
 - Wire the groom transition's compose→dispatch path: select eligible item → compose
   the DoR brief (0022) → dispatch the groom work cell to the backend (0019) → record
   the correlation handle (0073); ingest is the existing pipeline path.
 
 ### Technical detail
 
-**Where it lands.** `@looper/runtime`, in `runtime/src/loops-builtin/` (registers
+**Where it lands.** `@loopdog/runtime`, in `runtime/src/loops-builtin/` (registers
 the asset) and `runtime/src/triggers/` + `runtime/src/sweep/` (eligibility wiring).
 **No new pipeline code** — the groom loop is data executed by the 0012 runner; this
 task only declares it and binds its triggers.
@@ -67,7 +67,7 @@ export const groomLoop: BuiltinLoop = {
 ```
 
 The registry is the list the pipeline (0012) and the CLI loop-introspection (0068)
-read. An adopter `.looper/loops/groom/` overrides the built-in asset (same
+read. An adopter `.loopdog/loops/groom/` overrides the built-in asset (same
 resolution order as prompts, 0022); registration only supplies the default when the
 adopter hasn't authored their own.
 
@@ -77,9 +77,9 @@ define eligibility. This task maps that to concrete trigger sources:
 
 | Source | Fires groom when | Why |
 |---|---|---|
-| `issues` (opened/labeled/edited) event (0008) | an issue enters/sits in `looper:state/needs-grooming` | low-latency: a freshly-filed/labeled issue grooms immediately |
+| `issues` (opened/labeled/edited) event (0008) | an issue enters/sits in `loopdog:state/needs-grooming` | low-latency: a freshly-filed/labeled issue grooms immediately |
 | `issue_comment` event (0008) | a `needs-clarification` item gets a human reply | re-entry to grooming; the reply→re-groom logic is 0034, this task only marks the loop eligible on that event |
-| cron sweep (0076) | any `needs-grooming` item a webhook missed, or a controller→controller handoff into `needs-grooming` | resilience backstop; `GITHUB_TOKEN` won't re-trigger so a label looper itself wrote is only picked up by the sweep |
+| cron sweep (0076) | any `needs-grooming` item a webhook missed, or a controller→controller handoff into `needs-grooming` | resilience backstop; `GITHUB_TOKEN` won't re-trigger so a label loopdog itself wrote is only picked up by the sweep |
 
 Eligibility is computed by the pipeline's existing selector (0012: label == `from`
 state AND passes the loop's trigger filter); this task's job is to register the
@@ -94,11 +94,11 @@ claims are atomic and transitions idempotent (0012/0013), so no special-casing h
 0009 effect boundary that means: read the issue, compose the brief, emit the full
 `PlannedAction[]` ("would dispatch groom on #N; would set `needs-grooming →
 ready-for-agent`") into the run record — but **post no comment, write no label, and
-dispatch nothing**. The adopter watches the previews (via `looper run --dry-run` /
+dispatch nothing**. The adopter watches the previews (via `loopdog run --dry-run` /
 job summaries, 0070) until they trust the loop, then promotes:
 
 ```
-looper promote groom --to act      # rewrites mode: in .looper/loops/groom/loop.yml (0009)
+loopdog promote groom --to act      # rewrites mode: in .loopdog/loops/groom/loop.yml (0009)
 ```
 
 `tier: safe` (0033) means promotion is permitted (the `tier:core`-merge guard in
@@ -114,7 +114,7 @@ mode is `act`, the pipeline (0012) runs the groom transition:
 2. **Compose** the DoR brief: `compose(ctx, source)` (0022) over
    `templates/loops/groom/prompt.md`, with `ComposeContext` filled from the issue +
    `transition: { from: needs-grooming, to: ready-for-agent }` + `run_id` +
-   `branch: looper/groom/<issue>-<run_id>`. The non-overridable output-contract
+   `branch: loopdog/groom/<issue>-<run_id>`. The non-overridable output-contract
    trailer (0022) is appended so the agent's plan-edit PR/comments correlate back.
 3. **Dispatch** the brief to the configured backend (`backend: claude`, 0033) via
    `dispatch(brief)` (0019); record the correlation handle (0073) in the run record.
@@ -152,16 +152,16 @@ mode is `act`, the pipeline (0012) runs the groom transition:
 
 ## Acceptance Criteria
 
-- [x] The built-in `groom` loop is registered in `@looper/runtime` and appears as a
-      selectable loop to the pipeline (0012) and `looper loops` (0068).
-- [x] An `issues` event for an item entering `looper:state/needs-grooming` makes the
+- [x] The built-in `groom` loop is registered in `@loopdog/runtime` and appears as a
+      selectable loop to the pipeline (0012) and `loopdog loops` (0068).
+- [x] An `issues` event for an item entering `loopdog:state/needs-grooming` makes the
       groom loop eligible and (in `act`) runs exactly one groom transition.
 - [x] The cron sweep (0076) picks up a `needs-grooming` item whose triggering event
       was dropped/missed, and a controller-written handoff into `needs-grooming`.
 - [x] The loop defaults to `mode: dry-run`: a full run performs **zero** GitHub
       writes and **zero** dispatch, yet emits a complete `PlannedAction[]` (including
       the composed DoR brief) to the run record.
-- [x] `looper promote groom --to act` flips the loop to acting; thereafter a groom
+- [x] `loopdog promote groom --to act` flips the loop to acting; thereafter a groom
       run composes the DoR brief (0022) and dispatches to the backend (0019) with a
       recorded correlation handle (0073).
 - [x] An event and a sweep racing the same `needs-grooming` item produce exactly one
@@ -182,7 +182,7 @@ mode is `act`, the pipeline (0012) runs the groom transition:
       effect bypasses the decorator; dry-run is the resolved default.
 - [x] Add a scenario test (M18) for dry-run (zero writes, full `PlannedAction[]`) and
       a double-invocation event↔sweep test (single effective dispatch).
-- [x] Document the dry-run default + `looper promote groom --to act` in the grooming
+- [x] Document the dry-run default + `loopdog promote groom --to act` in the grooming
       walkthrough.
 
 ## Test Plan
@@ -192,8 +192,8 @@ Tests run via the repo's `vitest` runner; behavioral paths use the M18 fakes
 
 ```bash
 # from repo root
-npm test -w @looper/runtime   # groom registered; event/sweep eligibility; compose→dispatch wiring
-npm test -w @looper/testing   # scenario: dry-run = 0 writes/0 dispatch + populated PlannedAction[]
+npm test -w @loopdog/runtime   # groom registered; event/sweep eligibility; compose→dispatch wiring
+npm test -w @loopdog/testing   # scenario: dry-run = 0 writes/0 dispatch + populated PlannedAction[]
 # scenario: seed needs-grooming issue, mode dry-run → assert no label/comment/dispatch, brief in run record
 # scenario: promote to act → assert one dispatch with correlation handle recorded
 # simulation: deliver issues event AND run sweep on same item → exactly one effective dispatch (idempotent)
@@ -223,7 +223,7 @@ task adds no direct port call) and proving zero-mutation in the scenario test. A
 second risk is double-dispatch under event↔sweep races; mitigated by *not* bypassing
 the existing 0012 idempotency key + 0073 correlation guard and covering it with the
 simulation test. Rollback is config-only: the loop ships `mode: dry-run`, so reverting
-a `looper promote` (or the registration) returns groom to observe-only with no code
+a `loopdog promote` (or the registration) returns groom to observe-only with no code
 change.
 
 ## Final Summary

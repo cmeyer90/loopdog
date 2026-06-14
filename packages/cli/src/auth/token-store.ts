@@ -7,13 +7,13 @@ import { join } from 'node:path';
 const execFileAsync = promisify(execFile);
 
 /**
- * Local token storage for `looper login` (task 0077): the OS keychain
- * (service `looper`) when available — macOS `security`, Linux `secret-tool` —
- * else a 0600 `~/.looper/auth.json` with a printed plaintext warning. Never
+ * Local token storage for `loopdog login` (task 0077): the OS keychain
+ * (service `loopdog`) when available — macOS `security`, Linux `secret-tool` —
+ * else a 0600 `~/.loopdog/auth.json` with a printed plaintext warning. Never
  * written into any repo or model-visible artifact.
  */
 
-const SERVICE = 'looper';
+const SERVICE = 'loopdog';
 
 export interface TokenStoreOptions {
   /** Override for tests; defaults to the user home dir. */
@@ -23,7 +23,7 @@ export interface TokenStoreOptions {
 }
 
 function authFile(opts: TokenStoreOptions): string {
-  return join(opts.home ?? homedir(), '.looper', 'auth.json');
+  return join(opts.home ?? homedir(), '.loopdog', 'auth.json');
 }
 
 export async function storeToken(

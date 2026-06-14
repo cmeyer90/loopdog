@@ -1,4 +1,4 @@
-# Looper — Codebase Architecture & Module Layout
+# Loopdog — Codebase Architecture & Module Layout
 
 > The **structure** doc: how the code is organized, where boundaries are, and the
 > order to build it. The product "why/what" is [`architecture.md`](architecture.md);
@@ -15,29 +15,29 @@ behavior is config, not code.
 
 ## Stack (decision — 2026-06-08, ratified in M01 · 0001)
 
-**TypeScript (strict) on Node 20+, an npm-workspaces monorepo.** Rationale: looper
+**TypeScript (strict) on Node 20+, an npm-workspaces monorepo.** Rationale: loopdog
 *is* a GitHub-Actions + Octokit + CLI tool, and that ecosystem is JS-native —
 `@octokit/*` (REST/GraphQL), `@actions/*`, npm distribution, one language for the
 CLI and the controller it invokes in Actions. Default toolchain (finalize in 0001,
 don't over-specify): `tsup`/`tsc` build · `vitest` tests · `eslint` + `prettier` ·
 `commander` CLI · `@clack/prompts` for the questionnaire · `zod` for config
 schemas. *Alternative considered:* Go single-binary CLI — rejected because the
-GitHub Actions + Octokit + CLI surface is where looper lives, and that's JS.
+GitHub Actions + Octokit + CLI surface is where loopdog lives, and that's JS.
 
 ## Packages (the boundaries)
 
-Each is `@looper/<name>`, one responsibility, its public API is its `index.ts`.
+Each is `@loopdog/<name>`, one responsibility, its public API is its `index.ts`.
 
 | Package | Responsibility | Depends on |
 |---|---|---|
 | `core` | Pure domain: state machine, transition decision logic, DoR/DoD gates, run-record types, idempotency keys, **and the port interfaces** (`Backend`, `ProjectAdapter`, `PlanStore`, `GitHubPort`, `SecretBackend`). No IO. | — |
-| `config` | Root `looper.yml` + per-loop `loop.yml` schema, discovery, validation. | core |
+| `config` | Root `loopdog.yml` + per-loop `loop.yml` schema, discovery, validation. | core |
 | `github` | The GitHub port: Octokit wrapper over `GITHUB_TOKEN`, labels/issues/PRs, claim/lease, event parsing, identity. | core |
 | `plans` | Durable plan store: read/write milestones+tasks into the repo. | core, github |
 | `backends` | Execution-backend interface impls: `claude`, `codex`, `self-hosted` + dispatch/ingest correlation. | core, github |
 | `adapters` | Project-adapter impls: `detect`, `generic`, `node`, `python`. | core |
 | `runtime` | The controller / composition root: triggers + reconcile sweep + the effectful transition pipeline + telemetry, plus the **built-in loop definitions** (config + prompts as assets). | core + all ports |
-| `cli` | The `looper` binary (login, init, loops, runs, status, prompts) — the same entrypoint Actions invoke. | runtime, config, github |
+| `cli` | The `loopdog` binary (login, init, loops, runs, status, prompts) — the same entrypoint Actions invoke. | runtime, config, github |
 | `testing` | **Dev-only.** The fakes (in-memory GitHub, fake/replay backends) + scenario & simulation runner + fixtures. Not shipped. | core (+ test-time peers) |
 
 **Dependency direction is one-way:** `core` ← ports (`config`/`github`/`plans`/
@@ -49,7 +49,7 @@ DI framework.
 ## Filetree
 
 ```
-looper/
+loopdog/
 ├── package.json                 # npm workspaces root
 ├── tsconfig.base.json
 ├── packages/
@@ -62,12 +62,12 @@ looper/
 │   ├── runtime/src/{pipeline,triggers,sweep,telemetry,loops-builtin}/+ index.ts
 │   ├── cli/src/commands/{login,init,loops,runs,status,prompts}.ts    + index.ts
 │   └── testing/src/{fake-github,fake-backends,scenario,simulation,fixtures}/  (dev-only)
-├── templates/                   # what `looper init` scaffolds INTO an adopter repo:
-│   ├── looper.yml               #   root config
+├── templates/                   # what `loopdog init` scaffolds INTO an adopter repo:
+│   ├── loopdog.yml               #   root config
 │   ├── loops/<builtin>/         #   default loop.yml + prompt.md per built-in loop
-│   └── workflows/looper-*.yml   #   the thin reusable-workflow callers
+│   └── workflows/loopdog-*.yml   #   the thin reusable-workflow callers
 ├── docs/                        # architecture.md, codebase.md, walkthroughs/
-└── .agent/                      # looper's OWN durable plans (dogfooding the product)
+└── .agent/                      # loopdog's OWN durable plans (dogfooding the product)
 ```
 
 Each package has a colocated `test/`. A package's `src/index.ts` is a thin barrel;
@@ -109,13 +109,13 @@ is the payoff of "loops are data."
 
 ## Testing strategy
 
-Looper is an autonomous dispatcher, so it must be provable **without burning
+Loopdog is an autonomous dispatcher, so it must be provable **without burning
 subscription quota or hitting real GitHub** (Milestone 18). The modular design
-makes this cheap: IO is behind ports in `@looper/core`, so the `@looper/testing`
+makes this cheap: IO is behind ports in `@loopdog/core`, so the `@loopdog/testing`
 package injects in-memory fakes and runs the *real* controller. A five-tier
 pyramid:
 
-1. **unit** — `@looper/core` pure logic; no fakes (it's IO-free).
+1. **unit** — `@loopdog/core` pure logic; no fakes (it's IO-free).
 2. **component** — each port impl vs. a fake/recorded counterpart (backend +
    adapter conformance kits).
 3. **scenario** — whole loops on **fake GitHub + fake/replay backend** → golden
@@ -135,7 +135,7 @@ so no PR ever spends real quota.
 - No plugin-loader/marketplace framework — backends and adapters are a small fixed
   registry behind an interface; third parties use the conformance kit (M06 · 0028).
 - No database, queue, or event bus — **GitHub is the store and the bus**.
-- No separate `@looper/interfaces`, `@looper/utils`, or `action` package — ports
+- No separate `@loopdog/interfaces`, `@loopdog/utils`, or `action` package — ports
   live in `core`; the CLI is the single entrypoint Actions also call.
 - No DI framework, no per-loop classes, no premature secrets framework (identity
   lives in `github`, provider auth in `backends`).

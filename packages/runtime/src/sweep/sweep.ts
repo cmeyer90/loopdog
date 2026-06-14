@@ -1,13 +1,13 @@
-import type { IssueSnapshot, LoopDefinition, RepoRef, RunRecord } from '@looper/core';
+import type { IssueSnapshot, LoopDefinition, RepoRef, RunRecord } from '@loopdog/core';
 import {
   NOT_BEFORE_PREFIX,
   OFF_RAMP_LABELS,
   STATE_LABEL_PREFIX,
   parseNotBefore,
   stateLabel,
-} from '@looper/core';
-import { isCronDue } from '@looper/config';
-import { clearExpiredClaim } from '@looper/github';
+} from '@loopdog/core';
+import { isCronDue } from '@loopdog/config';
+import { clearExpiredClaim } from '@loopdog/github';
 import type { RunnerDeps } from '../pipeline/transition-runner.js';
 import { runLoopOnItem, scanStates } from '../pipeline/transition-runner.js';
 
@@ -96,11 +96,11 @@ export async function runSweep(
 
       // Parked holds (0050/0075): retryAfter passed → unpark and re-evaluate
       // through the pre-flight; kill-switch/approval holds have no retryAfter.
-      if (item.labels.includes('looper:parked')) {
+      if (item.labels.includes('loopdog:parked')) {
         const hold = await readHoldMarker(deps, item);
         if (hold?.retryAfter && Date.parse(hold.retryAfter) <= now.getTime()) {
-          await deps.gh.removeLabel(item.ref, 'looper:parked');
-          item.labels = item.labels.filter((l) => l !== 'looper:parked');
+          await deps.gh.removeLabel(item.ref, 'loopdog:parked');
+          item.labels = item.labels.filter((l) => l !== 'loopdog:parked');
         }
       }
 
@@ -162,7 +162,7 @@ async function readHoldMarker(
 ): Promise<{ reason: string; retryAfter: string | null } | null> {
   const comments = await deps.gh.listComments(item.ref);
   for (const comment of [...comments].reverse()) {
-    const m = comment.body.match(/<!-- looper:hold (\{.*?\}) -->/);
+    const m = comment.body.match(/<!-- loopdog:hold (\{.*?\}) -->/);
     if (m) {
       try {
         return JSON.parse(m[1]!) as { reason: string; retryAfter: string | null };
@@ -181,13 +181,13 @@ function preFilter(item: IssueSnapshot): string | null {
 
   const offRamp = item.labels.find((l) => (OFF_RAMP_LABELS as readonly string[]).includes(l));
   if (offRamp) return `off-ramp ${offRamp}`;
-  if (item.labels.includes('looper:quarantine')) return 'quarantined';
-  if (item.labels.includes('looper:stop')) return 'kill switch';
-  if (item.labels.includes('looper:needs-approval') && !item.labels.includes('looper:approved')) {
+  if (item.labels.includes('loopdog:quarantine')) return 'quarantined';
+  if (item.labels.includes('loopdog:stop')) return 'kill switch';
+  if (item.labels.includes('loopdog:needs-approval') && !item.labels.includes('loopdog:approved')) {
     return 'awaiting approval';
   }
-  // `looper:parked` holds: budget/quota gates (M12) clear or re-park them via
+  // `loopdog:parked` holds: budget/quota gates (M12) clear or re-park them via
   // the runner pre-flight; the sweep skips them to avoid blind dispatch.
-  if (item.labels.includes('looper:parked')) return 'parked (operational hold)';
+  if (item.labels.includes('loopdog:parked')) return 'parked (operational hold)';
   return null;
 }

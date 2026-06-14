@@ -3,7 +3,7 @@ import type { Mode } from '../gates/mode.js';
 
 /**
  * The domain shape of a declared loop ("loops are data, not code"): the parsed
- * form of `.looper/loops/<name>/loop.yml`. `@looper/config` owns parsing and
+ * form of `.loopdog/loops/<name>/loop.yml`. `@loopdog/config` owns parsing and
  * validation into this type; the runtime executes any value of it generically.
  */
 export interface LoopDefinition {

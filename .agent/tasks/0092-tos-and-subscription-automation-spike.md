@@ -5,7 +5,7 @@ Branch: claude/laughing-johnson-8a7944
 
 ## Goal
 
-Get an explicit, ideally written, answer to the question looper's whole premise
+Get an explicit, ideally written, answer to the question loopdog's whole premise
 depends on: **may a third-party tool programmatically drive a user's paid Claude /
 Codex subscription quota, unattended, at scale?** — before building the
 subscription path.
@@ -15,7 +15,7 @@ subscription path.
 Part of [Milestone 00](../milestones/milestone-00-pre-build-validation-spikes.md).
 The architecture flags this as an open question ([architecture](../../docs/architecture.md)
 "Verified provider capabilities"); the plan review ranked it the #1 blocker
-because a "no" doesn't degrade looper — it removes its reason to exist (subscriptions
+because a "no" doesn't degrade loopdog — it removes its reason to exist (subscriptions
 instead of API keys) and could get early adopters' accounts rate-limited or banned.
 
 ## Scope
@@ -24,7 +24,7 @@ instead of API keys) and could get early adopters' accounts rate-limited or bann
   for clauses on automation, programmatic access, and personal-use restrictions —
   treat silence as provider-favorable, not as permission.
 - Ask both providers' policy/devrel contacts the explicit question, in writing.
-- Document the answer and a **consequence model**: if "no", what is looper's
+- Document the answer and a **consequence model**: if "no", what is loopdog's
   primary path (the self-hosted/API backend) and what changes.
 
 ## Out Of Scope
@@ -66,7 +66,7 @@ Non-code: terms reviewed + provider responses captured + decision recorded.
 
 ## Decisions
 
-- **Anthropic: permitted** for looper's exact Claude pattern — the routine
+- **Anthropic: permitted** for loopdog's exact Claude pattern — the routine
   `/fire` endpoint is officially documented for external programmatic callers
   (CI pipelines, internal tools), satisfying the Consumer ToS carve-out
   ("where we otherwise explicitly permit it"). Constraints adopted as design
@@ -94,7 +94,7 @@ the circuit breaker (M19 · 0090) keep usage inside published limits.
 ## Final Summary
 
 Researched both providers' terms, product docs, and enforcement history
-(2026-06-09). Answer: Anthropic explicitly permits looper's Claude dispatch
+(2026-06-09). Answer: Anthropic explicitly permits loopdog's Claude dispatch
 pattern (per-routine `/fire` + bearer token is documented for external
 automation; bounded by daily caps and subscription limits); OpenAI is a gray
 area resolved to a conditional go (act as the adopter's own identity, within

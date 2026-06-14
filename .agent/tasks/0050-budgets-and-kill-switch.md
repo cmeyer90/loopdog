@@ -24,12 +24,12 @@ the circuit breaker (M19) — this guard composes their verdicts into one decisi
 
 ## Scope
 
-- A `BudgetGate` in `@looper/core` (pure predicate) and its effectful counterpart
-  in `@looper/runtime` that reads kill-switch + budget state from GitHub.
-- Global **kill switch**: a `looper:stop` label on a sentinel issue **or** a repo
-  variable `LOOPER_STOP` — either halts *all* dispatch immediately.
+- A `BudgetGate` in `@loopdog/core` (pure predicate) and its effectful counterpart
+  in `@loopdog/runtime` that reads kill-switch + budget state from GitHub.
+- Global **kill switch**: a `loopdog:stop` label on a sentinel issue **or** a repo
+  variable `LOOPDOG_STOP` — either halts *all* dispatch immediately.
 - Per-loop and global **budgets**: token-cost ceiling and dispatch-count ceiling
-  over a rolling window, sourced from `looper.yml`, spent against the run-record
+  over a rolling window, sourced from `loopdog.yml`, spent against the run-record
   cost ledger (0012).
 - Compose this verdict with quota (0075) and the circuit breaker (M19) so the runner
   gets one pass/park decision.
@@ -38,12 +38,12 @@ the circuit breaker (M19) — this guard composes their verdicts into one decisi
 
 ### Technical detail
 
-**Lands in:** the pure predicate + types in `@looper/core` (`core/src/gates/`);
-the GitHub-reading impl in `@looper/runtime` (`runtime/src/pipeline/preflight/`);
-config schema in `@looper/config`. No new package, no new IO port (reuse
+**Lands in:** the pure predicate + types in `@loopdog/core` (`core/src/gates/`);
+the GitHub-reading impl in `@loopdog/runtime` (`runtime/src/pipeline/preflight/`);
+config schema in `@loopdog/config`. No new package, no new IO port (reuse
 `GitHubPort` for labels/variables and the telemetry sink for the cost ledger).
 
-**Config (`looper.yml`), validated by zod in `@looper/config`:**
+**Config (`loopdog.yml`), validated by zod in `@loopdog/config`:**
 
 ```yaml
 budgets:
@@ -56,18 +56,18 @@ budgets:
     review:    { max_dispatches: 60 }
   on_exceeded: park           # park (default) | needs-human
 kill_switch:
-  variable: LOOPER_STOP       # repo variable name; presence/"true" = stop
-  label: looper:stop          # label on the sentinel issue = stop
+  variable: LOOPDOG_STOP       # repo variable name; presence/"true" = stop
+  label: loopdog:stop          # label on the sentinel issue = stop
 ```
 
 **Kill switch (checked first, cheapest).** Stop is active if **either** the repo
-variable `LOOPER_STOP` is truthy (`get_repo_variable` via `GitHubPort`) **or** the
-`looper:stop` label is present on the configured sentinel issue (default: the
-`looper:meta` issue, falling back to repo variable only if absent). Either source ⇒
+variable `LOOPDOG_STOP` is truthy (`get_repo_variable` via `GitHubPort`) **or** the
+`loopdog:stop` label is present on the configured sentinel issue (default: the
+`loopdog:meta` issue, falling back to repo variable only if absent). Either source ⇒
 the gate returns `{ allowed: false, reason: 'kill-switch' }` and the runner parks
-the item with `looper:parked` + a one-line comment while leaving its existing
-`looper:state/*` label intact, emitting no dispatch.
-`looper stop` / `looper resume-all` (CLI, M16) toggle the variable; humans can also drop
+the item with `loopdog:parked` + a one-line comment while leaving its existing
+`loopdog:state/*` label intact, emitting no dispatch.
+`loopdog stop` / `loopdog resume-all` (CLI, M16) toggle the variable; humans can also drop
 the label by hand. The variable is authoritative and instant; the label is the
 human-visible mirror.
 
@@ -98,7 +98,7 @@ type GuardVerdict =
 re-attempts the parked item once the window rolls — no manual nudge needed. A
 kill-switch denial has no `retryAfter` (it clears only on human resume).
 
-**Parked, not failed.** On deny the runner sets `looper:parked` (a non-terminal
+**Parked, not failed.** On deny the runner sets `loopdog:parked` (a non-terminal
 holding label), appends a `gate` step to the run record with `guard`+`reason`, and
 posts/updates a single comment ("Parked: over budget for loop `implement` — resets
 ~14:00 UTC"). The lifecycle state label is preserved, so the sweep knows which
@@ -120,12 +120,12 @@ within one sweep tick is acceptable and bounded by `max_in_flight` (M19).
 - Subscription rate-cap modelling + throttle/queue (quota, 0075).
 - Provider-outage pausing / retry backoff (circuit breaker + failure policy, M19).
 - Stuck-detection / K-failure escalation (0051).
-- The CLI surface for `looper stop`/`resume-all`/budget display (M16 · 0069); this task
+- The CLI surface for `loopdog stop`/`resume-all`/budget display (M16 · 0069); this task
   exposes the state the CLI reads/writes.
 
 ## Acceptance Criteria
 
-- [x] With `LOOPER_STOP` set **or** the `looper:stop` label present, no loop
+- [x] With `LOOPDOG_STOP` set **or** the `loopdog:stop` label present, no loop
       dispatches; eligible items are parked with a recorded `kill-switch` reason.
 - [x] A loop at or over its per-loop or the global ceiling is denied a new dispatch
       and parked with a `budget` reason and a `retryAfter` = window reset.
@@ -140,13 +140,13 @@ within one sweep tick is acceptable and bounded by `max_in_flight` (M19).
 
 ## Implementation Checklist
 
-- [x] Add the `budgets` + `kill_switch` schema to `@looper/config` (zod) + defaults.
+- [x] Add the `budgets` + `kill_switch` schema to `@loopdog/config` (zod) + defaults.
 - [x] Implement the pure `budgetGate(state, candidate): GuardVerdict` in `core/src/gates/`.
 - [x] Implement the runtime reader: kill-switch (variable + sentinel label) + ledger
       aggregation over `window` from the telemetry sink.
 - [x] Wire the gate into the runner pre-flight (0012) in cheap→expensive order and
       compose with quota (0075) + circuit (M19) into one verdict.
-- [x] Implement the parked outcome: `looper:parked` hold label, run-record `gate`
+- [x] Implement the parked outcome: `loopdog:parked` hold label, run-record `gate`
       step, single idempotent comment; preserve the lifecycle state label and do
       not bump the attempt counter.
 - [x] Expose `setStop()/clearStop()` helpers (repo variable) for the CLI (M16).
@@ -161,7 +161,7 @@ pnpm vitest run packages/core packages/runtime
 # unit: budgetGate predicate — under/at/over per-loop & global ceilings → verdicts
 # scenario (fake GitHub + fake backend):
 #   kill-switch label present  → eligible item parked, zero dispatches
-#   LOOPER_STOP variable truthy → parked; variable read error → fails closed (parked)
+#   LOOPDOG_STOP variable truthy → parked; variable read error → fails closed (parked)
 #   ledger at ceiling          → park with retryAfter; advance clock past window → dispatches
 #   composition order          → kill-switch beats budget beats quota beats circuit
 ```
@@ -182,19 +182,19 @@ pnpm vitest run packages/core packages/runtime
   wired into the runner's extraChecks — the access/safety siblings (M17/M19)
   compose into the same hook.
 - Kill switch V1: the repo VARIABLE (env-visible in Actions) is authoritative;
-  the per-item looper:stop label is already a standard hold. The sentinel-
+  the per-item loopdog:stop label is already a standard hold. The sentinel-
   issue label mirror is deferred (recorded simplification — the variable +
   item label cover both repo-wide and per-item stops).
 - Budgets aggregate the run-record ledger (dispatch steps + cost.usd) over
   the configured window; 0 = unlimited; on_exceeded park|needs-human honored.
-- Parking preserves the lifecycle label and writes a `looper:hold` marker
+- Parking preserves the lifecycle label and writes a `loopdog:hold` marker
   comment (reason + retryAfter) the sweep reads.
 
 ## Risks / Rollback
 
 - **Fail-open would burn quota** under a GitHub blip — the gate must fail *closed*;
   guard that path with an explicit test.
-- A mis-set ceiling could starve all loops silently; the parked comment + `looper
+- A mis-set ceiling could starve all loops silently; the parked comment + `loopdog
   status` (M16) must make "why nothing is running" obvious, and `0` is a documented
   intentional halt.
 - Budget is eventually-consistent (race-tolerant by design); the *hard* concurrency

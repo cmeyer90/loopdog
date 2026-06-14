@@ -17,10 +17,10 @@ Part of [Milestone 12](../milestones/milestone-12-observability-cost-and-safety.
 "per-provider outcome telemetry that feeds routing … Telemetry is per-loop and
 per-provider so routing (M13) is data-driven." The transition runner (0012) emits
 one run record per attempt (its schema is defined there); this task owns where
-those records **live** and how they are **aggregated**. It lands in `@looper/runtime`
+those records **live** and how they are **aggregated**. It lands in `@loopdog/runtime`
 (`runtime/src/telemetry/`) — the sink the codebase calls out as part of the
 controller (see [codebase](../../docs/codebase.md) §packages, `runtime`) — with the
-record/aggregate **types** declared in `@looper/core` (`core/src/run-record/`) so
+record/aggregate **types** declared in `@loopdog/core` (`core/src/run-record/`) so
 the ports stay one-way. See [architecture](../../docs/architecture.md#observability-cost--safety):
 "Per-provider outcome telemetry feeds routing." GitHub is the store and the bus —
 **no database, queue, or event bus** (M01 invariant).
@@ -37,9 +37,9 @@ the ports stay one-way. See [architecture](../../docs/architecture.md#observabil
 
 ### Technical detail
 
-**Lands in:** types in `@looper/core` (`core/src/run-record/{record,ledger,sink}.ts`,
+**Lands in:** types in `@loopdog/core` (`core/src/run-record/{record,ledger,sink}.ts`,
 re-exported from the package barrel); the GitHub-backed impl + aggregator in
-`@looper/runtime` (`runtime/src/telemetry/{sink,index,aggregate}.ts`). No new
+`@loopdog/runtime` (`runtime/src/telemetry/{sink,index,aggregate}.ts`). No new
 package, **no new IO port beyond `TelemetrySink`** — it reuses `GitHubPort` for all
 reads/writes. The run-record *shape* is owned by 0012; this task adds nothing to it
 except confirming the fields the ledger needs (`backend`, `outcome.status`,
@@ -49,14 +49,14 @@ except confirming the fields the ledger needs (`backend`, `outcome.status`,
 Primary sink: the **Actions run** that produced them — each invocation writes its
 record(s) as a JSON artifact and to the job summary (0052). Because artifacts expire
 and aren't queryable across runs, the **canonical** store is an append-only
-**orphan git branch** `looper/telemetry`: one newline-delimited-JSON file per UTC day,
+**orphan git branch** `loopdog/telemetry`: one newline-delimited-JSON file per UTC day,
 `runs/YYYY-MM-DD.ndjson`, committed via `GITHUB_TOKEN` (contents API). Append =
 read-file + add-line + commit-with-`If-Match` sha; on 409 conflict, re-read and retry
 (bounded) — this is the only writer contention point and it is rare (controller runs
 are serialized per item by the claim (0013), not globally). A small
 `runs/index.json` keeps `{ date, count, min_ts, max_ts, last_sha }` per day so a
 window query reads only the day-files it must (the bounded time index 0050 relies on).
-This branch is the **single canonical run-record store** — there is no `.looper/runs/`
+This branch is the **single canonical run-record store** — there is no `.loopdog/runs/`
 store; 0094 defers to this store and 0012 writes here, while 0069/0050 read here.
 
 **`TelemetrySink` port (in `core`):**
@@ -95,12 +95,12 @@ records. `failure_modes` are bucketed from the failing step's `detail`/`outcome`
 (stable enum, unknown → `other`). Routing (M13 · 0056) reads `ledger(window)` and
 sends a task type to the cell with the better `success_rate`/`merge_rate`; budgets
 (0050) reuse `query({since})` as the cost-ledger window scan; the CLI (0069) renders
-`query`, and a future `looper stats` renders `ledger`.
+`query`, and a future `loopdog stats` renders `ledger`.
 
 **Edge cases:** (a) telemetry write fails after the transition already committed to
 GitHub → log + best-effort retry, **never** fail the transition (telemetry is
 observe-only; a missing record is recoverable by backfill, a stranded item is not);
-(b) `looper/telemetry` branch absent on first run → create the orphan branch lazily;
+(b) `loopdog/telemetry` branch absent on first run → create the orphan branch lazily;
 (c) clock skew across runners → bucket by the record's own `trigger.at`/step
 timestamps, not wall-clock-at-write, and use the deterministic clock under test (M18);
 (d) divide-by-zero in `success_rate` when `n=0` → omit the cell, don't emit `NaN`;
@@ -116,7 +116,7 @@ so routing doesn't treat "free" as "cheapest by dollars."
 
 ## Acceptance Criteria
 
-- [x] A run record is persisted durably to the `looper/telemetry` branch and is
+- [x] A run record is persisted durably to the `loopdog/telemetry` branch and is
       retrievable by a later, separate controller invocation.
 - [x] `record` is idempotent on `run_id` — emitting the same record twice yields one
       stored entry.
@@ -131,7 +131,7 @@ so routing doesn't treat "free" as "cheapest by dollars."
 
 ## Implementation Checklist
 
-- [x] Declare `TelemetrySink`, `ProviderLedger`, and the `Cell` type in `@looper/core`
+- [x] Declare `TelemetrySink`, `ProviderLedger`, and the `Cell` type in `@loopdog/core`
       (`core/src/run-record/`), re-exported from the barrel.
 - [x] Implement the pure aggregator fold (`ledger.ts`) over `RunRecord[]`.
 - [x] Implement the GitHub-backed sink in `runtime/src/telemetry/`: orphan-branch
@@ -169,7 +169,7 @@ pnpm vitest run packages/core packages/runtime
 ## Decisions
 
 - The store decision held: append-only day-bucketed NDJSON on the
-  looper/telemetry orphan branch with CAS-retry appends and scrubbed egress.
+  loopdog/telemetry orphan branch with CAS-retry appends and scrubbed egress.
 - aggregateOutcomes(records, minSamples) gives per-(loop, backend) dispatch/
   outcome counts and a success rate with a sample floor (null below it) —
   exactly the input routeBackend consumes.

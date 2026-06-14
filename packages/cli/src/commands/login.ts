@@ -6,18 +6,18 @@ import { deleteStoredToken, readStoredToken, storeToken } from '../auth/token-st
 const execFileAsync = promisify(execFile);
 
 /**
- * `looper login` / `looper auth status` / `looper logout` (task 0077) — the
+ * `loopdog login` / `loopdog auth status` / `loopdog logout` (task 0077) — the
  * keyless connector. Preference order:
  *   1. existing `gh` auth (zero new credentials)
- *   2. GitHub OAuth DEVICE FLOW via looper's public OAuth-App client_id
+ *   2. GitHub OAuth DEVICE FLOW via loopdog's public OAuth-App client_id
  *      (no secret, no hosted backend — the documented keyless path)
- * Tokens land in the OS keychain (service `looper`; 0600 ~/.looper/auth.json
+ * Tokens land in the OS keychain (service `loopdog`; 0600 ~/.loopdog/auth.json
  * fallback with a plaintext warning). In CI the controller never logs in — it
  * uses the workflow's GITHUB_TOKEN. The token is never printed anywhere.
  */
 
-/** Looper's public OAuth App client id (a public identifier, not a secret). */
-const DEFAULT_CLIENT_ID = process.env['LOOPER_OAUTH_CLIENT_ID'] ?? 'Ov23liLooperPublicApp';
+/** Loopdog's public OAuth App client id (a public identifier, not a secret). */
+const DEFAULT_CLIENT_ID = process.env['LOOPDOG_OAUTH_CLIENT_ID'] ?? 'Ov23liLoopdogPublicApp';
 
 export function registerLogin(program: Command): void {
   program
@@ -33,7 +33,7 @@ export function registerLogin(program: Command): void {
           if (token) {
             const { stdout: who } = await execFileAsync('gh', ['api', 'user', '--jq', '.login']);
             console.log(`✓ reusing existing gh auth (logged in as ${who.trim()})`);
-            console.log('  looper will use `gh auth token` locally; no new credential stored.');
+            console.log('  loopdog will use `gh auth token` locally; no new credential stored.');
             maybeChainConnect(opts.connect);
             return;
           }
@@ -57,11 +57,11 @@ export function registerLogin(program: Command): void {
       const { token } = await auth({ type: 'oauth' });
       const where = await storeToken(token, 'github');
       if (where === 'keychain') {
-        console.log('✓ logged in; token stored in the OS keychain (service `looper`).');
+        console.log('✓ logged in; token stored in the OS keychain (service `loopdog`).');
       } else {
         console.log(
           '✓ logged in; keychain unavailable — token stored in PLAINTEXT at ' +
-            '~/.looper/auth.json (mode 0600). Consider a keychain-equipped machine.',
+            '~/.loopdog/auth.json (mode 0600). Consider a keychain-equipped machine.',
         );
       }
       maybeChainConnect(opts.connect);
@@ -87,10 +87,10 @@ export function registerLogin(program: Command): void {
         // no gh
       }
       if (!method && (await readStoredToken())) {
-        method = 'stored token (looper login device flow)';
+        method = 'stored token (loopdog login device flow)';
       }
       if (!method) {
-        console.log('auth: NOT logged in — run `looper login`');
+        console.log('auth: NOT logged in — run `loopdog login`');
         process.exitCode = 3;
         return;
       }
@@ -99,9 +99,9 @@ export function registerLogin(program: Command): void {
       // Provider-connection state (best effort, via gh secret list).
       try {
         const { stdout } = await execFileAsync('gh', ['secret', 'list']);
-        const hasClaude = stdout.includes('LOOPER_CLAUDE_FIRE_URL');
+        const hasClaude = stdout.includes('LOOPDOG_CLAUDE_FIRE_URL');
         console.log(
-          `claude: ${hasClaude ? 'connected (fire URL secret present)' : 'not connected — looper connect claude'}`,
+          `claude: ${hasClaude ? 'connected (fire URL secret present)' : 'not connected — loopdog connect claude'}`,
         );
       } catch {
         console.log('claude: unknown (run inside a repo with gh to check secrets)');
@@ -111,7 +111,7 @@ export function registerLogin(program: Command): void {
 
   program
     .command('logout')
-    .description('remove the stored looper token (idempotent)')
+    .description('remove the stored loopdog token (idempotent)')
     .action(async () => {
       await deleteStoredToken();
       console.log('✓ logged out (stored token removed; gh auth, if any, is untouched).');
@@ -124,8 +124,8 @@ function maybeChainConnect(connect: boolean): void {
     [
       '',
       'Next: connect your provider subscription —',
-      '  looper connect claude    (manual routine import: /fire URL + token)',
-      '  looper connect codex     (provider GitHub App authorization)',
+      '  loopdog connect claude    (manual routine import: /fire URL + token)',
+      '  loopdog connect codex     (provider GitHub App authorization)',
     ].join('\n'),
   );
 }

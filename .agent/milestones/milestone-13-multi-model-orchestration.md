@@ -2,14 +2,14 @@
 
 Status: verified
 
-> Background: [Looper Architecture](../../docs/architecture.md) — "Multi-model
+> Background: [Loopdog Architecture](../../docs/architecture.md) — "Multi-model
 > orchestration." Builds on the provider abstraction (M05) and telemetry (M12).
 
 ## Objective
 
 Go beyond single-provider selection: ensemble-with-judge on high-risk tickets,
 outcome-driven routing that sends task types to the stronger model, and explicit
-cross-provider review policy — so looper exploits model diversity where it pays.
+cross-provider review policy — so loopdog exploits model diversity where it pays.
 
 ## Guiding Decisions
 
@@ -35,7 +35,7 @@ cross-provider review policy — so looper exploits model diversity where it pay
 - [x] Cross-provider review pairings are configurable per risk tier
   (review_policy.by_tier + implementer-exclusion enforced in reviewerFor).
 - [x] `tier:core` tickets run dual-attempt with a judge selecting the result
-  (ensemble fan-out → looper-winner verdict → winner advance, loser retired).
+  (ensemble fan-out → loopdog-winner verdict → winner advance, loser retired).
 - [x] Routing is backed by logged per-model outcomes with sample floors and is
   configurable (routing.mode/min_samples; explainable reasons per choice).
 - [x] Cost/quality tuning is pure config (routing.prefer + pins), no code.

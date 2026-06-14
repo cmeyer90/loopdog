@@ -1,10 +1,10 @@
-import type { DispatchHandle, GitHubPort, IngestResult, PullRequestSnapshot } from '@looper/core';
+import type { DispatchHandle, GitHubPort, IngestResult, PullRequestSnapshot } from '@loopdog/core';
 
 /**
  * Dispatch → result correlation (task 0073): defense in depth, never one
  * signal. Match precedence over candidate PRs:
- *   1. branch name  `looper/<loop>/<issue>-<run_id>`   (agent-obeyed)
- *   2. PR body trailer `looper-run: <run_id>`           (agent-obeyed backup)
+ *   1. branch name  `loopdog/<loop>/<issue>-<run_id>`   (agent-obeyed)
+ *   2. PR body trailer `loopdog-run: <run_id>`           (agent-obeyed backup)
  *   3. issue ref `#<issue>` + bot author + opened after dispatch (weakest)
  * A PR matching none is NOT ours. The dispatch-time signal in the handle
  * (session id / comment id / workflow run) is the authoritative record of the

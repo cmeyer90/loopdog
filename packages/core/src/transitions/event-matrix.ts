@@ -1,6 +1,6 @@
 /**
  * The canonical V1 event/action matrix (task 0008) — the single source of
- * truth for: config validation (0006), event normalization (`@looper/github`),
+ * truth for: config validation (0006), event normalization (`@loopdog/github`),
  * trigger-source filtering (0081), custom-loop authoring (0078), and fake
  * GitHub event emission (0083). Workflow `types:` are pinned to this; unknown
  * events/actions are ignored fail-closed.

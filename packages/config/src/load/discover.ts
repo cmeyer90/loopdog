@@ -3,8 +3,8 @@ import { join } from 'node:path';
 import { parse } from 'yaml';
 
 /**
- * Config discovery (task 0006): the root `.looper/looper.yml` plus one folder
- * per loop under `.looper/loops/<name>/` (`loop.yml` + sibling `prompt.md`).
+ * Config discovery (task 0006): the root `.loopdog/loopdog.yml` plus one folder
+ * per loop under `.loopdog/loops/<name>/` (`loop.yml` + sibling `prompt.md`).
  * Discovery only READS and parses YAML; schema + cross-field validation is
  * `validate.ts`. No loop config is ever read from a monolithic file.
  */
@@ -19,7 +19,7 @@ export interface DiscoveredTree {
 }
 
 export interface DiscoveredLoop {
-  /** Folder name under `.looper/loops/`. */
+  /** Folder name under `.loopdog/loops/`. */
   folder: string;
   file: string;
   raw: unknown | null;
@@ -29,10 +29,10 @@ export interface DiscoveredLoop {
   parseError?: string;
 }
 
-export const LOOPER_DIR = '.looper';
+export const LOOPDOG_DIR = '.loopdog';
 
 export async function discoverConfig(repoDir: string): Promise<DiscoveredTree> {
-  const rootFile = join(repoDir, LOOPER_DIR, 'looper.yml');
+  const rootFile = join(repoDir, LOOPDOG_DIR, 'loopdog.yml');
   let root: unknown | null = null;
   try {
     root = parse(await readFile(rootFile, 'utf8'));
@@ -40,7 +40,7 @@ export async function discoverConfig(repoDir: string): Promise<DiscoveredTree> {
     root = null;
   }
 
-  const loopsDir = join(repoDir, LOOPER_DIR, 'loops');
+  const loopsDir = join(repoDir, LOOPDOG_DIR, 'loops');
   const loops: DiscoveredLoop[] = [];
   let folders: string[] = [];
   try {

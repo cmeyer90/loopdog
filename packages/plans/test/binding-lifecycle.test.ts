@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { FakeGitHub } from '@looper/testing';
+import { FakeGitHub } from '@loopdog/testing';
 import {
   RepoPlanStoreFiles,
   archivePlan,
@@ -13,9 +13,9 @@ import {
   resolveBinding,
   updatePlan,
   verifyPlan,
-} from '@looper/plans';
-import { renderCriteriaBlock, stateLabel, statusForLabels } from '@looper/core';
-import type { RunRecord } from '@looper/core';
+} from '@loopdog/plans';
+import { renderCriteriaBlock, stateLabel, statusForLabels } from '@loopdog/core';
+import type { RunRecord } from '@loopdog/core';
 
 const repo = { owner: 'o', repo: 'r' };
 const ref = { ...repo, number: 7 };
@@ -27,13 +27,13 @@ const GROOMED_BODY = [
   renderCriteriaBlock([
     { text: 'limits at 100 req/min', validation: { kind: 'test', ref: 'rl.test.ts' }, met: false },
   ]),
-  '<!-- looper:scope -->api only<!-- /looper:scope -->',
+  '<!-- loopdog:scope -->api only<!-- /loopdog:scope -->',
 ].join('\n');
 
 async function setup() {
   const gh = new FakeGitHub();
   await gh.ensureBranch(repo, 'main');
-  const files = new RepoPlanStoreFiles(gh, repo, 'main', '.looper/plans');
+  const files = new RepoPlanStoreFiles(gh, repo, 'main', '.loopdog/plans');
   const issue = gh.seedIssue({
     ref,
     title: 'Add rate limiting',
@@ -59,7 +59,7 @@ describe('issue <-> plan binding (0016)', () => {
     const { gh, files, issue } = await setup();
     const binding = await bindIssue(gh, files, issue);
     expect(binding.taskId).toBe('0001');
-    expect(binding.path).toBe('.looper/plans/tasks/0001-add-rate-limiting.md');
+    expect(binding.path).toBe('.loopdog/plans/tasks/0001-add-rate-limiting.md');
 
     const plan = (await files.read(binding.path))!.content;
     expect(plan).toContain('# 0001 Add rate limiting');
@@ -73,15 +73,15 @@ describe('issue <-> plan binding (0016)', () => {
     // idempotent: same binding, no duplicate file/marker
     const again = await bindIssue(gh, files, await gh.getIssue(ref));
     expect(again).toEqual({ ...binding, issue: ref });
-    expect((await files.list('.looper/plans/tasks')).length).toBe(1);
-    expect(((await gh.getIssue(ref)).body.match(/looper:plan/g) ?? []).length).toBe(1);
+    expect((await files.list('.loopdog/plans/tasks')).length).toBe(1);
+    expect(((await gh.getIssue(ref)).body.match(/loopdog:plan/g) ?? []).length).toBe(1);
   });
 
   it('resolves both directions and falls back to the Issue: field scan', async () => {
     const { gh, files, issue } = await setup();
     const binding = await bindIssue(gh, files, issue);
     // strip the marker (hand-edited issue) → fallback scan still resolves
-    const stripped = (await gh.getIssue(ref)).body.replace(/<!-- looper:plan .* -->\n?/, '');
+    const stripped = (await gh.getIssue(ref)).body.replace(/<!-- loopdog:plan .* -->\n?/, '');
     await gh.updateIssueBody(ref, stripped);
     const resolved = await resolveBinding(files, await gh.getIssue(ref));
     expect(resolved?.taskId).toBe(binding.taskId);
@@ -164,8 +164,8 @@ describe('index maintenance (0018)', () => {
     await bindIssue(gh, files, second);
 
     const first = await rebuildIndexes(files);
-    expect(first.wrote).toContain('.looper/plans/plan-index.md');
-    const index = (await files.read('.looper/plans/plan-index.md'))!.content;
+    expect(first.wrote).toContain('.loopdog/plans/plan-index.md');
+    const index = (await files.read('.loopdog/plans/plan-index.md'))!.content;
     expect(index).toContain('| 0001 | planned |');
     expect(index).toContain('| 0002 | planned |');
     expect(index).toContain('**Next task id:** `0003`');
@@ -175,19 +175,19 @@ describe('index maintenance (0018)', () => {
     expect(again.wrote).toEqual([]);
 
     // hand-edit → rebuild is authoritative
-    await files.write('.looper/plans/plan-index.md', 'vandalized', 'hand edit');
+    await files.write('.loopdog/plans/plan-index.md', 'vandalized', 'hand edit');
     const healed = await rebuildIndexes(files);
-    expect(healed.wrote).toContain('.looper/plans/plan-index.md');
-    expect((await files.read('.looper/plans/plan-index.md'))!.content).toContain('| 0002 |');
+    expect(healed.wrote).toContain('.loopdog/plans/plan-index.md');
+    expect((await files.read('.loopdog/plans/plan-index.md'))!.content).toContain('| 0002 |');
   });
 
   it('skips malformed plans with a report and projects the rest', async () => {
     const { gh, files, issue } = await setup();
     await bindIssue(gh, files, issue);
-    await files.write('.looper/plans/tasks/garbage.md', 'not a plan at all', 'bad file');
+    await files.write('.loopdog/plans/tasks/garbage.md', 'not a plan at all', 'bad file');
     const result = await rebuildIndexes(files);
-    expect(result.skipped).toContain('.looper/plans/tasks/garbage.md');
-    expect((await files.read('.looper/plans/plan-index.md'))!.content).toContain('| 0001 |');
+    expect(result.skipped).toContain('.loopdog/plans/tasks/garbage.md');
+    expect((await files.read('.loopdog/plans/plan-index.md'))!.content).toContain('| 0001 |');
   });
 
   it('archived plans leave the active index and ids are never reused', async () => {
@@ -195,9 +195,9 @@ describe('index maintenance (0018)', () => {
     const binding = await bindIssue(gh, files, issue);
     await archivePlan(files, binding, 'merged');
     await rebuildIndexes(files);
-    const active = (await files.read('.looper/plans/plan-index.md'))!.content;
+    const active = (await files.read('.loopdog/plans/plan-index.md'))!.content;
     expect(active).not.toContain('| 0001 | merged |');
-    const archiveIndex = (await files.read('.looper/plans/archive/plan-index.md'))!.content;
+    const archiveIndex = (await files.read('.loopdog/plans/archive/plan-index.md'))!.content;
     expect(archiveIndex).toContain('| 0001 | merged |');
     expect(active).toContain('**Next task id:** `0002`'); // id retired, not reused
     expect(await files.nextTaskId()).toBe('0002');

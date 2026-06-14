@@ -1,12 +1,12 @@
-import type { IssueSnapshot, LoopDefinition, WorkBrief } from '@looper/core';
-import { CRITERIA_CLOSE, CRITERIA_OPEN } from '@looper/core';
-import { compose } from '@looper/backends';
-import type { ComposeContext, PromptSource } from '@looper/backends';
+import type { IssueSnapshot, LoopDefinition, WorkBrief } from '@loopdog/core';
+import { CRITERIA_CLOSE, CRITERIA_OPEN } from '@loopdog/core';
+import { compose } from '@loopdog/backends';
+import type { ComposeContext, PromptSource } from '@loopdog/backends';
 
 /**
  * The runner's compose step (0012 → 0022): builds the ComposeContext and
- * delegates to the artifact composer in `@looper/backends`. Prompt text comes
- * from versioned repo files (or built-ins) — never from looper source.
+ * delegates to the artifact composer in `@loopdog/backends`. Prompt text comes
+ * from versioned repo files (or built-ins) — never from loopdog source.
  */
 export interface BriefInputs {
   loop: LoopDefinition;
@@ -15,14 +15,14 @@ export interface BriefInputs {
   source: PromptSource;
   defaultBranch?: string | undefined;
   testCmd?: string | undefined;
-  /** Recent non-looper comments (clarification replies, review feedback). */
+  /** Recent non-loopdog comments (clarification replies, review feedback). */
   comments?: ReadonlyArray<{ author: string; body: string }> | undefined;
 }
 
 export async function composeWorkBrief(inputs: BriefInputs): Promise<WorkBrief> {
   const { loop, item, runId } = inputs;
-  const expectedBranch = `looper/${loop.name}/${item.ref.number}-${runId}`;
-  const expectedTrailer = `looper-run: ${runId}`;
+  const expectedBranch = `loopdog/${loop.name}/${item.ref.number}-${runId}`;
+  const expectedTrailer = `loopdog-run: ${runId}`;
 
   const ctx: ComposeContext = {
     issue: { number: item.ref.number, title: item.title, body: item.body },

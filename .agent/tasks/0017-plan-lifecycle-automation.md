@@ -16,15 +16,15 @@ Part of [Milestone 04](../milestones/milestone-04-durable-planning-store.md):
 "Plans are opened, updated, and archived automatically as items move." Builds on
 the portable plan format (0015) and the issue↔plan binding + label↔Status
 mirroring (0016); feeds the index maintenance (0018). This is the *behavioral*
-layer over the `PlanStore` port (defined in @looper/core, 0094) — it sequences
+layer over the `PlanStore` port (defined in @loopdog/core, 0094) — it sequences
 the read/write calls that 0015/0016 expose into lifecycle transitions the runner
 invokes. See [architecture](../../docs/architecture.md) "Durable planning store
 (plans-as-memory)" — "the plan store is the durable memory; GitHub is the control
 plane; they never disagree" — and the planning protocol in [`../PLANS.md`](../PLANS.md)
 (status values, completion rules, archive rules), which this task automates.
 
-Lands primarily in **@looper/plans** (the lifecycle operations over `PlanStore`)
-with wiring in **@looper/runtime** (the transition pipeline + sweep call these
+Lands primarily in **@loopdog/plans** (the lifecycle operations over `PlanStore`)
+with wiring in **@loopdog/runtime** (the transition pipeline + sweep call these
 operations as part of write-back).
 
 ## Scope
@@ -42,7 +42,7 @@ operations as part of write-back).
 
 ### Technical detail
 
-**Lifecycle operations** (in `@looper/plans/src/lifecycle/`, called by the
+**Lifecycle operations** (in `@loopdog/plans/src/lifecycle/`, called by the
 runtime pipeline, not by loop authors):
 
 | Operation | Triggered on transition | Plan mutation |
@@ -53,8 +53,8 @@ runtime pipeline, not by loop authors):
 | `archive(item, terminal)` | `merged` / `abandoned` | set `Status: merged`/`abandoned`; move the file `tasks/<id>.md` → `archive/tasks/<id>.md` per the archive rules; leave a tombstone ref so the binding (0016) still resolves |
 
 **Status ↔ transition mapping** lives as a single table in
-`@looper/core/src/state-machine` (the states already exist there, 0011) so the
-plan `Status` and the `looper:state/*` label derive from the *same* source — they
+`@loopdog/core/src/state-machine` (the states already exist there, 0011) so the
+plan `Status` and the `loopdog:state/*` label derive from the *same* source — they
 cannot drift. `update` does **not** touch `Status`; only `open`/`verify`/`archive`
 move it, mirroring 0016's label writes in the same transition.
 
@@ -103,8 +103,8 @@ human directly on the issue → the sweep (0076) reconciles by calling `archive`
 
 ## Implementation Checklist
 
-- [x] Add the Status↔transition mapping in `@looper/core/src/state-machine`.
-- [x] Implement `open`/`update`/`verify`/`archive` in `@looper/plans/src/lifecycle/`
+- [x] Add the Status↔transition mapping in `@loopdog/core/src/state-machine`.
+- [x] Implement `open`/`update`/`verify`/`archive` in `@loopdog/plans/src/lifecycle/`
       over the `PlanStore` port.
 - [x] Make `update` append-only + `run_id`-keyed; make all four idempotent off plan
       content.
@@ -120,7 +120,7 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 
 ```bash
 # replace with this repo's checks
-npm test -w @looper/plans
+npm test -w @loopdog/plans
 # scenario: groom→open, dispatch→update, DoD→verify, merge→archive on fake GitHub
 # double-apply each transition (event then sweep) → single effect (idempotent)
 ```
@@ -143,7 +143,7 @@ npm test -w @looper/plans
 - Status↔transition derivation: the runner's plan sync calls lifecycle by
   target state and then `reconcileBinding` (0016) so Status always re-derives
   from the same core mapping as the label.
-- Archive leaves a `<!-- looper:tombstone -->` pointer at the active path so
+- Archive leaves a `<!-- loopdog:tombstone -->` pointer at the active path so
   the issue marker still resolves; tombstones are excluded from projections.
 - **Deviation recorded:** the spec's single-commit atomic write-back is
   relaxed in V1 — the contents API commits per file, and every operation is
@@ -158,12 +158,12 @@ invariant). Defenses: one shared Status↔label mapping, idempotent content-addr
 operations, and single-commit write-back; the sweep (0076) is the backstop that
 reconciles any missed transition. Rollback is safe because operations are
 idempotent and `update` is append-only — re-running never corrupts a plan; revert
-the wiring in @looper/runtime to disable lifecycle automation while leaving the
+the wiring in @loopdog/runtime to disable lifecycle automation while leaving the
 `PlanStore` reads intact.
 
 ## Final Summary
 
-`@looper/plans/lifecycle`: the four loop-driven operations (open/update/
+`@loopdog/plans/lifecycle`: the four loop-driven operations (open/update/
 verify/archive), content-keyed idempotent, run_id-keyed append-only logging,
 tombstoned archives — wired into the runner's write-back (`plan-sync`) behind
 the mode EffectGate, with the sweep covering missed transitions. The wiring

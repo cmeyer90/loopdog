@@ -1,11 +1,11 @@
 import type { Command } from 'commander';
-import { loadConfig } from '@looper/config';
-import { compose, createFsPromptSource, lintPrompt, resolveArtifact } from '@looper/runtime';
-import type { ComposeContext } from '@looper/runtime';
+import { loadConfig } from '@loopdog/config';
+import { compose, createFsPromptSource, lintPrompt, resolveArtifact } from '@loopdog/runtime';
+import type { ComposeContext } from '@loopdog/runtime';
 import { findTemplatesDir } from '../assets.js';
 
 /**
- * `looper prompts show|diff|lint` (tasks 0022/0072): see exactly what would be
+ * `loopdog prompts show|diff|lint` (tasks 0022/0072): see exactly what would be
  * sent before it spends quota; diff adopter overrides against built-ins; lint
  * placeholders, policy refs, and secret literals.
  */
@@ -28,7 +28,7 @@ export function registerPrompts(program: Command): void {
         runId: 'run-<sample>',
         loop: loop.name,
         backend: opts.backend ?? loop.backend,
-        branch: `looper/${loop.name}/<issue>-<run-id>`,
+        branch: `loopdog/${loop.name}/<issue>-<run-id>`,
         repo: { defaultBranch: 'main' },
         adapter: {},
       };
@@ -76,7 +76,7 @@ export function registerPrompts(program: Command): void {
     .action(async (opts: { path: string }) => {
       const result = await loadConfig(opts.path);
       if (!result.ok || !result.config) {
-        console.error('config invalid — fix `looper config validate` first.');
+        console.error('config invalid — fix `loopdog config validate` first.');
         process.exitCode = 1;
         return;
       }
@@ -108,11 +108,11 @@ export function registerPrompts(program: Command): void {
     .action(async (loopName: string, opts: { path: string }) => {
       const { join } = await import('node:path');
       const { access } = await import('node:fs/promises');
-      const file = join(opts.path, '.looper', 'loops', loopName, 'prompt.md');
+      const file = join(opts.path, '.loopdog', 'loops', loopName, 'prompt.md');
       try {
         await access(file);
       } catch {
-        console.error(`no prompt at ${file} (run \`looper loops new ${loopName}\` first)`);
+        console.error(`no prompt at ${file} (run \`loopdog loops new ${loopName}\` first)`);
         process.exitCode = 2;
         return;
       }
@@ -130,7 +130,7 @@ export function registerPrompts(program: Command): void {
         child.on('exit', () => resolve());
       });
       console.log(
-        `✓ edited ${file}; \`looper prompts lint\` then commit (the diff is the version log).`,
+        `✓ edited ${file}; \`loopdog prompts lint\` then commit (the diff is the version log).`,
       );
     });
 
@@ -141,7 +141,7 @@ export function registerPrompts(program: Command): void {
     .option('--limit <n>', 'max commits', '10')
     .description('git history of the loop prompt (prompts are versioned artifacts)')
     .action(async (loopName: string, opts: { path: string; limit: string }) => {
-      const relPath = `.looper/loops/${loopName}/prompt.md`;
+      const relPath = `.loopdog/loops/${loopName}/prompt.md`;
       const { execFile } = await import('node:child_process');
       const { promisify } = await import('node:util');
       try {

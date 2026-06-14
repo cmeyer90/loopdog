@@ -20,15 +20,15 @@ promotion"* ([architecture](../../docs/architecture.md) "Design tenets" and "V1
 scope — non-negotiable: human-gated by default"). The `mode` field is declared by
 the config schema (0006: `defaults.mode`, per-loop `mode`); this task owns its
 **enforcement** inside the transition runner (M03 · 0012) at the `dispatch`/`write`
-steps, the dry-run **preview** rendering the CLI surfaces consume (`looper init`
-preview 0007, `looper run --dry-run` 0070), and the `looper promote` command.
-Lands primarily in `@looper/runtime` (the effect boundary) and `@looper/cli`
-(preview + promote); `@looper/core` gains the mode type + the gate that maps a mode
+steps, the dry-run **preview** rendering the CLI surfaces consume (`loopdog init`
+preview 0007, `loopdog run --dry-run` 0070), and the `loopdog promote` command.
+Lands primarily in `@loopdog/runtime` (the effect boundary) and `@loopdog/cli`
+(preview + promote); `@loopdog/core` gains the mode type + the gate that maps a mode
 to allowed effects.
 
 ## Scope
 
-- Define the `Mode` enum and an **effect classifier** in `@looper/core`: a pure
+- Define the `Mode` enum and an **effect classifier** in `@loopdog/core`: a pure
   function `allowedEffects(mode) -> { dispatch, mutateRepo, comment }`.
 - Enforce mode in the runtime pipeline (0012): wrap every outward effect
   (`dispatch`, label/PR/plan writes, comments) so a mode short-circuits or
@@ -38,7 +38,7 @@ to allowed effects.
   the CLI renders, with the composed brief shown but never sent.
 - Default resolution: missing `mode` ⇒ `dry-run` (root `defaults.mode` > per-loop;
   same precedence as 0006); new scaffolds (0007) ship `dry-run`.
-- `looper promote <loop> --to act|suggest` — the explicit, audited promotion path
+- `loopdog promote <loop> --to act|suggest` — the explicit, audited promotion path
   that edits the loop's `mode`; refuses to promote `tier:core` loops to auto-`act`
   merges.
 
@@ -49,10 +49,10 @@ Three modes, increasing autonomy:
 | mode | reads GitHub | composes brief | posts a comment | mutates labels/PRs/plan | dispatches the backend |
 |---|---|---|---|---|---|
 | `dry-run` | yes | yes (preview only) | **no** | no | no |
-| `suggest` | yes | yes | yes (one advisory comment: "would do X; run `looper promote`") | no | no |
+| `suggest` | yes | yes | yes (one advisory comment: "would do X; run `loopdog promote`") | no | no |
 | `act` | yes | yes | yes | yes | yes |
 
-`@looper/core` (`core/src/gates/`) adds:
+`@loopdog/core` (`core/src/gates/`) adds:
 
 ```ts
 export type Mode = "dry-run" | "suggest" | "act";
@@ -71,12 +71,12 @@ unaware, and the decorator is the only thing that reads `mode`. The run record
 mirrors what actually happened, in `dry-run`/`suggest` it is the would-be plan.
 
 `suggest` posts exactly **one** idempotent advisory comment per (item, transition)
-— keyed by a `looper-suggest:<loop>:<from>-><to>` hidden marker so the sweep (0076)
-re-running doesn't spam (reuse the comment-upsert primitive in `@looper/github`).
+— keyed by a `loopdog-suggest:<loop>:<from>-><to>` hidden marker so the sweep (0076)
+re-running doesn't spam (reuse the comment-upsert primitive in `@loopdog/github`).
 
-`looper promote <loop> --to <mode>` (cli `commands/loops.ts` or a thin
+`loopdog promote <loop> --to <mode>` (cli `commands/loops.ts` or a thin
 `commands/promote.ts`): loads the loop config (0006), validates the target mode, and
-rewrites `.looper/loops/<loop>/loop.yml`'s `mode:` in place (comment-preserving YAML
+rewrites `.loopdog/loops/<loop>/loop.yml`'s `mode:` in place (comment-preserving YAML
 edit). Guard: refuse `--to act` when the loop's `gates.tier` is `core` and the
 transition is a merge (graduated auto-merge stays human-gated forever — architecture
 "verification ladder"). Promotion prints a one-line audit summary; the YAML diff is
@@ -106,17 +106,17 @@ loosen, the configured mode.
 - [x] In `dry-run`, a full transition run performs **zero** GitHub writes and **zero** backend dispatches, yet emits a complete `PlannedAction[]` including the composed brief.
 - [x] In `suggest`, the run posts exactly one idempotent advisory comment (no spam under repeated sweep invocation) and still performs no writes/dispatch.
 - [x] In `act`, the run dispatches and writes as normal, and the run record's `planned` mirrors the real effects.
-- [x] `looper promote <loop> --to act` rewrites `mode:` in the loop file and is refused for a `tier:core` merge loop.
+- [x] `loopdog promote <loop> --to act` rewrites `mode:` in the loop file and is refused for a `tier:core` merge loop.
 - [x] A kill-switch/budget pause overrides even `act`; CLI `--dry-run` cannot be loosened by config.
 - [x] Relevant checks pass.
 
 ## Implementation Checklist
 
-- [x] Add `Mode`, `EffectPolicy`, `allowedEffects`, `PlannedAction` to `@looper/core` gates.
-- [x] Implement the mode-aware port decorator in `@looper/runtime` and resolve `mode` once per run.
+- [x] Add `Mode`, `EffectPolicy`, `allowedEffects`, `PlannedAction` to `@loopdog/core` gates.
+- [x] Implement the mode-aware port decorator in `@loopdog/runtime` and resolve `mode` once per run.
 - [x] Extend the run record (0012) with `mode` + `planned`; emit it in every mode.
-- [x] Implement the idempotent advisory-comment upsert for `suggest` in `@looper/github`.
-- [x] Implement `looper promote` (comment-preserving YAML edit + tier:core guard + audit line).
+- [x] Implement the idempotent advisory-comment upsert for `suggest` in `@loopdog/github`.
+- [x] Implement `loopdog promote` (comment-preserving YAML edit + tier:core guard + audit line).
 - [x] Ensure scaffolds (0007) default to `dry-run`; document the promotion path in adopter docs.
 
 ## Test Plan
@@ -130,7 +130,7 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
 # scenario (fake-github 0083 + fake backend): run a loop in dry-run → assert 0 writes/0 dispatch, PlannedAction[] populated
 # scenario: run in suggest twice (event then sweep) → exactly one advisory comment
 # scenario: run in act → effects applied, planned mirrors them
-# cli: looper promote groom --to act → file rewritten; promote a tier:core merge loop → refused
+# cli: loopdog promote groom --to act → file rewritten; promote a tier:core merge loop → refused
 ```
 
 ## Verification Log
@@ -141,7 +141,7 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
   idempotent advisory comment under repeated sweeps, no other writes; act =
   effects applied with planned mirroring them (all prior act-path tests);
   forceDryRun tightens an act loop for one invocation.
-- 2026-06-09: `looper promote` end-to-end: groom dry-run→act rewrites `mode:`
+- 2026-06-09: `loopdog promote` end-to-end: groom dry-run→act rewrites `mode:`
   in place preserving comments; tier:core merge loop promotion refused with
   exit 1 and file untouched.
 
@@ -155,11 +155,11 @@ Tests run via the repo's vitest runner; behavioral tests use the M18 fakes
   would mis-resolve against simulated writes; the gate keeps mode in one place
   with honest semantics.
 - Run records carry `mode` + `planned[]` in every mode. Telemetry-store choice
-  is the composition root's: act uses the `looper/telemetry` branch store; a
+  is the composition root's: act uses the `loopdog/telemetry` branch store; a
   dry-run invocation forced via `--dry-run` still records through whatever
   store was injected (job summary in Actions).
-- Suggest marker key: `looper-suggest:<loop>:<from>-><to>` via the
-  `upsertMarkedComment` primitive in `@looper/github`.
+- Suggest marker key: `loopdog-suggest:<loop>:<from>-><to>` via the
+  `upsertMarkedComment` primitive in `@loopdog/github`.
 - Promote guard boundary: refuse `--to act` when `gates.tier === 'core'` AND
   `transition.to === 'merged'` — auto-merge of core paths is the dial a loop
   never turns itself.
@@ -180,6 +180,6 @@ promote commit) to return any loop to observe-only.
 Three modes (`dry-run | suggest | act`) with `allowedEffects` in core, a
 single EffectGate boundary in the runner recording `PlannedAction[]` on every
 run record, idempotent suggest advisories, scaffold-default dry-run (0007),
-the tighten-only `--dry-run` override, and the audited `looper promote`
+the tighten-only `--dry-run` override, and the audited `loopdog promote`
 command with the tier:core merge guard. Proven side-effect-free by zero-
 mutation fake-GitHub assertions.

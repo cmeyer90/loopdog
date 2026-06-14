@@ -242,5 +242,5 @@ function expandDays(days: string[]): Set<number> {
   return out;
 }
 
-export const NEEDS_APPROVAL_LABEL = 'looper:needs-approval';
-export const DEFAULT_APPROVAL_LABEL = 'looper:approved';
+export const NEEDS_APPROVAL_LABEL = 'loopdog:needs-approval';
+export const DEFAULT_APPROVAL_LABEL = 'loopdog:approved';

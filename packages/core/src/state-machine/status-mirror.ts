@@ -28,11 +28,11 @@ const STATE_TO_STATUS: Record<string, PlanStatus> = {
 };
 
 const OFF_RAMP_TO_STATUS: Record<string, PlanStatus> = {
-  'looper:blocked': 'blocked',
-  'looper:needs-human': 'blocked',
-  'looper:stuck': 'blocked',
-  'looper:quarantine': 'blocked',
-  'looper:abandoned': 'abandoned',
+  'loopdog:blocked': 'blocked',
+  'loopdog:needs-human': 'blocked',
+  'loopdog:stuck': 'blocked',
+  'loopdog:quarantine': 'blocked',
+  'loopdog:abandoned': 'abandoned',
 };
 
 /** Plan Status for a lifecycle/off-ramp label; null for labels that never map. */

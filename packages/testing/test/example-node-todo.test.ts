@@ -3,11 +3,11 @@ import { cp, mkdtemp, readFile, rm, writeFile } from 'node:fs/promises';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
-import { loadConfig } from '@looper/config';
-import { stateLabel } from '@looper/core';
-import { FakeBackend, FakeGitHub, InMemoryRunRecordStore, VirtualClock } from '@looper/testing';
-import { assertGolden, runScenario, type ScenarioWorld } from '@looper/testing';
-import type { ControllerOptions } from '@looper/runtime';
+import { loadConfig } from '@loopdog/config';
+import { stateLabel } from '@loopdog/core';
+import { FakeBackend, FakeGitHub, InMemoryRunRecordStore, VirtualClock } from '@loopdog/testing';
+import { assertGolden, runScenario, type ScenarioWorld } from '@loopdog/testing';
+import type { ControllerOptions } from '@loopdog/runtime';
 
 /**
  * The runnable example attachment (M14 · 0061): the committed
@@ -26,18 +26,18 @@ afterAll(async () => {
 
 const GROOMED = [
   'Add a `clear()` method that removes all completed todos.',
-  '<!-- looper:acceptance-criteria -->',
+  '<!-- loopdog:acceptance-criteria -->',
   '- [ ] clear() removes done items, keeps open ones (test: test/todo.test.js)',
-  '<!-- /looper:acceptance-criteria -->',
-  '<!-- looper:scope -->src/todo.js only<!-- /looper:scope -->',
+  '<!-- /loopdog:acceptance-criteria -->',
+  '<!-- loopdog:scope -->src/todo.js only<!-- /loopdog:scope -->',
 ].join('\n');
 
 describe('example attachment: node-todo (0061)', () => {
-  it('the committed example config validates against the @looper/config schema', async () => {
+  it('the committed example config validates against the @loopdog/config schema', async () => {
     const result = await loadConfig(EXAMPLE);
     expect(result.ok).toBe(true);
     // It ships SAFE: dry-run by default (the maintainer promotes per loop).
-    const root = await readFile(join(EXAMPLE, '.looper', 'looper.yml'), 'utf8');
+    const root = await readFile(join(EXAMPLE, '.loopdog', 'loopdog.yml'), 'utf8');
     expect(root).toMatch(/mode:\s*dry-run/);
     // And references no API key / PAT anywhere in the attachment.
     expect(root).not.toMatch(/ghp_|sk-ant-|api[_-]?key/i);
@@ -45,10 +45,10 @@ describe('example attachment: node-todo (0061)', () => {
 
   it('drives node-todo through groom→implement on fakes to a golden (act for the trace)', async () => {
     // Copy the example attachment and promote to act so the trace shows effects.
-    const dir = await mkdtemp(join(tmpdir(), 'looper-example-'));
+    const dir = await mkdtemp(join(tmpdir(), 'loopdog-example-'));
     dirs.push(dir);
-    await cp(join(EXAMPLE, '.looper'), join(dir, '.looper'), { recursive: true });
-    const rootYml = join(dir, '.looper', 'looper.yml');
+    await cp(join(EXAMPLE, '.loopdog'), join(dir, '.loopdog'), { recursive: true });
+    const rootYml = join(dir, '.loopdog', 'loopdog.yml');
     await writeFile(
       rootYml,
       (await readFile(rootYml, 'utf8')).replace('mode: dry-run', 'mode: act'),

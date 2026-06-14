@@ -5,11 +5,11 @@ Branch: task/0062-security-and-trust-model
 
 ## Goal
 
-Publish looper's canonical **security & trust model**: a single document that
-states the threat model, looper's permissions and blast-radius guarantees, what
+Publish loopdog's canonical **security & trust model**: a single document that
+states the threat model, loopdog's permissions and blast-radius guarantees, what
 it can and cannot do to a repo, where the subscription-driving / provider-cloud
 trust boundaries lie, and the open ToS question — so a maintainer can make an
-informed decision to attach looper *before* their code, secrets, or subscription
+informed decision to attach loopdog *before* their code, secrets, or subscription
 quota are ever exposed.
 
 ## Background
@@ -17,7 +17,7 @@ quota are ever exposed.
 Part of [Milestone 14](../milestones/milestone-14-documentation-examples-and-trust.md):
 the adoption surface for an open-source tool. The milestone's guiding decision is
 that **trust is earned with an explicit threat model and a clear statement of
-what looper can and cannot do to a repo** — this task is that artifact. It fills
+what loopdog can and cannot do to a repo** — this task is that artifact. It fills
 the `trust/security.md` nav slot the docs site (0058) reserves, peer to the
 quickstart and references.
 
@@ -30,16 +30,16 @@ it**. Grounded in [architecture](../../docs/architecture.md) "Identity & secrets
 authorization (M17 · 0079), budgets/kill-switch (M12 · 0050), the cron sweep
 (0076), provider auth & scoped identity (0029), and the secret-residency doc
 (0032) — it does not implement them. The ToS spike (0092) is referenced as a
-flagged adoption risk, never as resolved. No new `@looper/*` runtime code beyond
+flagged adoption risk, never as resolved. No new `@loopdog/*` runtime code beyond
 docs plus one drift-guard assertion.
 
 ## Scope
 
 - A new doc, `docs/security.md` (surfaced as `trust/security.md` in the 0058 nav),
   structured as: trust model → threat model → permission & blast-radius
-  guarantees → "what looper can / cannot do" → subscription & provider-cloud
+  guarantees → "what loopdog can / cannot do" → subscription & provider-cloud
   residency (link 0032) → ToS posture → responsible-disclosure.
-- A **permission inventory**: every identity/token looper uses, its scope, and
+- A **permission inventory**: every identity/token loopdog uses, its scope, and
   who grants it (Actions `GITHUB_TOKEN`, optional PAT, Codex provider GitHub App,
   Claude routine `/fire` token, optional Claude GitHub App only for
   Claude-native GitHub triggers, local OAuth device-flow client_id).
@@ -47,7 +47,7 @@ docs plus one drift-guard assertion.
   `mode: dry-run` default, risk tiers (`tier:safe` graduated auto-merge,
   `tier:core` human-gated forever via CODEOWNERS), `blast_radius.max_files`,
   budgets/quota/kill-switch (0050), authorization gate (0079), and the rule
-  *looper can never edit the checks (ladder rung 2) that gate it*.
+  *loopdog can never edit the checks (ladder rung 2) that gate it*.
 - A **threat model** enumerating attacker classes, the asset each targets, the
   control that mitigates it, and the honest residual risk.
 - A drift guard: a presence/link assertion so the doc cannot silently rot or
@@ -63,12 +63,12 @@ Security**.
 
 **Document spine (sections, in order):**
 
-1. **Trust model in one paragraph** — looper is *pure orchestration*: it
+1. **Trust model in one paragraph** — loopdog is *pure orchestration*: it
    manipulates GitHub state and dispatches to provider cloud agents; **it makes
-   no direct model API calls on the primary path** and runs **no looper-hosted
+   no direct model API calls on the primary path** and runs **no loopdog-hosted
    infrastructure** (no database, queue, or hosted backend — GitHub is the store
    and the bus). The non-negotiables (architecture "V1 scope"): human-gated by
-   default; secrets never in model-visible context looper controls; **looper can
+   default; secrets never in model-visible context loopdog controls; **loopdog can
    never edit the checks that gate it**; the provider-cloud boundary stated
    plainly.
 
@@ -80,11 +80,11 @@ Security**.
    | Actions `GITHUB_TOKEN` | repo-scoped, auto | GitHub Actions | adopter's runner | read/write labels, issues, PRs, comments, claims; **does not re-trigger workflows** (handoffs go via the cron sweep, 0076) |
    | Optional PAT (fine-grained) | adopter-chosen | adopter, in repo secret | adopter's runner | instant controller→controller handoff (else sweep pace) — **never required** |
    | Codex provider GitHub App | provider-defined | provider, adopter authorizes repos | provider | lets Codex respond to `@codex` mentions and open PRs on the user's subscription |
-   | Claude routine fire URL/token | routine `/fire` only | adopter, generated in Claude web UI | looper keychain / Actions secret refs | dispatch a user-created Claude routine |
-   | Optional Claude GitHub App | provider-defined | provider, adopter authorizes repos | provider | required only for Claude-native GitHub triggers outside Looper's primary `/fire` path |
+   | Claude routine fire URL/token | routine `/fire` only | adopter, generated in Claude web UI | loopdog keychain / Actions secret refs | dispatch a user-created Claude routine |
+   | Optional Claude GitHub App | provider-defined | provider, adopter authorizes repos | provider | required only for Claude-native GitHub triggers outside Loopdog's primary `/fire` path |
    | Local OAuth `client_id` (device flow) | user login | public OAuth App (no private key, no hosted backend) | OS keychain | authenticate the CLI user locally; *or* reuse existing `gh`/git auth |
 
-   State plainly: **there is no looper GitHub App in V1** and **no model API key
+   State plainly: **there is no loopdog GitHub App in V1** and **no model API key
    on the primary path** (keys exist only on the optional self-hosted backend).
 
 3. **Blast-radius guarantees** — the layered controls that bound damage, each
@@ -97,13 +97,13 @@ Security**.
    | Bounded change size | `blast_radius.max_files`; scope-exceeding work halts + escalates | M09 |
    | Spend & quota ceilings + kill switch | budgets/quota/kill-switch checked **before any dispatch** | M12 · 0050 |
    | Who/what/when may trigger | authorization gate; untrusted trigger is *parked* (`needs-approval`), no spend, until a trusted human releases it | M17 · 0079 |
-   | Untamperable verification | merge gated on the adopter's CI (rung 2) + branch protection + CODEOWNERS, which **looper cannot edit** | M10 |
+   | Untamperable verification | merge gated on the adopter's CI (rung 2) + branch protection + CODEOWNERS, which **loopdog cannot edit** | M10 |
 
    Make the load-bearing invariant explicit: the verification ladder + risk tiers
    are **the one dial a loop must never tune about itself** (architecture "The
    adopter's end-state job").
 
-4. **What looper *can* / *cannot* do** — two plain lists. *Can*: read/write the
+4. **What loopdog *can* / *cannot* do** — two plain lists. *Can*: read/write the
    repo's issues/PRs/labels/comments as `GITHUB_TOKEN`; dispatch the user's
    subscription quota to a provider; open/advance PRs through the gated lifecycle;
    write durable plans into the repo. *Cannot*: edit the required checks / branch
@@ -118,15 +118,15 @@ Security**.
    |---|---|---|---|
    | Anonymous issue/comment on a public repo | subscription quota drain; prompt-injection into a work cell | authorization gate parks untrusted triggers before any dispatch (0079); budgets/kill-switch (0050) | injection inside an *approved* item's content still reaches the work cell — bounded by blast-radius + gates |
    | Untrusted/self-approving actor | bypass the gate | a self-approval by the untrusted actor doesn't count; strictest rule wins (0079) | misconfigured allowlist widens the surface — documented as the adopter's responsibility |
-   | Compromised/malicious PR from a work cell | merge bad code | rungs 2–4 (adopter CI, cross-provider review, deploy smoke) gate merge; looper can't edit them | a *human* approving `tier:core` is the backstop; CI coverage gaps are the adopter's risk |
-   | Provider/cloud-sandbox compromise | adopter's code + project secrets in provider infra | residency boundary stated honestly (0032); secrets scrubbed from looper-controlled context; ZDR orgs use self-hosted | the residency decision is the adopter's to accept (link 0032) |
-   | Stolen `GITHUB_TOKEN` / PAT / routine token | repo write / dispatch | tokens are short-lived (`GITHUB_TOKEN`) or adopter-held; least privilege; no looper-hosted secret store | a leaked PAT grants instant-handoff scope until revoked |
-   | Supply-chain (looper itself) | the controller code | open-source + pinned deps + the dogfood example (0061) | standard OSS supply-chain risk; out of scope to fully solve here |
+   | Compromised/malicious PR from a work cell | merge bad code | rungs 2–4 (adopter CI, cross-provider review, deploy smoke) gate merge; loopdog can't edit them | a *human* approving `tier:core` is the backstop; CI coverage gaps are the adopter's risk |
+   | Provider/cloud-sandbox compromise | adopter's code + project secrets in provider infra | residency boundary stated honestly (0032); secrets scrubbed from loopdog-controlled context; ZDR orgs use self-hosted | the residency decision is the adopter's to accept (link 0032) |
+   | Stolen `GITHUB_TOKEN` / PAT / routine token | repo write / dispatch | tokens are short-lived (`GITHUB_TOKEN`) or adopter-held; least privilege; no loopdog-hosted secret store | a leaked PAT grants instant-handoff scope until revoked |
+   | Supply-chain (loopdog itself) | the controller code | open-source + pinned deps + the dogfood example (0061) | standard OSS supply-chain risk; out of scope to fully solve here |
 
 6. **Subscription-driving & provider-cloud residency** — restate the trust
    boundary *briefly* and **link 0032 (`docs/trust-boundary.md`)** for the full
    residency matrix and the Codex secret-stripping / no-internet constraints. Make
-   the enforceable rule prominent: looper never serializes a long-lived credential
+   the enforceable rule prominent: loopdog never serializes a long-lived credential
    into prompts, plans, comments, run records, logs, or other model/GitHub-visible
    artifacts it controls.
 
@@ -154,17 +154,17 @@ no provider calls, fully offline.
 - The ToS legal determination itself (0092).
 - The docs-site shell, nav, and Pages deploy (0058) — this fills its `trust`
   slot only.
-- Any new looper GitHub App, API-keys on the primary path, or database/queue.
+- Any new loopdog GitHub App, API-keys on the primary path, or database/queue.
 
 ## Acceptance Criteria
 
 - [x] `docs/security.md` exists and opens with the one-paragraph trust model and
       the V1 non-negotiables (human-gated default; secrets never in
-      looper-controlled model context; looper can never edit the gating checks).
+      loopdog-controlled model context; loopdog can never edit the gating checks).
 - [x] A permission inventory names every identity (Actions `GITHUB_TOKEN`,
       optional PAT, Codex provider App, Claude routine fire URL/token, optional
       Claude GitHub App for native triggers, OAuth `client_id`) with scope and
-      grantor, and states **no looper GitHub App** and **no model API key on the
+      grantor, and states **no loopdog GitHub App** and **no model API key on the
       primary path**.
 - [x] A blast-radius guarantee table maps each control (dry-run default, risk
       tiers, `max_files`, budgets/kill-switch, authorization gate, untamperable CI)
@@ -172,7 +172,7 @@ no provider calls, fully offline.
 - [x] A threat model enumerates attacker classes with target asset, mitigating
       control, and honest residual risk — including quota drain, prompt injection,
       and provider-cloud compromise.
-- [x] Explicit "what looper can / cannot do" lists, including that it cannot edit
+- [x] Explicit "what loopdog can / cannot do" lists, including that it cannot edit
       the checks that gate it and cannot merge `tier:core` without a human.
 - [x] The provider-cloud residency boundary is stated and **links 0032**; the ToS
       question links 0092 as an open risk without implying resolution.
@@ -210,10 +210,10 @@ docs task, so the only test is the drift guard plus a relative-link check.
 
 - 2026-06-12: `docs/security.md` published — opens with the one-paragraph trust
   model + the three V1 non-negotiables (human-gated default; secrets never in
-  model context; Looper can't edit its own gates). Includes a permission inventory
+  model context; Loopdog can't edit its own gates). Includes a permission inventory
   (every identity: `GITHUB_TOKEN`, optional PAT, Codex App, Claude routine fire
   URL/token, optional Claude App, OAuth client_id, and the self-hosted
-  `LOOPER_MODEL_API_KEY` as the only key-holder — explicitly "no Looper GitHub
+  `LOOPDOG_MODEL_API_KEY` as the only key-holder — explicitly "no Loopdog GitHub
   App, no model API key on the primary path"), a blast-radius guarantee table
   (control → owning milestone), a threat-model table (attacker → asset →
   mitigation → residual risk, incl. quota drain, prompt injection, provider-cloud
@@ -240,7 +240,7 @@ assertion).
 ## Risks / Rollback
 
 The main risk is an **overconfident or stale** security doc: adopters grant
-looper access to their repo and subscription based on it, so any guarantee it
+loopdog access to their repo and subscription based on it, so any guarantee it
 states must be one the code actually enforces (link the owning task for each).
 Keep the threat model honest about residual risk, link the ToS spike (0092)
 rather than implying resolution, and let the drift guard enforce the doc's
@@ -249,8 +249,8 @@ one assertion; delete the file and the guard to revert with no runtime impact.
 
 ## Final Summary
 
-`docs/security.md` is Looper's canonical trust model: the one-paragraph model +
-V1 non-negotiables, a full permission inventory (no Looper App, no primary-path
+`docs/security.md` is Loopdog's canonical trust model: the one-paragraph model +
+V1 non-negotiables, a full permission inventory (no Loopdog App, no primary-path
 API key), a blast-radius guarantee table mapped to owning milestones, a threat
 model with honest residual risk, explicit can/cannot lists, the provider-cloud
 residency boundary (links 0032), the open ToS question (links 0092), and a

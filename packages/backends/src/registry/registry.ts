@@ -1,4 +1,4 @@
-import type { ExecutionBackend, GitHubPort } from '@looper/core';
+import type { ExecutionBackend, GitHubPort } from '@loopdog/core';
 import { ClaudeBackend } from '../claude/claude-backend.js';
 import { CodexBackend } from '../codex/codex-backend.js';
 import { SelfHostedBackend } from '../self-hosted/self-hosted-backend.js';

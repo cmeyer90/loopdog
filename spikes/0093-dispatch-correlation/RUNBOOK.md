@@ -1,28 +1,28 @@
 # Spike 0093 Runbook — operator steps (requires real subscriptions)
 
 > These are the manual steps a human operator performs once per provider. They
-> are also the draft of what `looper connect claude` / `looper connect codex`
+> are also the draft of what `loopdog connect claude` / `loopdog connect codex`
 > must display (tasks 0010 / 0077 / 0020 / 0023 consume this).
 
 ## 1. Claude — manual routine / API-trigger import
 
 Per current public Claude docs (2026-06): routines and their API triggers are
 created **in the Claude web UI only**; the CLI cannot create or revoke API
-trigger tokens. The spike therefore validates the *import* flow looper V1 uses:
+trigger tokens. The spike therefore validates the *import* flow loopdog V1 uses:
 
 1. In Claude (web), open **Claude Code → Routines** and create a routine:
    - **Repository:** select the scratch repo (authorize Anthropic's GitHub App
-     for it if prompted — this is the *provider's* App, not a looper App).
+     for it if prompted — this is the *provider's* App, not a loopdog App).
    - **Cloud environment:** pick/create one; note that env vars and setup
-     scripts for the sandbox are configured **here**, in Claude — looper never
+     scripts for the sandbox are configured **here**, in Claude — loopdog never
      forwards Actions secrets at `/fire` time.
    - **Branch-push permissions:** allow the routine to create branches/PRs.
    - **Prompt:** any placeholder; the `/fire` call supplies the real brief.
 2. Add an **API trigger** to the routine. Claude shows a per-routine **fire
    URL** and a **bearer token** (shown once — copy it now).
 3. In the scratch repo: `Settings → Secrets and variables → Actions` and add:
-   - `LOOPER_SPIKE_CLAUDE_FIRE_URL` = the fire URL
-   - `LOOPER_SPIKE_CLAUDE_FIRE_TOKEN` = the bearer token
+   - `LOOPDOG_SPIKE_CLAUDE_FIRE_URL` = the fire URL
+   - `LOOPDOG_SPIKE_CLAUDE_FIRE_TOKEN` = the bearer token
 4. Record while you're there (feeds 0020/0023):
    - Can the token be **regenerated**? What happens to the old one?
    - Can the trigger be **revoked**? Does the routine survive token rotation?
@@ -40,7 +40,7 @@ trigger tokens. The spike therefore validates the *import* flow looper V1 uses:
 2. Open issue #1 in the scratch repo (any text).
 3. Run the `spike-codex-mention` workflow. **Key observation:** does Codex
    react to a mention posted by `github-actions[bot]`? If it ignores
-   bot-authored mentions, record that — looper would need the mention to come
+   bot-authored mentions, record that — loopdog would need the mention to come
    from a user-attributable identity (e.g. a PAT), which changes 0021.
    - Control: post the same `@codex …` text manually as the human; confirm
      Codex reacts to that.

@@ -6,7 +6,7 @@ import {
   dopplerSecretStore,
   oidcSecretStore,
   vaultSecretStore,
-} from '@looper/backends';
+} from '@loopdog/backends';
 
 /** A fetch stub that ignores its args and returns a fixed JSON payload. */
 const fakeFetch = (payload: unknown, init: { ok?: boolean; status?: number } = {}): typeof fetch =>

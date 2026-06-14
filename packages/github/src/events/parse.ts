@@ -1,10 +1,10 @@
-import type { AuthorAssociation, TriggerEvent } from '@looper/core';
+import type { AuthorAssociation, TriggerEvent } from '@loopdog/core';
 
 /**
  * Normalize a GitHub Actions event into a `TriggerEvent` (task 0008 input).
  * Input is the workflow's event name + the webhook payload (the file at
  * `GITHUB_EVENT_PATH`). Unknown events normalize with item/actor when present,
- * so custom loops can subscribe to events looper doesn't special-case.
+ * so custom loops can subscribe to events loopdog doesn't special-case.
  */
 export function parseActionsEvent(
   eventName: string,

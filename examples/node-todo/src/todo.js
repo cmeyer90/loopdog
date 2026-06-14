@@ -1,4 +1,4 @@
-// A tiny in-memory todo list — the "real app" Looper is attached to in this
+// A tiny in-memory todo list — the "real app" Loopdog is attached to in this
 // example. Deliberately small: the point is the *attachment*, not the app.
 
 export class TodoList {

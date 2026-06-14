@@ -1,4 +1,4 @@
-import type { BackendCapabilities } from '@looper/core';
+import type { BackendCapabilities } from '@loopdog/core';
 
 /**
  * Drift report (task 0087): when the live smoke fails, classify WHAT drifted so

@@ -3,7 +3,7 @@
 Status: blocked (agent-completable scope done; live-subscription trials operator-pending)
 
 > The gating step **before** any build. A four-lens plan review converged on this:
-> looper's whole thesis rests on external bets — subscription ToS, the Claude
+> loopdog's whole thesis rests on external bets — subscription ToS, the Claude
 > `/fire` beta API, and dispatch→PR correlation reliability — that must be
 > validated before committing to M01+. A negative result here *changes the
 > product*, so these run first, cheap, and throwaway. The Claude bootstrap question
@@ -12,7 +12,7 @@ Status: blocked (agent-completable scope done; live-subscription trials operator
 
 ## Objective
 
-De-risk the two external unknowns that could invalidate looper's premise before
+De-risk the two external unknowns that could invalidate loopdog's premise before
 writing production code: (1) whether unattended third-party orchestration of a
 user's paid **subscription** is permitted, and (2) whether the subscription
 **dispatch + PR-correlation** primitives actually work headlessly.
@@ -27,11 +27,11 @@ user's paid **subscription** is permitted, and (2) whether the subscription
   on these (0020, 0073) already say "spike it early."
 - **Claude implementation path is manual routine import.** Current Claude docs say
   API triggers are added to an existing routine from the web UI and that the CLI
-  cannot create or revoke API tokens. Looper therefore does not attempt to create
-  Claude routines or tokens programmatically in V1. `looper connect claude` guides
+  cannot create or revoke API tokens. Loopdog therefore does not attempt to create
+  Claude routines or tokens programmatically in V1. `loopdog connect claude` guides
   the user to create a Claude routine, select the repo/environment, add an API
   trigger, and import the `/fire` URL + bearer token as GitHub Actions secrets.
-  Looper then calls `/fire` from Actions using those secret refs. This still uses
+  Loopdog then calls `/fire` from Actions using those secret refs. This still uses
   the user's Claude subscription; it is not the `ANTHROPIC_API_KEY` GitHub Action
   path.
 

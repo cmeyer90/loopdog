@@ -20,7 +20,7 @@ in-memory `GitHubPort`, 0084 gives scripted/replay `Backend`s, and this task add
 the driver + assertion layer that runs the unmodified `runtime` controller against
 them. It exercises the transition runner (0012), dispatch→ingest correlation
 (0073), the events-vs-sweep handoff (M02 · 0076), and gates (M03 · 0014). Lives in
-the dev-only `@looper/testing` package (`scenario/` + `fixtures/`). See
+the dev-only `@loopdog/testing` package (`scenario/` + `fixtures/`). See
 [codebase](../../docs/codebase.md) "Testing strategy" and
 [architecture](../../docs/architecture.md) "Triggering."
 
@@ -38,9 +38,9 @@ the dev-only `@looper/testing` package (`scenario/` + `fixtures/`). See
 
 ### Technical detail
 
-**Lands in:** `@looper/testing` — `src/scenario/` (runner, format, snapshot,
+**Lands in:** `@loopdog/testing` — `src/scenario/` (runner, format, snapshot,
 golden-store) and `src/fixtures/` (canned scenarios + their goldens). Imports the
-real `@looper/runtime` controller and the `@looper/core` port types; injects the
+real `@loopdog/runtime` controller and the `@loopdog/core` port types; injects the
 0083 `FakeGitHub` and 0084 fake/replay `Backend`s. No production package depends on
 `testing`.
 
@@ -53,10 +53,10 @@ loops: [groom, implement]             # built-in loop assets loaded from runtime
 backend: { groom: fake, implement: fake }   # fake | replay:<cassette> (0084)
 initial:
   issues:
-    - { number: 142, title: "Add /health endpoint", labels: [looper:state/new],
+    - { number: 142, title: "Add /health endpoint", labels: [loopdog:state/new],
         author: { login: alice, association: COLLABORATOR } }
 steps:
-  - event: { kind: issues, action: labeled, issue: 142, label: looper:state/new }
+  - event: { kind: issues, action: labeled, issue: 142, label: loopdog:state/new }
   - sweep: {}                          # cron reconcile pass (carries token→token handoff)
   - event: { kind: pull_request, action: opened, pr: 7 }   # provider agent's PR (0073)
   - sweep: {}
@@ -83,12 +83,12 @@ code is unchanged; only the leaves are fakes. Loop assets come from
 (`fixtures/goldens/<name>.golden.yml` or `.json`), serialized in canonical order:
 
 ```yaml
-labels: { "142": [looper:state/in-review] }
+labels: { "142": [loopdog:state/in-review] }
 prs:
-  - { number: 7, head: "looper/implement/142-run_91c", base: main,
+  - { number: 7, head: "loopdog/implement/142-run_91c", base: main,
       trailer_run: run_91c, links_issue: 142, state: open }
 comments:
-  - { target: issue/142, author: looper, body_digest: "sha256:…" }   # body redacted→digest
+  - { target: issue/142, author: loopdog, body_digest: "sha256:…" }   # body redacted→digest
 plan:
   ".agent/tasks/0142-add-health-endpoint.md": "sha256:…"             # plan files by content digest
 runs:
@@ -106,7 +106,7 @@ debug flag prints full text on diff; (c) collections sorted by stable key
 tokens) are dropped or normalized; (e) backend nondeterminism is removed because
 the fake/replay backend (0084) is itself deterministic.
 
-**Golden store + update mode:** `LOOPER_UPDATE_GOLDENS=1` (or `vitest -u`) rewrites
+**Golden store + update mode:** `LOOPDOG_UPDATE_GOLDENS=1` (or `vitest -u`) rewrites
 goldens from the observed end-state; default mode compares and, on mismatch, throws
 with a unified, field-level diff (added/removed/changed keys). A missing golden in
 compare mode is a failure, not an auto-create, so new scenarios are reviewed.
@@ -146,7 +146,7 @@ on this runner.
 - [x] Golden snapshot captures labels, PRs, comments, plan files, and run-records,
       serialized in canonical order with free-text redacted to digests.
 - [x] Compare mode fails on drift with a readable field-level diff; update mode
-      (`LOOPER_UPDATE_GOLDENS=1`) rewrites goldens; a missing golden fails in
+      (`LOOPDOG_UPDATE_GOLDENS=1`) rewrites goldens; a missing golden fails in
       compare mode.
 - [x] Running the same scenario twice (same seed) yields byte-identical goldens.
 - [x] The same scenario over a `replay` backend (0084) and the scripted fake
@@ -166,14 +166,14 @@ on this runner.
 
 ## Test Plan
 
-Tests run via vitest in `@looper/testing`; all behavior uses the M18 fakes
+Tests run via vitest in `@loopdog/testing`; all behavior uses the M18 fakes
 (0083/0084) — no real quota, no network.
 
 ```bash
 # run the scenario suite (self-tests of the runner + the starter scenarios)
-pnpm --filter @looper/testing test
+pnpm --filter @loopdog/testing test
 # regenerate goldens after an intended behavior change, then review the diff
-LOOPER_UPDATE_GOLDENS=1 pnpm --filter @looper/testing test
+LOOPDOG_UPDATE_GOLDENS=1 pnpm --filter @loopdog/testing test
 ```
 
 Self-tests assert: determinism (two runs → identical golden), compare-mode failure
@@ -190,7 +190,7 @@ fake-vs-replay golden equality.
   written transition advances only on the next sweep (no-retrigger); a DoR-less
   item is never implemented (gate block); and the same scenario over a
   `ReplayBackend` cassette yields the SAME golden as the scripted fake
-  (fake-vs-replay equality). `assertGolden` honors `LOOPER_UPDATE_GOLDENS=1`
+  (fake-vs-replay equality). `assertGolden` honors `LOOPDOG_UPDATE_GOLDENS=1`
   (rewrite) vs compare (a missing golden fails loudly with the create hint).
 
 ## Decisions
@@ -231,5 +231,5 @@ A declarative scenario runner drives the unmodified controller over the fakes an
 snapshots end-state to a canonical, digest-redacted golden — proving whole loops
 deterministically, offline, zero quota, with drift failing CI. Starter scenarios
 cover the implement happy path, idempotent re-delivery, the no-retrigger sweep
-handoff, a DoR gate block, and fake-vs-replay golden equality; `LOOPER_UPDATE_
+handoff, a DoR gate block, and fake-vs-replay golden equality; `LOOPDOG_UPDATE_
 GOLDENS=1` rewrites, compare-mode fails on drift with a readable diff.

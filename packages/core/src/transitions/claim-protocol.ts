@@ -6,10 +6,10 @@ import {
 
 /**
  * Pure claim-protocol logic (task 0013). GitHub has no transactions, so the
- * claim is label-based optimistic concurrency: add `looper:claimed-by/<run>`
+ * claim is label-based optimistic concurrency: add `loopdog:claimed-by/<run>`
  * + assign the bot, then RE-READ; if more than one claim marker is present
  * (lost race), the lexicographically lowest run id wins and losers release.
- * The IO wrapper lives in `@looper/github` (claims/).
+ * The IO wrapper lives in `@loopdog/github` (claims/).
  */
 
 /**

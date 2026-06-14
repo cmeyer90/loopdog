@@ -85,7 +85,7 @@ Backend:
 
 ## Decisions
 
-- Signatures (in `@looper/core/ports/backend.ts`): `capabilities():
+- Signatures (in `@loopdog/core/ports/backend.ts`): `capabilities():
   BackendCapabilities`, `dispatch(brief: WorkBrief): Promise<DispatchHandle>`
   (async — returns immediately with the dispatch-time correlation signal),
   `ingest(handle): Promise<IngestResult>` (non-blocking poll; `pending` until
@@ -100,7 +100,7 @@ Backend:
   (claude-session | codex-mention | workflow-run | local-process) per the 0093
   dual-signal decision.
 - Conformance harness = the shared backend test suite + the FakeBackend in
-  `@looper/testing` (the M06-0028-style kit for backends).
+  `@loopdog/testing` (the M06-0028-style kit for backends).
 
 ## Risks / Rollback
 

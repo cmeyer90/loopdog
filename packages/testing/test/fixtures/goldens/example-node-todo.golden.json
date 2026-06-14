@@ -1,12 +1,12 @@
 {
   "labels": {
-    "42": ["looper:state/in-review"],
-    "9001": ["looper:state/in-review"]
+    "42": ["loopdog:state/in-review"],
+    "9001": ["loopdog:state/in-review"]
   },
   "prs": [
     {
       "number": 9001,
-      "head": "looper/implement/42-run-implement-42-a1-229e8e1a",
+      "head": "loopdog/implement/42-run-implement-42-a1-229e8e1a",
       "base": "main",
       "state": "open",
       "merged": false,
@@ -16,12 +16,12 @@
   "comments": [
     {
       "target": "#42",
-      "author": "looper",
-      "bodyDigest": "sha256:4d2435aab3239a2f"
+      "author": "loopdog",
+      "bodyDigest": "sha256:8ae94b1fe8962ad9"
     }
   ],
   "plan": {
-    ".looper/plans/tasks/0001-add-todolist-clear.md": "sha256:dc9a926a5bcffa44"
+    ".loopdog/plans/tasks/0001-add-todolist-clear.md": "sha256:b4a60d1622ad74b7"
   },
   "runs": [
     {

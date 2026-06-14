@@ -24,10 +24,10 @@ export function killSwitchGate(state: {
   labelPresent: boolean;
 }): GuardVerdict {
   if (state.variableSet) {
-    return { allowed: false, guard: 'kill-switch', reason: 'repo variable LOOPER_STOP is set' };
+    return { allowed: false, guard: 'kill-switch', reason: 'repo variable LOOPDOG_STOP is set' };
   }
   if (state.labelPresent) {
-    return { allowed: false, guard: 'kill-switch', reason: 'looper:stop label present' };
+    return { allowed: false, guard: 'kill-switch', reason: 'loopdog:stop label present' };
   }
   return { allowed: true };
 }
@@ -155,7 +155,7 @@ export function backoffUntil(
   return new Date(now.getTime() + delay * 1000).toISOString();
 }
 
-export const NOT_BEFORE_PREFIX = 'looper:not-before/';
+export const NOT_BEFORE_PREFIX = 'loopdog:not-before/';
 
 export function notBeforeLabel(until: string): string {
   return `${NOT_BEFORE_PREFIX}${until}`;

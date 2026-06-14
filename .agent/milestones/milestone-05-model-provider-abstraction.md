@@ -2,10 +2,10 @@
 
 Status: verified (live provider round-trips operator-pending per M00)
 
-> Background: [Looper Architecture](../../docs/architecture.md) — "Execution
+> Background: [Loopdog Architecture](../../docs/architecture.md) — "Execution
 > model: orchestrate provider cloud agents over GitHub" and "Verified provider
-> capabilities." This is the milestone that makes looper subscription-native.
-> Lands in `@looper/backends` (interface in `@looper/core`) — see
+> capabilities." This is the milestone that makes loopdog subscription-native.
+> Lands in `@loopdog/backends` (interface in `@loopdog/core`) — see
 > [Codebase Layout](../../docs/codebase.md).
 
 ## Objective
@@ -13,7 +13,7 @@ Status: verified (live provider round-trips operator-pending per M00)
 Define one execution-backend contract — dispatch a work cell with a brief, then
 ingest its resulting PR — and implement it for the **Claude** and **Codex**
 subscription cloud agents (the primary path) plus an optional **self-hosted/API**
-backend. Loops are written once and run on either provider. Looper makes no direct
+backend. Loops are written once and run on either provider. Loopdog makes no direct
 model API calls on the primary path.
 
 ## Guiding Decisions
@@ -22,7 +22,7 @@ model API calls on the primary path.
   dispatched through the provider's subscription-native surface (Codex:
   `@codex` mention/assignment only — no cloud REST API; Claude: imported routine
   API `/fire` URL + bearer token. Claude-native schedule/GitHub event triggers
-  exist but are configured in Claude and are not Looper's primary dispatch path).
+  exist but are configured in Claude and are not Loopdog's primary dispatch path).
 - The backend interface is `dispatch(brief) → ingest(PR/result)`. The controller
   composes the brief and gates the result; the provider sandbox runs the work.
 - Backends are config-selected and may differ per loop (implement on one, review
@@ -53,7 +53,7 @@ model API calls on the primary path.
   subscription backends (Claude, Codex) and the optional self-hosted backend
   (+ the scripted fake — four conforming implementations).
 - [x] A loop can dispatch work to a provider cloud agent and ingest the
-  resulting PR, with no direct model API call by looper on the primary path
+  resulting PR, with no direct model API call by loopdog on the primary path
   (proven offline against the fakes; live round-trips are the 0093 operator
   items).
 - [x] Backends are selectable per loop and per stage (implement vs. review)
@@ -70,6 +70,6 @@ model API calls on the primary path.
   backends suites (correlation precedence + guards, claude /fire with pinned
   beta header, codex mention + review verdict, self-hosted worker dispatch
   with name-only key custody, composer + lint, selection/auth table).
-- 2026-06-09: `looper prompts show/diff/lint` smoke-tested on a scaffolded
+- 2026-06-09: `loopdog prompts show/diff/lint` smoke-tested on a scaffolded
   repo; the controller now builds the default registry internally so the CLI
   stays inside its dependency boundary.

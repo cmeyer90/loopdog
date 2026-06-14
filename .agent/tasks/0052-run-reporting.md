@@ -8,7 +8,7 @@ Branch: claude/laughing-johnson-8a7944
 Make every controller invocation legible with **zero hosted infra**: render each
 run's transitions, steps, cost/quota, and outcome into the GitHub Actions **job
 summary** and a single idempotent **issue/PR comment**, so an operator sees what
-looper did — and why — straight from the GitHub UI, no CLI or dashboard required.
+loopdog did — and why — straight from the GitHub UI, no CLI or dashboard required.
 
 ## Background
 
@@ -18,7 +18,7 @@ issue/PR comments + the CLI (M16); an optional dashboard is additive."* See
 [architecture](../../docs/architecture.md#observability-cost--safety) ("Run
 reporting with no hosted UI") and [codebase](../../docs/codebase.md) — reporting is
 a thin **render layer over the run record** (M03 · 0012) emitted by the transition
-runner, living in `@looper/runtime` (`runtime/src/telemetry/`). It is the
+runner, living in `@loopdog/runtime` (`runtime/src/telemetry/`). It is the
 *human-facing* projection of the same data the CLI (M16 · 0069) and routing
 (M13) consume; it adds **no new store** (GitHub is the only store). It is downstream
 of the budget/kill-switch park (0050), stuck-detection escalation (0051), and the
@@ -28,9 +28,9 @@ are 0053; this task **consumes** that record and **does not** define storage.
 
 ## Scope
 
-- A pure **report formatter** in `@looper/core` that turns one run record (and an
+- A pure **report formatter** in `@loopdog/core` that turns one run record (and an
   optional small set of recent runs) into Markdown blocks (summary + comment body).
-- A runtime **reporter** in `@looper/runtime` that, at the end of each invocation,
+- A runtime **reporter** in `@loopdog/runtime` that, at the end of each invocation,
   writes the Markdown to the Actions job summary and upserts the per-item comment.
 - A stable **comment-anchor** scheme so a re-run updates the same comment in place
   rather than spamming the thread.
@@ -40,14 +40,14 @@ are 0053; this task **consumes** that record and **does not** define storage.
 
 ### Technical detail
 
-**Lands in:** the pure formatter + types in `@looper/core`
+**Lands in:** the pure formatter + types in `@loopdog/core`
 (`core/src/run-record/report.ts` — IO-free, beside the run-record types from 0012);
-the effectful writer in `@looper/runtime` (`runtime/src/telemetry/reporter.ts`),
+the effectful writer in `@loopdog/runtime` (`runtime/src/telemetry/reporter.ts`),
 called by the pipeline as the final step of every invocation. No new package, no
 new IO port — the job summary is written via the `GITHUB_STEP_SUMMARY` file path
 (provided by Actions) and the comment via the existing `GitHubPort` (`upsert_comment`).
 
-**Pure formatter (`@looper/core`)** — given a `RunRecord` (0012 schema), returns
+**Pure formatter (`@loopdog/core`)** — given a `RunRecord` (0012 schema), returns
 two Markdown strings:
 
 ```ts
@@ -58,24 +58,24 @@ function renderSweep(runs: RunRecord[]): string; // one summary table for a swee
 
 - **`summaryMd`** — a heading line (`run_91c · implement · #142 · done`), a one-row
   status table (backend, trigger, duration, cost/quota, outcome→artifact), the
-  ordered **step trace** (timestamp · kind · detail, mirroring `looper runs show`
+  ordered **step trace** (timestamp · kind · detail, mirroring `loopdog runs show`
   0069), and footer links (PR, plan file, gh run, provider session). A **sweep**
   invocation that advances N items renders one table (`renderSweep`) — one row per
   run — so a cron tick produces a single digestible summary, not N walls of text.
 - **`commentMd`** — a compact, item-scoped status: current state, last run outcome,
-  cost/quota-so-far, and a `looper runs show <run>` hint. Wrapped in a hidden
+  cost/quota-so-far, and a `loopdog runs show <run>` hint. Wrapped in a hidden
   **anchor marker** so it can be found and updated:
-  `<!-- looper:report item=142 -->`.
+  `<!-- loopdog:report item=142 -->`.
 
-**Runtime reporter (`@looper/runtime`)** — `report(run, ctx)`:
+**Runtime reporter (`@loopdog/runtime`)** — `report(run, ctx)`:
 
 1. Append `summaryMd` to `process.env.GITHUB_STEP_SUMMARY` (the file Actions
    renders as the job summary). If the env var is absent (local/dry-run), write to
    stdout instead — never throw. Multiple runs in one invocation each append; a
    sweep appends one `renderSweep` table.
 2. **Upsert** the per-item comment via `GitHubPort`: list comments on the item,
-   find one whose body contains the `looper:report item=<n>` anchor, `update` it if
-   present else `create`. This keeps **exactly one** looper status comment per item.
+   find one whose body contains the `loopdog:report item=<n>` anchor, `update` it if
+   present else `create`. This keeps **exactly one** loopdog status comment per item.
 3. **Scrub** any brief snippet/step detail through the M07 leak guard before
    writing either surface.
 
@@ -89,7 +89,7 @@ function renderSweep(runs: RunRecord[]): string; // one summary table for a swee
 - **ingest** (0073): show `opened PR #143 → in-review` with the correlated PR link;
   a not-ours/`null` ingest produces **no** report (nothing happened for us).
 
-**Config (`looper.yml`, validated by zod in `@looper/config`):**
+**Config (`loopdog.yml`, validated by zod in `@loopdog/config`):**
 
 ```yaml
 reporting:
@@ -105,14 +105,14 @@ stdout, never fail the run (reporting is never a hard dependency of the transiti
 budget 0050); the anchor de-dups on the next write; (c) a run with no item (e.g. a
 pure sweep with zero advances) → emit a terse "no eligible work" summary, no
 comment; (d) very long step traces → `verbosity` caps inline steps and links to
-`looper runs show` for the full log; (e) deterministic ordering/timestamps under
+`loopdog runs show` for the full log; (e) deterministic ordering/timestamps under
 test via the M18 clock so golden snapshots are stable.
 
 ## Out Of Scope
 
 - The persisted run-record schema and per-provider telemetry **aggregation/storage**
   (M03 · 0012, M12 · 0053) — this task renders, it does not store.
-- The CLI surfaces (`looper runs list/show`, `looper status`) — M16 · 0069/0068.
+- The CLI surfaces (`loopdog runs list/show`, `loopdog status`) — M16 · 0069/0068.
 - Any hosted dashboard (additive, post-V1).
 - Defining park/escalate/correlation *behavior* (0050/0051/0073) — only rendering it.
 - Leak-guard implementation (M07) — this task reuses it.
@@ -136,7 +136,7 @@ test via the M18 clock so golden snapshots are stable.
 
 ## Implementation Checklist
 
-- [x] Add the `reporting` schema + defaults to `@looper/config` (zod).
+- [x] Add the `reporting` schema + defaults to `@loopdog/config` (zod).
 - [x] Implement the pure `renderRun`/`renderSweep` formatter + `RunReport` type in
       `core/src/run-record/report.ts` (IO-free, snapshot-tested).
 - [x] Implement the runtime `reporter` in `runtime/src/telemetry/`: job-summary

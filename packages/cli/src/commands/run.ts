@@ -4,13 +4,13 @@ import {
   parseRepoFromRemoteUrl,
   resolveGitHubAuth,
   ACTIONS_BOT,
-} from '@looper/github';
-import { TelemetryBranchStore, handleRun } from '@looper/runtime';
-import type { RepoRef } from '@looper/core';
+} from '@loopdog/github';
+import { TelemetryBranchStore, handleRun } from '@loopdog/runtime';
+import type { RepoRef } from '@loopdog/core';
 import { findTemplatesDir } from '../assets.js';
 
 /**
- * `looper run` / `looper tail` (task 0070): trigger a loop now (optionally on
+ * `loopdog run` / `loopdog tail` (task 0070): trigger a loop now (optionally on
  * one issue, optionally forced dry-run) and watch recent runs. Trigger honors
  * the same gates as automated runs — `--dry-run` only tightens, never loosens.
  */
@@ -58,6 +58,12 @@ export function registerRun(program: Command): void {
             `${r.loop} #${r.item.number}: ${r.outcome.status}` +
               (r.outcome.transition ? ` (${r.outcome.transition})` : ''),
           );
+          // Surface WHY a run failed instead of a bare "failed" (M19 taxonomy).
+          if (r.outcome.failure) {
+            console.log(`  ↳ ${r.outcome.failure.class}: ${r.outcome.failure.reason}`);
+          } else if (r.outcome.note) {
+            console.log(`  ↳ ${r.outcome.note}`); // e.g. a gate skip reason
+          }
         }
       },
     );

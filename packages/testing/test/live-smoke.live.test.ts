@@ -3,8 +3,8 @@ import { describe, expect, it } from 'vitest';
 /**
  * Tier-5 live smoke (task 0087). This file's `.live.test.ts` name keeps it OUT
  * of the per-PR run (the default `1-4` config excludes the live glob); it runs
- * only under `LOOPER_TIER=5`, gated to manual dispatch + nightly cron in
- * `.github/workflows/looper-live-smoke.yml`. It spends REAL subscription quota.
+ * only under `LOOPDOG_TIER=5`, gated to manual dispatch + nightly cron in
+ * `.github/workflows/loopdog-live-smoke.yml`. It spends REAL subscription quota.
  *
  * Without a real subscription credential it SKIPS (never fails) — so even when
  * selected it's a no-op in an unconfigured environment. Wiring it to a real
@@ -13,8 +13,8 @@ import { describe, expect, it } from 'vitest';
  * `src/live-smoke/harness.ts` and is unit-covered via the drift classifier.
  */
 const CREDENTIAL =
-  process.env['LOOPER_LIVE_SMOKE_TOKEN'] ?? process.env['CLAUDE_CODE_OAUTH_TOKEN'] ?? '';
-const SCRATCH_REPO = process.env['LOOPER_LIVE_SMOKE_REPO'] ?? '';
+  process.env['LOOPDOG_LIVE_SMOKE_TOKEN'] ?? process.env['CLAUDE_CODE_OAUTH_TOKEN'] ?? '';
+const SCRATCH_REPO = process.env['LOOPDOG_LIVE_SMOKE_REPO'] ?? '';
 const configured = CREDENTIAL.length > 0 && SCRATCH_REPO.length > 0;
 
 describe('live smoke (tier 5, real subscription)', () => {

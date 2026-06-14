@@ -1,9 +1,9 @@
-import type { GitHubPort, ItemRef } from '@looper/core';
+import type { GitHubPort, ItemRef } from '@loopdog/core';
 
-/** Attempt counter as a label (`looper:attempts/N`) — sweep-visible state for
+/** Attempt counter as a label (`loopdog:attempts/N`) — sweep-visible state for
  * stuck detection (M12 · 0051) without a side datastore. */
 
-const PREFIX = 'looper:attempts/';
+const PREFIX = 'loopdog:attempts/';
 
 export function parseAttempts(labels: readonly string[]): number {
   const label = labels.find((l) => l.startsWith(PREFIX));
@@ -36,7 +36,7 @@ export async function clearAttempts(gh: GitHubPort, item: ItemRef): Promise<void
  * stranded. Stamped by the RUNTIME at dispatch (`deps.now` + dispatch_timeout) —
  * independent of the backend's own `dispatchedAt`.
  */
-const DEADLINE_PREFIX = 'looper:dispatch-deadline/';
+const DEADLINE_PREFIX = 'loopdog:dispatch-deadline/';
 
 export function dispatchDeadlineLabel(until: string): string {
   return `${DEADLINE_PREFIX}${until}`;

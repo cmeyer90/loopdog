@@ -3,13 +3,13 @@ import { installNetworkGuard } from './network-guard.js';
 
 /**
  * Hermetic test setup (task 0087), wired as a vitest `setupFiles` entry. It
- * SELF-GATES on `LOOPER_HERMETIC=1` so it enforces in CI (where the guarantee
+ * SELF-GATES on `LOOPDOG_HERMETIC=1` so it enforces in CI (where the guarantee
  * matters) without breaking local `npm test` for a developer who happens to
  * have `GITHUB_TOKEN` exported. When enabled it:
  *   - asserts no provider/`GITHUB_TOKEN` secret is present (fail loudly), and
  *   - installs the network guard so any outbound socket is a red test.
  */
-if (process.env['LOOPER_HERMETIC'] === '1') {
+if (process.env['LOOPDOG_HERMETIC'] === '1') {
   const secrets = assertNoSecrets();
   if (!secrets.ok) {
     throw new Error(

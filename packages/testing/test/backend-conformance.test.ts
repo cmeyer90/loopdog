@@ -7,7 +7,7 @@ import {
   runBackendConformance,
   selfHostedLike,
   type Cassette,
-} from '@looper/testing';
+} from '@loopdog/testing';
 
 /**
  * Backend conformance (task 0084): the scripted fake and the replay backend

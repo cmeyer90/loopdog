@@ -1,12 +1,12 @@
 {
   "labels": {
-    "1": ["looper:state/in-review"],
-    "9001": ["looper:state/in-review"]
+    "1": ["loopdog:state/in-review"],
+    "9001": ["loopdog:state/in-review"]
   },
   "prs": [
     {
       "number": 9001,
-      "head": "looper/implement/1-run-implement-1-a1-1e70ea83",
+      "head": "loopdog/implement/1-run-implement-1-a1-1e70ea83",
       "base": "main",
       "state": "open",
       "merged": false,
@@ -16,12 +16,12 @@
   "comments": [
     {
       "target": "#1",
-      "author": "looper",
-      "bodyDigest": "sha256:1464dfa53d59c246"
+      "author": "loopdog",
+      "bodyDigest": "sha256:c3c571c3a581b005"
     }
   ],
   "plan": {
-    ".looper/plans/tasks/0001-add-rate-limiting.md": "sha256:8dcf7c8e26870184"
+    ".loopdog/plans/tasks/0001-add-rate-limiting.md": "sha256:dd1c90f989bf5e09"
   },
   "runs": [
     {
