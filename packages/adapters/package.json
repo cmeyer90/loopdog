@@ -1,6 +1,6 @@
 {
   "name": "@loopdog/adapters",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "Loopdog adapters package",
   "license": "Apache-2.0",
   "type": "module",
@@ -20,6 +20,6 @@
     "node": ">=20.0.0"
   },
   "dependencies": {
-    "@loopdog/core": "0.3.1"
+    "@loopdog/core": "0.3.2"
   }
 }
