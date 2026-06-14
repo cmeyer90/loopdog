@@ -62,6 +62,11 @@ roadmap.
   (the workflow upgrades npm). OIDC can't create a new package name, so the
   first publish is a one-time manual bootstrap. Manual fallback:
   `npm run build && npx changeset publish` + `git push --follow-tags`.
+  One-time repo setting: enable **Settings → Actions → General → Workflow
+  permissions → "Allow GitHub Actions to create and approve pull requests"** or
+  Stage 1 can't open the Version Packages PR ("GitHub Actions is not permitted to
+  create or approve pull requests"). This is a release-pipeline setting only — the
+  adopter controller never creates/approves PRs.
 - Flaky tests: quarantine with `it.skip` + `// QUARANTINE(<issue-url>): <reason>`
   and a `flaky-test` issue — never delete (see CONTRIBUTING).
 
