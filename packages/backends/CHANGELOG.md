@@ -1,5 +1,13 @@
 # @loopdog/backends
 
+## 0.5.0
+
+### Patch Changes
+
+- Updated dependencies []:
+  - @loopdog/core@0.5.0
+  - @loopdog/github@0.5.0
+
 ## 0.4.0
 
 ### Patch Changes
