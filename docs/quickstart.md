@@ -64,6 +64,12 @@ loopdog workflows            # list loopdog's workflows + whether each is enable
 loopdog workflows enable     # turn them all back on (your own `ci` is untouched)
 ```
 
+**Running an old controller?** `loopdog status` flags it when the version your
+caller workflows pin lags the CLI you have installed —
+`⚠ controller pinned v0.2.0 · CLI v0.4.0 — run loopdog upgrade to re-sync`. One
+`loopdog upgrade` floats the pins so the controller tracks each release from then
+on (new installs already float, so they auto-track out of the box).
+
 ## What's safe here
 
 - **Dry-run by default.** Every loop starts comment-only; you promote per loop.

@@ -138,4 +138,23 @@ describe('renderStatus', () => {
     expect(out).toContain('No loops configured');
     expect(out).toContain('loopdog init');
   });
+
+  it('nudges loopdog upgrade when the controller is pinned behind the CLI', () => {
+    const out = renderStatus(
+      view({ controller: { status: 'behind', pinned: '0.2.0', cli: '0.4.0' } }),
+    );
+    expect(out).toContain('controller pinned');
+    expect(out).toContain('v0.2.0');
+    expect(out).toContain('loopdog upgrade');
+  });
+
+  it('stays silent about the controller when it floats or is current', () => {
+    expect(
+      renderStatus(view({ controller: { status: 'floating', pinned: '0', cli: '0.4.0' } })),
+    ).not.toContain('controller pinned');
+    expect(
+      renderStatus(view({ controller: { status: 'current', pinned: '0.4.0', cli: '0.4.0' } })),
+    ).not.toContain('controller pinned');
+    expect(renderStatus(view())).not.toContain('controller pinned'); // undefined
+  });
 });
