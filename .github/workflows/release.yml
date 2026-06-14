@@ -7,6 +7,14 @@
 # Re-running a partially-failed publish is safe: `changeset publish` skips
 # versions that are already on the registry.
 #
+# REPO SETTING (one-time, required for Stage 1): Settings → Actions → General →
+#   Workflow permissions → enable "Allow GitHub Actions to create and approve
+#   pull requests". Without it, Stage 1 fails opening the Version Packages PR
+#   with "GitHub Actions is not permitted to create or approve pull requests".
+#   (This is a release-pipeline setting only — loopdog's adopter controller never
+#   creates or approves PRs; the provider work cells open PRs under their own
+#   identity.)
+#
 # Auth is npm Trusted Publishing (OIDC) — https://docs.npmjs.com/trusted-publishers
 # — so there is NO long-lived NPM_TOKEN secret. Requirements:
 #   - `id-token: write` (below) so the job can mint an OIDC token,

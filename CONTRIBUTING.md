@@ -47,6 +47,13 @@ job authenticates to npm via **OIDC trusted publishing** — no stored token; se
 `SECURITY.md`. Manual fallback (maintainers): `npm run build && npx changeset
 publish` while logged in (`npm login`), then `git push --follow-tags`.
 
+**One-time repo setting (maintainers):** enable **Settings → Actions → General →
+Workflow permissions → "Allow GitHub Actions to create and approve pull
+requests"**. Without it the version-PR stage fails with _"GitHub Actions is not
+permitted to create or approve pull requests."_ It only affects loopdog's own
+release pipeline; adopters never need it (the controller doesn't open or approve
+PRs — the provider work cells do, under their own identity).
+
 ## Flaky tests
 
 Never delete a flaky test. Quarantine it with `it.skip` plus a comment
