@@ -71,13 +71,25 @@ export async function ingestViaCorrelation(
   // this run's trailer (disambiguates concurrent runs). Author is NOT a signal:
   // a Claude routine posts as the USER, not a bot — requiring `Bot` here broke
   // ingestion for the whole subscription path.
+  const hasVerdict = (body: string) => /(^|\n)\s*loopdog-verdict:\s*\S+/.test(body);
   const comments = await gh.listComments(handle.item);
-  const verdicts = comments.filter((c) => /(^|\n)\s*loopdog-verdict:\s*\S+/.test(c.body));
+  const verdicts = comments.filter((c) => hasVerdict(c.body));
   const ours =
     verdicts.find((c) => c.body.includes(handle.expectedTrailer)) ?? verdicts[verdicts.length - 1];
   if (ours) {
     const matchedBy = ours.body.includes(handle.expectedTrailer) ? 'pr-trailer' : 'issue-ref';
     return { status: 'completed', commentId: ours.id, matchedBy };
+  }
+  // A reviewer may submit a formal PR REVIEW instead of an issue comment — the
+  // idiomatic way to review a PR. Scan those too (no-op / empty for issues).
+  const reviews = await gh.listReviews(handle.item).catch(() => []);
+  const reviewHits = reviews.filter((r) => hasVerdict(r.body));
+  const ourReview =
+    reviewHits.find((r) => r.body.includes(handle.expectedTrailer)) ??
+    reviewHits[reviewHits.length - 1];
+  if (ourReview) {
+    const matchedBy = ourReview.body.includes(handle.expectedTrailer) ? 'pr-trailer' : 'issue-ref';
+    return { status: 'completed', verdict: ourReview.body, matchedBy };
   }
   return { status: 'pending' };
 }

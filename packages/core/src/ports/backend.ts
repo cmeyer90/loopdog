@@ -88,6 +88,11 @@ export type IngestResult =
       status: 'completed';
       pr?: PullRequestSnapshot | undefined;
       commentId?: number | undefined;
+      /**
+       * Verdict-bearing text when the result is a formal PR review (which has no
+       * comment id to update). The runtime parses the verdict line from it.
+       */
+      verdict?: string | undefined;
       /** Which signal matched — telemetry for the 0093 honor-rate question. */
       matchedBy: 'dispatch-signal' | 'branch-name' | 'pr-trailer' | 'issue-ref';
     }

@@ -24,6 +24,9 @@ Fix the zero-infra Actions install path, surfaced by an end-to-end dogfood:
   is now author-agnostic and keys on the `loopdog-verdict:` line (the dispatch
   marker, which also carries the run trailer, is no longer mistaken for the
   result). The brief now also tells the work cell to trail its summary comment.
+- **Review verdicts in a formal PR review now ingest.** A reviewer naturally
+  submits a GitHub PR review (not an issue comment); correlation now also scans
+  `listReviews` for the verdict, plumbing it through `IngestResult.verdict`.
 - **The Claude `/fire` backend maps known errors to fixes** —
   `github_repo_access_denied`, `authentication_error`, and 429 now produce a
   one-line actionable message instead of a bare HTTP status.
