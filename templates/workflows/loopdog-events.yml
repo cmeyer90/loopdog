@@ -50,6 +50,6 @@ jobs:
     # mode. Unset secrets pass through as empty — dry-run/suggest loops and the
     # deterministic triage loop never read them. Stored by `loopdog connect`.
     secrets:
-      claude-fire-url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
-      claude-fire-token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
-      codex-mention-token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}
+      claude_fire_url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
+      claude_fire_token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
+      codex_mention_token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}

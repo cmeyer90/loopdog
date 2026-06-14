@@ -21,6 +21,6 @@ jobs:
     # The sweep carries controller->controller handoffs, so it is the path that
     # actually dispatches most loops — it needs the provider secrets too.
     secrets:
-      claude-fire-url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
-      claude-fire-token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
-      codex-mention-token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}
+      claude_fire_url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
+      claude_fire_token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
+      codex_mention_token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}

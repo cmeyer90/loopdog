@@ -14,13 +14,13 @@ on:
     # the sweep still runs (reclaim leases, advance deterministic loops) without
     # them; only model-dispatching loops in `act` mode require them.
     secrets:
-      claude-fire-url:
+      claude_fire_url:
         description: 'LOOPDOG_CLAUDE_FIRE_URL — Claude routine /fire URL'
         required: false
-      claude-fire-token:
+      claude_fire_token:
         description: 'LOOPDOG_CLAUDE_FIRE_TOKEN — Claude routine bearer token'
         required: false
-      codex-mention-token:
+      codex_mention_token:
         description: 'LOOPDOG_CODEX_MENTION_TOKEN — token that posts @codex mentions'
         required: false
 
@@ -44,9 +44,9 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ github.token }}
           # Provider auth for `act`-mode dispatch — empty when not connected.
-          LOOPDOG_CLAUDE_FIRE_URL: ${{ secrets.claude-fire-url }}
-          LOOPDOG_CLAUDE_FIRE_TOKEN: ${{ secrets.claude-fire-token }}
-          LOOPDOG_CODEX_MENTION_TOKEN: ${{ secrets.codex-mention-token }}
+          LOOPDOG_CLAUDE_FIRE_URL: ${{ secrets.claude_fire_url }}
+          LOOPDOG_CLAUDE_FIRE_TOKEN: ${{ secrets.claude_fire_token }}
+          LOOPDOG_CODEX_MENTION_TOKEN: ${{ secrets.codex_mention_token }}
         run: |
           npx --yes @loopdog/cli@${{ inputs.loopdog-version }} controller sweep \
             --repo "${{ github.repository }}"
