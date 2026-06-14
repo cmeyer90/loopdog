@@ -62,11 +62,22 @@ export async function ingestViaCorrelation(
     if (!updatedAfterDispatch) return { status: 'pending' };
     return { status: 'completed', pr: found.pr, matchedBy: found.matchedBy };
   }
-  // comment / plan-update expectations: look for a marker comment from the run.
+  // comment / plan-update expectations: find the work cell's summary comment.
+  //
+  // The completion signal is the `loopdog-verdict:` line the prompt always
+  // emits — NOT the trailer alone, because loopdog's own dispatch-marker comment
+  // carries the trailer too (matching it would silently auto-pass review). So we
+  // only consider comments that carry a verdict, then prefer the one bearing
+  // this run's trailer (disambiguates concurrent runs). Author is NOT a signal:
+  // a Claude routine posts as the USER, not a bot — requiring `Bot` here broke
+  // ingestion for the whole subscription path.
   const comments = await gh.listComments(handle.item);
-  const ours = comments.find(
-    (c) => c.body.includes(handle.expectedTrailer) && c.author.type === 'Bot',
-  );
-  if (ours) return { status: 'completed', commentId: ours.id, matchedBy: 'pr-trailer' };
+  const verdicts = comments.filter((c) => /(^|\n)\s*loopdog-verdict:\s*\S+/.test(c.body));
+  const ours =
+    verdicts.find((c) => c.body.includes(handle.expectedTrailer)) ?? verdicts[verdicts.length - 1];
+  if (ours) {
+    const matchedBy = ours.body.includes(handle.expectedTrailer) ? 'pr-trailer' : 'issue-ref';
+    return { status: 'completed', commentId: ours.id, matchedBy };
+  }
   return { status: 'pending' };
 }

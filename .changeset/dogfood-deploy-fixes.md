@@ -18,6 +18,12 @@ Fix the zero-infra Actions install path, surfaced by an end-to-end dogfood:
 - **`loopdog init` pins the scaffolded workflows** to the installed CLI version
   (the `@v<major>` reusable-workflow ref + exact `loopdog-version`) instead of a
   nonexistent `@v0.1.0` tag.
+- **Comment/plan-update results now ingest on the subscription path.** A Claude
+  routine posts as the *user*, not a bot, so the old correlation (which required
+  a `Bot` author) never matched groom/review results and they timed out. Ingest
+  is now author-agnostic and keys on the `loopdog-verdict:` line (the dispatch
+  marker, which also carries the run trailer, is no longer mistaken for the
+  result). The brief now also tells the work cell to trail its summary comment.
 - **The Claude `/fire` backend maps known errors to fixes** —
   `github_repo_access_denied`, `authentication_error`, and 429 now produce a
   one-line actionable message instead of a bare HTTP status.
