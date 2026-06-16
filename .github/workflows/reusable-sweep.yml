@@ -1,7 +1,10 @@
 # Loopdog's reusable SWEEP workflow (task 0076) — the resilience backstop.
 # Recovers webhook-missed items, carries GITHUB_TOKEN controller→controller
 # handoffs (why no loopdog GitHub App is needed), and drives time-based
-# transitions (lease reclaim, cron-due loops, hold retries).
+# transitions (lease reclaim, cron-due loops, hold retries). With the optional
+# `loopdog_pat` secret set, sweep-made transitions also re-trigger event
+# workflows, so a swept item chains onward instantly rather than waiting for the
+# next cron tick.
 name: loopdog-reusable-sweep
 on:
   workflow_call:
@@ -23,6 +26,12 @@ on:
       codex_mention_token:
         description: 'LOOPDOG_CODEX_MENTION_TOKEN — token that posts @codex mentions'
         required: false
+      loopdog_pat:
+        description: >-
+          LOOPDOG_PAT — optional fine-grained PAT (issues/PR/contents: write).
+          When set, transitions the sweep makes re-trigger event workflows so
+          swept items chain on instantly. Unset → GITHUB_TOKEN (today's behavior).
+        required: false
 
 # Least-privilege manifest (task 0029). NOT granted: actions, packages,
 # deployments, id-token, security-events. Deploy/OIDC loops opt in per-workflow.
@@ -43,6 +52,9 @@ jobs:
       - name: run loopdog controller (sweep)
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # Optional PAT: when non-empty the controller acts as it (instant
+          # handoff); empty falls through to GITHUB_TOKEN (sweep-carried).
+          LOOPDOG_PAT: ${{ secrets.loopdog_pat }}
           # Provider auth for `act`-mode dispatch — empty when not connected.
           LOOPDOG_CLAUDE_FIRE_URL: ${{ secrets.claude_fire_url }}
           LOOPDOG_CLAUDE_FIRE_TOKEN: ${{ secrets.claude_fire_token }}

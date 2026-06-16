@@ -13,6 +13,7 @@ const execFileAsync = promisify(execFile);
 
 export const CLAUDE_FIRE_URL_SECRET = 'LOOPDOG_CLAUDE_FIRE_URL';
 export const CLAUDE_FIRE_TOKEN_SECRET = 'LOOPDOG_CLAUDE_FIRE_TOKEN';
+export const PAT_SECRET = 'LOOPDOG_PAT';
 
 export function registerConnect(program: Command): void {
   const connect = program
@@ -112,6 +113,75 @@ export function registerConnect(program: Command): void {
       console.log(
         `✓ stored ${CLAUDE_FIRE_URL_SECRET} + ${CLAUDE_FIRE_TOKEN_SECRET} as Actions secrets.\n` +
           '  Rotation: regenerate the token in Claude, then re-run `loopdog connect claude`.',
+      );
+    });
+
+  connect
+    .command('cascade')
+    .description('store a fine-grained PAT (LOOPDOG_PAT) so loop handoffs fire instantly')
+    .option('--repo <owner/name>', 'repository to store the secret in (default: cwd repo)')
+    .option('--rotate', 're-import even when the secret already exists', false)
+    .action(async (opts: { repo?: string; rotate: boolean }) => {
+      // Idempotent re-run: already set → no-op unless rotating.
+      if (!opts.rotate) {
+        try {
+          const { stdout } = await execFileAsync('gh', [
+            'secret',
+            'list',
+            ...(opts.repo ? ['--repo', opts.repo] : []),
+          ]);
+          if (stdout.includes(PAT_SECRET)) {
+            console.log(
+              `✓ instant handoff already enabled (${PAT_SECRET} secret present).\n` +
+                '  To rotate: regenerate the PAT, then `loopdog connect cascade --rotate`.\n' +
+                `  To disable (fall back to the sweep): delete the ${PAT_SECRET} secret.`,
+            );
+            return;
+          }
+        } catch {
+          // gh unavailable or not in a repo — continue to the guided flow
+        }
+      }
+      console.log(
+        [
+          'Enable instant loop→loop handoff (optional):',
+          '',
+          'By default loopdog acts as the Actions GITHUB_TOKEN, whose label writes',
+          'do NOT re-trigger workflows, so controller→controller handoffs wait for',
+          'the cron reconcile sweep. A fine-grained PAT makes them instant.',
+          '',
+          'Create one at github.com/settings/personal-access-tokens:',
+          '  • Resource owner: the org/user that owns THIS repo',
+          '  • Repository access: only this repository',
+          '  • Repository permissions: Contents: Read and write, Issues: Read and',
+          '    write, Pull requests: Read and write (Metadata: Read is auto-added)',
+          '',
+          `It is stored as the GitHub Actions secret ${PAT_SECRET} via gh, and read`,
+          'only inside your own workflow runs. Delete the secret anytime to revert',
+          'to the sweep-carried (today) behavior.',
+          '',
+        ].join('\n'),
+      );
+
+      if (!process.stdin.isTTY) {
+        console.log(
+          `non-interactive shell: set the secret yourself —\n  gh secret set ${PAT_SECRET}`,
+        );
+        return;
+      }
+      const { text, isCancel, cancel } = await import('@clack/prompts');
+      const pat = await text({
+        message: `Fine-grained PAT (stored as ${PAT_SECRET}):`,
+        validate: (v) => (v.trim() ? undefined : 'Paste the personal access token.'),
+      });
+      if (isCancel(pat)) {
+        cancel('Cancelled — nothing stored.');
+        return;
+      }
+      await ghSecretSet(PAT_SECRET, String(pat).trim(), opts.repo ? ['--repo', opts.repo] : []);
+      console.log(
+        `✓ stored ${PAT_SECRET} as an Actions secret — loop handoffs now fire instantly.\n` +
+          '  The cron sweep stays on as the backstop. Delete the secret to revert.',
       );
     });
 

@@ -26,3 +26,6 @@ jobs:
       claude_fire_url: ${{ secrets.LOOPDOG_CLAUDE_FIRE_URL }}
       claude_fire_token: ${{ secrets.LOOPDOG_CLAUDE_FIRE_TOKEN }}
       codex_mention_token: ${{ secrets.LOOPDOG_CODEX_MENTION_TOKEN }}
+      # Optional: with LOOPDOG_PAT set (`loopdog connect cascade`), a swept item
+      # chains onward instantly instead of waiting for the next cron tick.
+      loopdog_pat: ${{ secrets.LOOPDOG_PAT }}

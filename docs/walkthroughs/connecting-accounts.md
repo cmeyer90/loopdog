@@ -81,10 +81,16 @@ Because loopdog's controller acts as `GITHUB_TOKEN`, a label it writes won't fir
 the *next* loop's event (GitHub's loop-prevention). That's fine — the **cron
 reconcile sweep** picks the item up on its next tick. Events from *humans* and from
 the *provider's* agent (opening a PR) still fire instantly; only
-controller→controller handoffs run at sweep pace. An adopter who wants those
-instant too can drop a fine-grained **PAT** into a repo secret. A full loopdog
-GitHub App (a distinct `loopdog[bot]` identity, org-wide install) is a deliberately
-**post-V1** option, never required.
+controller→controller handoffs run at sweep pace — and GitHub throttles the
+`*/5` schedule hard, so that can be many minutes (sometimes hours), not five.
+An adopter who wants those handoffs instant runs **`loopdog connect cascade`** to
+store a fine-grained **PAT** as the `LOOPDOG_PAT` repo secret (scoped to this
+repo: Contents/Issues/Pull requests — read & write). The scaffolded workflows
+forward it automatically; the controller then acts as the PAT, whose label writes
+re-trigger the next loop's event, and the cron sweep drops back to a pure
+backstop. Delete the secret to revert. A full loopdog GitHub App (a distinct
+`loopdog[bot]` identity, org-wide install) is a deliberately **post-V1** option,
+never required.
 
 ## Notes
 

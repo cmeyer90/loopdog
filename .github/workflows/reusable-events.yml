@@ -4,8 +4,10 @@
 # GitHub Actions IS the webhook receiver: the caller's `on:` block (pinned to
 # the canonical event/action matrix) delivers events natively; this workflow
 # runs the deterministic controller for the one affected item under the
-# adopter's own GITHUB_TOKEN. Controller-written changes do not re-trigger
-# events — the sweep (reusable-sweep.yml) carries those handoffs.
+# adopter's own GITHUB_TOKEN. Controller-written changes made with GITHUB_TOKEN
+# do not re-trigger events — the sweep (reusable-sweep.yml) carries those
+# handoffs. Set the optional `loopdog_pat` secret to make those handoffs INSTANT
+# instead: a PAT's label writes DO fire follow-on event workflows.
 name: loopdog-reusable-events
 on:
   workflow_call:
@@ -27,6 +29,14 @@ on:
       codex_mention_token:
         description: 'LOOPDOG_CODEX_MENTION_TOKEN — token that posts @codex mentions'
         required: false
+      loopdog_pat:
+        description: >-
+          LOOPDOG_PAT — optional fine-grained PAT (issues/PR/contents: write).
+          When set, controller state-label writes re-trigger event workflows, so
+          loop→loop handoffs are instant instead of waiting for the cron sweep.
+          Unset → empty → the controller falls back to GITHUB_TOKEN (today's
+          sweep-carried behavior).
+        required: false
 
 # Least-privilege manifest (task 0029). NOT granted: actions, packages,
 # deployments, id-token, security-events. Deploy/OIDC loops opt in per-workflow.
@@ -47,6 +57,9 @@ jobs:
       - name: run loopdog controller (event)
         env:
           GITHUB_TOKEN: ${{ github.token }}
+          # Optional PAT: when non-empty the controller acts as it (instant
+          # handoff); empty falls through to GITHUB_TOKEN (sweep-carried).
+          LOOPDOG_PAT: ${{ secrets.loopdog_pat }}
           # Provider auth for `act`-mode dispatch — empty when not connected.
           LOOPDOG_CLAUDE_FIRE_URL: ${{ secrets.claude_fire_url }}
           LOOPDOG_CLAUDE_FIRE_TOKEN: ${{ secrets.claude_fire_token }}
