@@ -1,6 +1,6 @@
 {
   "name": "@loopdog/cli",
-  "version": "0.6.1",
+  "version": "0.6.2",
   "description": "Loopdog — autonomous-SDLC loops for any GitHub repository, driven by your existing Claude Code and Codex subscriptions.",
   "license": "Apache-2.0",
   "type": "module",
@@ -32,10 +32,10 @@
     "ldg": "dist/main.js"
   },
   "devDependencies": {
-    "@loopdog/core": "0.6.1",
-    "@loopdog/config": "0.6.1",
-    "@loopdog/github": "0.6.1",
-    "@loopdog/runtime": "0.6.1"
+    "@loopdog/core": "0.6.2",
+    "@loopdog/config": "0.6.2",
+    "@loopdog/github": "0.6.2",
+    "@loopdog/runtime": "0.6.2"
   },
   "repository": {
     "type": "git",
