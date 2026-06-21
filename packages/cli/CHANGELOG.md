@@ -1,5 +1,25 @@
 # @loopdog/cli
 
+## 0.6.2
+
+### Patch Changes
+
+- [#25](https://github.com/cmeyer90/loopdog/pull/25) [`aa43925`](https://github.com/cmeyer90/loopdog/commit/aa43925cfc41e7a43e6a950ed1ccb61d5b73f8d7) Thanks [@Pugsin](https://github.com/Pugsin)! - Generate declaration files during the CLI bundle so the published `types` field and root export point to an included `dist/index.d.ts` file.
+
+- [#23](https://github.com/cmeyer90/loopdog/pull/23) [`68c5eb0`](https://github.com/cmeyer90/loopdog/commit/68c5eb0d3a75889f274a83e0b7976cfe6ec3852d) Thanks [@cmeyer90](https://github.com/cmeyer90)! - Wire the optional `LOOPDOG_PAT` through the reusable + scaffolded workflows so
+  loop→loop handoffs can fire instantly (task 0105). The controller acts as the
+  Actions `GITHUB_TOKEN`, whose label writes don't re-trigger workflows, so every
+  controller→controller handoff (e.g. `ready-for-agent → implement`) waited on the
+  `*/5` cron sweep — which GitHub throttles to many minutes or hours, stalling the
+  pipeline. The identity layer already supported a PAT (`reTriggersWorkflows: true`)
+  and the docs already promised it; the reusable/event/sweep workflows just never
+  plumbed it. Now `reusable-events.yml`/`reusable-sweep.yml` accept an optional
+  `loopdog_pat` secret and export it as `LOOPDOG_PAT`, and the scaffolded callers
+  forward `${{ secrets.LOOPDOG_PAT }}`. New `loopdog connect cascade` stores the
+  secret. Opt-in and fully backwards-compatible: with no PAT set, behavior is
+  unchanged (GITHUB_TOKEN + sweep). Existing adopters: re-run `loopdog init` (or add
+  the one `loopdog_pat:` line) and run `loopdog connect cascade`.
+
 ## 0.6.1
 
 ### Patch Changes
